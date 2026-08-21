@@ -1,0 +1,33 @@
+# User documentation files
+USER_GUIDE.md
+Guardra_User_Guide.docx
+Guardra_User_Guide.pdf
+*.docx
+*.pdf
+
+# Python & virtual environment
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.env
+venv/
+env/
+ENV/
+*.db
+guardra.db
+
+# Node & Frontend build
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Browser extension archives
+guardra-extension.zip
+
+# Operating system & Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

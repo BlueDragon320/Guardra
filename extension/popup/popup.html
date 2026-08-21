@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guardra Privacy Rating</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="brand">
+        <div class="logo-shield">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="brand-title">Guardra</h1>
+          <span class="brand-sub">Privacy Guardian</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="btn-refresh" title="Rescan site" class="icon-btn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+          </svg>
+        </button>
+        <button id="btn-open-dashboard" title="Open Web Dashboard" class="icon-btn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+            <polyline points="15 3 21 3 21 9"/>
+            <line x1="10" y1="14" x2="21" y2="3"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Active Site Banner -->
+    <div class="site-card">
+      <div class="site-info">
+        <div class="site-name" id="site-name">Scanning...</div>
+        <div class="site-domain" id="site-domain">Please wait</div>
+      </div>
+      <div class="grade-badge" id="grade-badge">
+        <span class="grade-letter" id="grade-letter">-</span>
+        <span class="grade-score" id="grade-score">0/100</span>
+      </div>
+    </div>
+
+    <!-- Regional Compliance Bar -->
+    <div class="compliance-box" id="compliance-box">
+      <div class="compliance-badge" id="dpdp-badge">
+        <span class="flag">🇮🇳</span>
+        <span class="compliance-text" id="dpdp-text">Checking DPDP Act...</span>
+      </div>
+      <div class="compliance-badge" id="gdpr-badge">
+        <span class="flag">🇪🇺</span>
+        <span class="compliance-text" id="gdpr-text">Checking GDPR...</span>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="summary-box" id="summary-text">
+      Evaluating privacy terms, third-party data broker sharing, and statutory grievance mechanisms.
+    </div>
+
+    <!-- Quick Stats Grid -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Data Sharing</div>
+        <div class="stat-value" id="stat-sharing">-</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Retention</div>
+        <div class="stat-value" id="stat-retention">-</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Trackers</div>
+        <div class="stat-value" id="stat-trackers">-</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Erasure Right</div>
+        <div class="stat-value" id="stat-erasure">-</div>
+      </div>
+    </div>
+
+    <!-- Primary Action Buttons -->
+    <div class="actions-section">
+      <button class="primary-btn" id="btn-trigger-deletion">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+        </svg>
+        Generate DPDP / GDPR Deletion Request
+      </button>
+
+      <div class="secondary-btns">
+        <button class="secondary-btn" id="btn-check-breach">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 14h-2v-2h2zm0-4h-2V7h2z"/>
+          </svg>
+          Breach Check
+        </button>
+        <button class="secondary-btn" id="btn-toggle-details">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+          View Rubric
+        </button>
+      </div>
+    </div>
+
+    <!-- Expandable Rubric Details Section -->
+    <div class="rubric-details hidden" id="rubric-details">
+      <h3 class="section-title">6-Pillar Privacy Breakdown</h3>
+      <div class="rubric-list" id="rubric-list">
+        <!-- Rubric items injected here -->
+      </div>
+
+      <div class="grievance-block" id="grievance-block">
+        <div class="grievance-title">Designated Grievance / DPO Contact:</div>
+        <div class="grievance-val" id="grievance-contact">Loading...</div>
+      </div>
+    </div>
+
+    <!-- Modal for 1-Click Notice Quick Dispatch -->
+    <div class="modal hidden" id="deletion-modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Statutory Deletion Notice</h3>
+          <button class="close-btn" id="btn-close-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <label>Your Full Name:</label>
+          <input type="text" id="modal-user-name" placeholder="E.g. Rahul Sharma" value="Privacy Principal" />
+          
+          <label>Your Registered Email:</label>
+          <input type="email" id="modal-user-email" placeholder="user@example.com" value="user@guardra.local" />
+          
+          <label>Legal Framework:</label>
+          <select id="modal-legal-basis">
+            <option value="dpdp">India: DPDP Act 2023 (Section 12 Erasure)</option>
+            <option value="gdpr">European Union: GDPR Article 17</option>
+            <option value="ccpa">California: CCPA / CPRA § 1798.105</option>
+          </select>
+          
+          <div class="modal-preview-box">
+            <p id="modal-notice-preview">Generating formal statutory notice citing grievance officer and 30-day compliance timeline...</p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="secondary-btn" id="btn-copy-notice">Copy Text</button>
+          <button class="primary-btn" id="btn-send-email">Open Email Client</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <span>Guardra Suite v1.0</span>
+      <a href="#" id="link-options">Settings</a>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

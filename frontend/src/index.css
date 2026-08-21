@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Minimal subtle scrollbars */
+html.dark ::-webkit-scrollbar-track {
+  background: #09090b;
+}
+html.dark ::-webkit-scrollbar-thumb {
+  background: #27272a;
+}
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46;
+}
+
+html:not(.dark) ::-webkit-scrollbar-track {
+  background: #fafafa;
+}
+html:not(.dark) ::-webkit-scrollbar-thumb {
+  background: #d4d4d8;
+}
+html:not(.dark) ::-webkit-scrollbar-thumb:hover {
+  background: #a1a1aa;
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
