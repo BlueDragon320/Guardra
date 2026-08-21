@@ -411,9 +411,17 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
   }
 });
 
-// Listen for messages from content script
+// Listen for messages from content script or popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "GET_CURRENT_RATING") {
+    // If message includes domain explicitly
+    if (message.domain) {
+      fetchSiteRating(message.domain).then(rating => {
+        sendResponse({ domain: message.domain, rating });
+      });
+      return true;
+    }
+
     const tabUrl = sender.tab?.url;
     const domain = tabUrl ? extractDomain(tabUrl) : null;
     if (domain) {
@@ -422,18 +430,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       });
       return true;
     } else {
-      chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
-        if (tabs.length > 0 && tabs[0].url) {
-          const d = extractDomain(tabs[0].url);
+      chrome.tabs.query({ active: true, lastFocusedWindow: true }, async (tabs) => {
+        let activeTab = tabs && tabs.length > 0 ? tabs[0] : null;
+        if (!activeTab || !activeTab.url) {
+          const allTabs = await chrome.tabs.query({ active: true });
+          activeTab = allTabs.find(t => t.url && !t.url.startsWith("chrome://")) || null;
+        }
+
+        if (activeTab && activeTab.url) {
+          const d = extractDomain(activeTab.url);
           if (d) {
             const r = await fetchSiteRating(d);
             sendResponse({ domain: d, rating: r });
-          } else {
-            sendResponse({ domain: null, rating: null });
+            return;
           }
-        } else {
-          sendResponse({ domain: null, rating: null });
         }
+        sendResponse({ domain: null, rating: null });
       });
       return true;
     }
