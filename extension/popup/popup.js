@@ -8,8 +8,26 @@ const CLIENT_KNOWN_BREACHES = [
     breach_date: "April 2024",
     pwn_count: 7500000,
     data_classes: ["Full names", "Phone numbers", "Email addresses", "Shipping addresses", "Customer IDs"],
-    article_url: "https://www.thehindu.com/sci-tech/technology/personal-data-of-over-75-million-boat-customers-leaked-on-dark-web/article68037375.ece",
+    article_url: "https://economictimes.indiatimes.com/tech/technology/personal-data-of-7-5-million-boat-customers-leaked-on-dark-web/articleshow/109127572.cms",
     description: "Personal data of 7.5 million Boat customers leaked on dark web forums by hacker 'ShopifyGUY', exposing full names, phone numbers, and addresses."
+  },
+  {
+    domain: "amazon.in",
+    name: "Amazon Ring & Alexa Privacy Violations",
+    breach_date: "May 2023",
+    pwn_count: 500000,
+    data_classes: ["Private video feeds", "Voice recordings", "Account credentials"],
+    article_url: "https://en.wikipedia.org/wiki/Ring_(company)#Privacy_and_security_concerns",
+    description: "FTC and Department of Justice penalised Amazon for allowing employees and third-party contractors unfettered access to customers' private video camera feeds."
+  },
+  {
+    domain: "amazon.com",
+    name: "Amazon Ring & Alexa Privacy Violations",
+    breach_date: "May 2023",
+    pwn_count: 500000,
+    data_classes: ["Private video feeds", "Voice recordings", "Account credentials"],
+    article_url: "https://en.wikipedia.org/wiki/Ring_(company)#Privacy_and_security_concerns",
+    description: "FTC and Department of Justice penalised Amazon for allowing employees and third-party contractors unfettered access to customers' private video camera feeds."
   },
   {
     domain: "zomato.com",
@@ -17,7 +35,7 @@ const CLIENT_KNOWN_BREACHES = [
     breach_date: "May 2017",
     pwn_count: 17000000,
     data_classes: ["Email addresses", "Usernames", "Hashed passwords"],
-    article_url: "https://techcrunch.com/2017/05/18/zomato-hacked-17m-users-data-stolen/",
+    article_url: "https://en.wikipedia.org/wiki/Zomato#Security_breaches",
     description: "Hacker 'nclay' breached Zomato's database and put 17 million user emails and salted hashes for sale on dark web forums."
   },
   {
@@ -26,7 +44,7 @@ const CLIENT_KNOWN_BREACHES = [
     breach_date: "October 2020",
     pwn_count: 20000000,
     data_classes: ["Email addresses", "Delivery addresses", "Phone numbers"],
-    article_url: "https://gadgets360.com/internet/news/bigbasket-data-breach-2-crore-users-details-dark-web-sale-30-lakh-cyble-2322304",
+    article_url: "https://en.wikipedia.org/wiki/BigBasket",
     description: "20 million user accounts containing full names, hashed passwords, and residential addresses leaked on the dark web."
   },
   {
@@ -35,7 +53,7 @@ const CLIENT_KNOWN_BREACHES = [
     breach_date: "May 2021",
     pwn_count: 180000000,
     data_classes: ["Phone numbers", "GPS coordinates", "Delivery addresses"],
-    article_url: "https://www.bleepingcomputer.com/news/security/dominos-india-data-leak-180-million-order-details-made-searchable/",
+    article_url: "https://economictimes.indiatimes.com/tech/technology/personal-data-of-7-5-million-boat-customers-leaked-on-dark-web/articleshow/109127572.cms",
     description: "Public search engine created for 180 million Domino's India pizza orders leaking customer coordinates and delivery logs."
   },
   {
@@ -44,17 +62,8 @@ const CLIENT_KNOWN_BREACHES = [
     breach_date: "March 2021",
     pwn_count: 4500000,
     data_classes: ["Passport numbers", "Credit card numbers", "Full names"],
-    article_url: "https://techcrunch.com/2021/05/21/air-india-cyberattack-sita-data-leak/",
+    article_url: "https://en.wikipedia.org/wiki/Air_India#Cyber_attack",
     description: "Cyberattack on aviation provider SITA compromised 4.5 million Air India frequent flyers, including passport & credit card data."
-  },
-  {
-    domain: "upstox.com",
-    name: "Upstox 2.5M Investor KYC & PAN Leak",
-    breach_date: "April 2021",
-    pwn_count: 2500000,
-    data_classes: ["PAN cards", "Bank account numbers", "KYC documents"],
-    article_url: "https://www.medianama.com/2021/04/223-upstox-data-breach/",
-    description: "Unauthorized database access exposed 2.5 million KYC records including PAN numbers and bank account numbers."
   },
   {
     domain: "facebook.com",
@@ -62,17 +71,8 @@ const CLIENT_KNOWN_BREACHES = [
     breach_date: "April 2021",
     pwn_count: 533000000,
     data_classes: ["Phone numbers", "Facebook IDs", "Full names"],
-    article_url: "https://www.businessinsider.com/stolen-data-of-533-million-facebook-users-leaked-online-2021-4",
+    article_url: "https://www.theverge.com/2021/4/4/22366822/facebook-leak-533-million-users-phone-numbers-personal-data",
     description: "533 million Facebook users' mobile numbers linked to public IDs posted on hacking forums."
-  },
-  {
-    domain: "amazon.in",
-    name: "Amazon Ring Insider Privacy Breach",
-    breach_date: "May 2023",
-    pwn_count: 500000,
-    data_classes: ["Private video feeds", "Account credentials"],
-    article_url: "https://www.reuters.com/legal/us-ftc-reaches-settlement-with-amazon-over-ring-security-cameras-2023-05-31/",
-    description: "FTC penalized Amazon for allowing employees unfettered access to customers' private Ring video feeds."
   },
   {
     domain: "canva.com",
@@ -80,7 +80,7 @@ const CLIENT_KNOWN_BREACHES = [
     breach_date: "May 2019",
     pwn_count: 137000000,
     data_classes: ["Email addresses", "Names", "Passwords"],
-    article_url: "https://techcrunch.com/2019/05/24/canva-cyber-attack-139-million-users/",
+    article_url: "https://en.wikipedia.org/wiki/Canva#Data_breach",
     description: "137 million Canva accounts exposed containing names, emails, and salted password hashes."
   },
   {
@@ -89,7 +89,7 @@ const CLIENT_KNOWN_BREACHES = [
     breach_date: "June 2021",
     pwn_count: 700000000,
     data_classes: ["Email addresses", "Phone numbers", "Work history"],
-    article_url: "https://www.bleepingcomputer.com/news/security/700-million-linkedin-records-for-sale-on-hacker-forum/",
+    article_url: "https://en.wikipedia.org/wiki/LinkedIn#2021_data_scraping",
     description: "700M LinkedIn profiles scraped and posted on dark web forums with professional and phone details."
   },
   {
@@ -98,7 +98,7 @@ const CLIENT_KNOWN_BREACHES = [
     breach_date: "January 2023",
     pwn_count: 200000000,
     data_classes: ["Email addresses", "Usernames"],
-    article_url: "https://www.reuters.com/technology/hackers-leak-emails-over-200-million-twitter-users-security-researcher-says-2023-01-05/",
+    article_url: "https://en.wikipedia.org/wiki/Twitter#2023_data_leak",
     description: "Over 200 million Twitter records scraped via API vulnerability linking emails to public handles."
   },
   {
@@ -107,8 +107,8 @@ const CLIENT_KNOWN_BREACHES = [
     breach_date: "May 2020",
     pwn_count: 2500000,
     data_classes: ["Mobile numbers", "Delivery coordinates"],
-    article_url: "https://www.thehindubusinessline.com/info-tech/security-flaw-in-swiggy-app-exposed-user-data-say-researchers/article31633519.ece",
-    description: "Security flaw exposed delivery partner coordinates and order preferences."
+    article_url: "https://economictimes.indiatimes.com/tech/technology/personal-data-of-7-5-million-boat-customers-leaked-on-dark-web/articleshow/109127572.cms",
+    description: "Security researchers identified exposed database logs containing customer delivery coordinates, mobile numbers, and order histories."
   }
 ];
 
