@@ -152,6 +152,18 @@
 
   function renderFloatingPill(rating) {
     if (isDismissed) return;
+    chrome.storage.local.get("guardra_inpage_enabled", (res) => {
+      if (res.guardra_inpage_enabled === false) {
+        const rootHost = document.getElementById("guardra-inpage-root");
+        if (rootHost) rootHost.remove();
+        return;
+      }
+      _doRenderFloatingPill(rating);
+    });
+  }
+
+  function _doRenderFloatingPill(rating) {
+    if (isDismissed) return;
     currentRating = rating;
     const domain = window.location.hostname.replace(/^www\./, "");
     
@@ -371,9 +383,21 @@
             <a href="http://localhost:5173" target="_blank" class="secondary-btn" style="text-align:center;">
               📊 Open Guardra Web Suite
             </a>
+            <button id="guardra-btn-disable-alwayson" style="background:none; border:none; color:#71717a; font-size:9px; cursor:pointer; text-align:center; padding:3px; margin-top:2px; text-decoration:underline;">
+              🔕 Turn Off Always-On Badge on Websites
+            </button>
           </div>
         </div>
       `;
+
+      const disableAlwaysOnBtn = shadowRoot.getElementById("guardra-btn-disable-alwayson");
+      if (disableAlwaysOnBtn) {
+        disableAlwaysOnBtn.addEventListener("click", () => {
+          chrome.storage.local.set({ guardra_inpage_enabled: false });
+          isDismissed = true;
+          if (rootHost) rootHost.remove();
+        });
+      }
 
       const disableBtn = shadowRoot.getElementById("guardra-btn-disable-optional");
       if (disableBtn) {
@@ -445,8 +469,21 @@
     });
   }
 
-  // 7. Strict Cookie Enforcement listener
+  // 7. Strict Cookie Enforcement & Always-On In-Page Shield listeners
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+    if (msg.type === "TOGGLE_INPAGE_SHIELD") {
+      if (msg.enabled === false) {
+        isDismissed = true;
+        const rootHost = document.getElementById("guardra-inpage-root");
+        if (rootHost) rootHost.remove();
+      } else {
+        isDismissed = false;
+        renderFloatingPill(currentRating);
+      }
+      sendResponse({ success: true });
+      return true;
+    }
+
     if (msg.type === "STRICT_COOKIES_ENFORCED") {
       try {
         // Purge tracking keys from localStorage
@@ -462,6 +499,7 @@
       automateCookieRejection();
       updateFloatingPill("Strict Cookies Enforced");
       sendResponse({ success: true });
+      return true;
     }
   });
 

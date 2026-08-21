@@ -212,6 +212,52 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
+  // 1. Theme Management (Light / Dark)
+  const themeBtn = document.getElementById("btn-toggle-theme");
+  const themeIcon = document.getElementById("theme-icon");
+
+  const storedTheme = await chrome.storage.local.get("guardra_theme");
+  const currentTheme = storedTheme.guardra_theme || "dark";
+  applyTheme(currentTheme);
+
+  function applyTheme(theme) {
+    if (theme === "light") {
+      document.body.classList.add("light-theme");
+      if (themeIcon) themeIcon.textContent = "🌙";
+    } else {
+      document.body.classList.remove("light-theme");
+      if (themeIcon) themeIcon.textContent = "☀️";
+    }
+  }
+
+  if (themeBtn) {
+    themeBtn.addEventListener("click", async () => {
+      const isLight = document.body.classList.contains("light-theme");
+      const newTheme = isLight ? "dark" : "light";
+      applyTheme(newTheme);
+      await chrome.storage.local.set({ guardra_theme: newTheme });
+    });
+  }
+
+  // 2. In-Page Always-On Website Shield Toggle
+  const inpageToggle = document.getElementById("toggle-inpage-shield");
+  if (inpageToggle) {
+    const storedInpage = await chrome.storage.local.get("guardra_inpage_enabled");
+    inpageToggle.checked = storedInpage.guardra_inpage_enabled !== false;
+
+    inpageToggle.addEventListener("change", async () => {
+      const enabled = inpageToggle.checked;
+      await chrome.storage.local.set({ guardra_inpage_enabled: enabled });
+
+      const tabs = await chrome.tabs.query({});
+      tabs.forEach(t => {
+        if (t.id && t.url && (t.url.startsWith("http://") || t.url.startsWith("https://"))) {
+          chrome.tabs.sendMessage(t.id, { type: "TOGGLE_INPAGE_SHIELD", enabled }).catch(() => {});
+        }
+      });
+    });
+  }
+
   loadActiveTabRating();
 
   // Button Listeners
