@@ -114,8 +114,20 @@ const CLIENT_KNOWN_BREACHES = [
 
 function getClientBreaches(domain) {
   if (!domain) return [];
-  const clean = domain.toLowerCase().replace(/^www\./, "");
-  return CLIENT_KNOWN_BREACHES.filter(b => clean === b.domain || clean.endsWith("." + b.domain) || b.domain.endsWith("." + clean));
+  const clean = domain.toLowerCase().replace(/^www\./, "").split(":")[0];
+  const matched = CLIENT_KNOWN_BREACHES.filter(b => {
+    const bDom = b.domain.toLowerCase();
+    return clean === bDom || clean.endsWith("." + bDom) || bDom.endsWith("." + clean);
+  });
+  if (matched.length > 0) return matched;
+  const brand = clean.split(".")[0];
+  const brandMatched = CLIENT_KNOWN_BREACHES.filter(b => b.domain.toLowerCase().split(".")[0] === brand);
+  const seen = new Set();
+  return brandMatched.filter(b => {
+    if (seen.has(b.name)) return false;
+    seen.add(b.name);
+    return true;
+  });
 }
 
 function extractDomain(url) {
@@ -131,6 +143,15 @@ function extractDomain(url) {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
+  // Universal link interceptor: MV3 extension popups block regular <a> clicks by default
+  document.addEventListener("click", (e) => {
+    const link = e.target.closest("a[href]");
+    if (link && link.href && (link.href.startsWith("http://") || link.href.startsWith("https://"))) {
+      e.preventDefault();
+      chrome.tabs.create({ url: link.href });
+    }
+  });
+
   loadActiveTabRating();
 
   // Button Listeners
@@ -416,6 +437,18 @@ function renderBreaches(breaches) {
         ${tagsHtml ? `<div class="breach-tags">${tagsHtml}</div>` : ""}
         ${articleHtml}
       `;
+
+      if (b.article_url) {
+        const articleBtn = card.querySelector(".breach-article-btn");
+        if (articleBtn) {
+          articleBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            chrome.tabs.create({ url: b.article_url });
+          });
+        }
+      }
+
       breachList.appendChild(card);
     });
   } else {
