@@ -408,6 +408,26 @@
     });
   }
 
+  // 7. Strict Cookie Enforcement listener
+  chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+    if (msg.type === "STRICT_COOKIES_ENFORCED") {
+      try {
+        // Purge tracking keys from localStorage
+        const trackerKeyRegex = /^(_ga|_gid|_gat|_fbp|_fbc|amplitude|mixpanel|_hj|mp_|_clck|_clsk|criteo)/i;
+        Object.keys(localStorage).forEach(k => {
+          if (trackerKeyRegex.test(k)) localStorage.removeItem(k);
+        });
+        Object.keys(sessionStorage).forEach(k => {
+          if (trackerKeyRegex.test(k)) sessionStorage.removeItem(k);
+        });
+      } catch (e) {}
+
+      automateCookieRejection();
+      updateFloatingPill("Strict Cookies Enforced");
+      sendResponse({ success: true });
+    }
+  });
+
   // Run on page load
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);

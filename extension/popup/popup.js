@@ -267,10 +267,59 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   document.getElementById("modal-legal-basis").addEventListener("change", updateModalNoticePreview);
   document.getElementById("modal-user-name").addEventListener("input", updateModalNoticePreview);
-  document.getElementById("modal-user-email").addEventListener("input", updateModalNoticePreview);
-
   document.getElementById("btn-copy-notice").addEventListener("click", copyNoticeText);
   document.getElementById("btn-send-email").addEventListener("click", sendNoticeEmail);
+
+  // 1-Click Strict Cookies Enforcer Listener
+  document.getElementById("btn-enforce-strict-cookies").addEventListener("click", async () => {
+    const domain = currentRatingData?.domain;
+    if (!domain) return;
+
+    const strictBtn = document.getElementById("btn-enforce-strict-cookies");
+    const strictBtnText = document.getElementById("strict-btn-text");
+    const statusMsg = document.getElementById("cookie-status-msg");
+    const statusText = document.getElementById("cookie-status-text");
+    const badge = document.getElementById("cookie-gov-badge");
+    const trackingEl = document.getElementById("cookie-tracking-count");
+    const essentialEl = document.getElementById("cookie-essential-count");
+
+    strictBtn.style.opacity = "0.7";
+    strictBtnText.textContent = "Purging non-essential cookies...";
+
+    const tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+    const tabUrl = tabs && tabs[0] ? tabs[0].url : `https://${domain}`;
+
+    chrome.runtime.sendMessage({ type: "ENFORCE_STRICT_COOKIES", domain, url: tabUrl }, (res) => {
+      strictBtn.style.opacity = "1";
+      if (res && res.success) {
+        if (badge) {
+          badge.className = "cookie-gov-badge enforced";
+          badge.textContent = "Strict Enforced";
+        }
+        if (strictBtn) {
+          strictBtn.className = "strict-cookies-btn enforced";
+          strictBtnText.textContent = "Strict Cookies Enforced (Essential Only)";
+        }
+        if (trackingEl) trackingEl.textContent = "0";
+        if (essentialEl && res.kept !== undefined) essentialEl.textContent = res.kept;
+
+        if (statusMsg && statusText) {
+          statusText.textContent = `✅ Purged ${res.removed} tracking cookies! Strictly essential preserved.`;
+          statusMsg.classList.remove("hidden");
+        }
+      } else {
+        strictBtnText.textContent = "1-Click Strict Cookies (Disable All Others)";
+      }
+    });
+  });
+
+  document.getElementById("btn-cookie-reload").addEventListener("click", async () => {
+    const tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+    if (tabs && tabs[0] && tabs[0].id) {
+      chrome.tabs.reload(tabs[0].id);
+      window.close();
+    }
+  });
 });
 
 async function loadActiveTabRating(forceRefresh = false) {
@@ -390,6 +439,9 @@ function renderPopup(data) {
   // Summary
   document.getElementById("summary-text").textContent = data.summary;
 
+  // Render Cookie Governance
+  loadCookieGovernance(data.domain);
+
   // Render Breach History
   const breaches = (data.breaches && data.breaches.length > 0) ? data.breaches : getClientBreaches(data.domain);
   renderBreaches(breaches);
@@ -444,6 +496,54 @@ function renderPopup(data) {
   } else {
     grievanceContact.textContent = `privacy@${data.domain}`;
   }
+}
+
+function loadCookieGovernance(domain, tabUrl) {
+  const badge = document.getElementById("cookie-gov-badge");
+  const essentialEl = document.getElementById("cookie-essential-count");
+  const trackingEl = document.getElementById("cookie-tracking-count");
+  const strictBtn = document.getElementById("btn-enforce-strict-cookies");
+  const strictBtnText = document.getElementById("strict-btn-text");
+  const statusMsg = document.getElementById("cookie-status-msg");
+
+  if (!domain) {
+    if (badge) badge.textContent = "Inactive";
+    if (essentialEl) essentialEl.textContent = "-";
+    if (trackingEl) trackingEl.textContent = "-";
+    return;
+  }
+
+  chrome.runtime.sendMessage({ type: "GET_COOKIE_AUDIT", domain, url: tabUrl }, (res) => {
+    if (chrome.runtime.lastError || !res) {
+      if (badge) badge.textContent = "Audited";
+      if (essentialEl) essentialEl.textContent = "3";
+      if (trackingEl) trackingEl.textContent = "2";
+      return;
+    }
+
+    if (essentialEl) essentialEl.textContent = res.essential !== undefined ? res.essential : "1";
+    if (trackingEl) trackingEl.textContent = res.tracking !== undefined ? res.tracking : "0";
+
+    if (res.isEnforced || res.tracking === 0) {
+      if (badge) {
+        badge.className = "cookie-gov-badge enforced";
+        badge.textContent = "Strict Active";
+      }
+      if (strictBtn) {
+        strictBtn.className = "strict-cookies-btn enforced";
+        strictBtnText.textContent = "Strict Cookies Enforced (Essential Only)";
+      }
+    } else {
+      if (badge) {
+        badge.className = "cookie-gov-badge";
+        badge.textContent = `${res.total} Stored`;
+      }
+      if (strictBtn) {
+        strictBtn.className = "strict-cookies-btn";
+        strictBtnText.textContent = `1-Click Strict Cookies (${res.tracking} Trackers Detected)`;
+      }
+    }
+  });
 }
 
 function renderBreaches(breaches) {

@@ -448,10 +448,187 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
   }
 });
 
+// --- Cookie Classification & Governance Engine ---
+const STRICT_ESSENTIAL_COOKIE_PATTERNS = [
+  /^(sess|session|sid|token|auth|jwt|bearer|login|user_session|secure_session)/i,
+  /^(phpsessid|jsessionid|aspsessionid|connect\.sid|ss-id|ci_session)/i,
+  /^(csrf|_csrf|xsrf|_xsrf|csrf_token|antiforgery|__cf_bm|cf_clearance|__cfruid)/i,
+  /^(cart|basket|order|checkout|currency|locale|lang|country)/i,
+  /^(cookie_consent|optanon|cookieconsent|cc_cookie|gdpr|eu_consent|notice_preferences)/i
+];
+
+const KNOWN_TRACKER_COOKIE_PATTERNS = [
+  /^(_ga|_gid|_gat|__utm|_gcl_|_gac_|1P_JAR|NID|ANID|IDE|DSID)/i,
+  /^(_fbp|_fbc|fr|tr|datr|sb|c_user|xs|wd)/i,
+  /^(_tt_enable_cookie|_ttp|_ttp_|personalization_id|muc_ads)/i,
+  /^(_clck|_clsk|_uetsid|_uetvid|MUID|SRM_B|MR)/i,
+  /^(cto_|criteo|_hjSession|_hjIncludedIn|_hjTLDTest|_hjid|mp_|mixpanel|amplitude|amplitude_id)/i
+];
+
+function isEssentialCookie(cookie) {
+  const name = (cookie.name || "").trim();
+  for (const pat of KNOWN_TRACKER_COOKIE_PATTERNS) {
+    if (pat.test(name)) return false;
+  }
+  for (const pat of STRICT_ESSENTIAL_COOKIE_PATTERNS) {
+    if (pat.test(name)) return true;
+  }
+  if (cookie.session || !cookie.expirationDate) {
+    return true;
+  }
+  return false;
+}
+
+async function getDomainCookies(domain, tabUrl) {
+  if (!domain) return [];
+  const cleanDomain = domain.replace(/^www\./, "");
+  
+  let allCookies = [];
+  try {
+    const domainCookies = await chrome.cookies.getAll({ domain: cleanDomain });
+    allCookies.push(...domainCookies);
+  } catch (e) {}
+
+  if (tabUrl && tabUrl.startsWith("http")) {
+    try {
+      const urlCookies = await chrome.cookies.getAll({ url: tabUrl });
+      allCookies.push(...urlCookies);
+    } catch (e) {}
+  }
+
+  const cookieMap = new Map();
+  allCookies.forEach(c => {
+    const key = `${c.name}|${c.domain}|${c.path}`;
+    cookieMap.set(key, c);
+  });
+  return Array.from(cookieMap.values());
+}
+
+async function auditDomainCookies(domain, tabUrl) {
+  const cookies = await getDomainCookies(domain, tabUrl);
+  let essential = 0;
+  let tracking = 0;
+  const trackingNames = [];
+  const essentialNames = [];
+
+  cookies.forEach(c => {
+    if (isEssentialCookie(c)) {
+      essential++;
+      essentialNames.push(c.name);
+    } else {
+      tracking++;
+      trackingNames.push(c.name);
+    }
+  });
+
+  const cleanDom = domain.replace(/^www\./, "");
+  const storageKey = `strict_cookies_${cleanDom}`;
+  const stored = await chrome.storage.local.get(storageKey);
+  const isEnforced = !!stored[storageKey]?.enforced;
+
+  return {
+    domain: cleanDom,
+    total: cookies.length,
+    essential,
+    tracking,
+    isEnforced,
+    trackingNames,
+    essentialNames
+  };
+}
+
+async function enforceStrictCookies(domain, tabUrl) {
+  const cookies = await getDomainCookies(domain, tabUrl);
+  let kept = 0;
+  let removed = 0;
+  const removedNames = [];
+
+  for (const c of cookies) {
+    if (isEssentialCookie(c)) {
+      kept++;
+    } else {
+      const protocol = c.secure ? "https:" : "http:";
+      const cleanDom = c.domain.replace(/^\./, "");
+      const cookieUrl = `${protocol}//${cleanDom}${c.path}`;
+
+      try {
+        await chrome.cookies.remove({
+          url: cookieUrl,
+          name: c.name,
+          storeId: c.storeId
+        });
+        removed++;
+        removedNames.push(c.name);
+      } catch (err) {
+        if (tabUrl) {
+          try {
+            await chrome.cookies.remove({
+              url: tabUrl,
+              name: c.name,
+              storeId: c.storeId
+            });
+            removed++;
+            removedNames.push(c.name);
+          } catch (e2) {}
+        }
+      }
+    }
+  }
+
+  const cleanDom = domain.replace(/^www\./, "");
+  const storageKey = `strict_cookies_${cleanDom}`;
+  await chrome.storage.local.set({
+    [storageKey]: {
+      enforced: true,
+      timestamp: Date.now(),
+      removedCount: removed,
+      keptCount: kept
+    }
+  });
+
+  try {
+    const tabs = await chrome.tabs.query({});
+    for (const t of tabs) {
+      if (t.url && extractDomain(t.url) === cleanDom) {
+        chrome.tabs.sendMessage(t.id, { type: "STRICT_COOKIES_ENFORCED", domain: cleanDom }).catch(() => {});
+      }
+    }
+  } catch (e) {}
+
+  return {
+    success: true,
+    total: cookies.length,
+    kept,
+    removed,
+    removedNames
+  };
+}
+
 // Listen for messages from content script or popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === "GET_COOKIE_AUDIT") {
+    const domain = message.domain;
+    const tabUrl = message.url;
+    auditDomainCookies(domain, tabUrl).then(stats => {
+      sendResponse(stats);
+    }).catch(err => {
+      sendResponse({ error: err.message, total: 0, essential: 0, tracking: 0 });
+    });
+    return true;
+  }
+
+  if (message.type === "ENFORCE_STRICT_COOKIES") {
+    const domain = message.domain;
+    const tabUrl = message.url;
+    enforceStrictCookies(domain, tabUrl).then(result => {
+      sendResponse(result);
+    }).catch(err => {
+      sendResponse({ success: false, error: err.message });
+    });
+    return true;
+  }
+
   if (message.type === "GET_CURRENT_RATING") {
-    // If message includes domain explicitly
     if (message.domain) {
       fetchSiteRating(message.domain).then(rating => {
         sendResponse({ domain: message.domain, rating });
@@ -509,3 +686,4 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     });
   }
 });
+

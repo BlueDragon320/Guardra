@@ -128,6 +128,49 @@
       </div>
     </div>
 
+    <!-- 1-Click Strict Cookies Governance Section -->
+    <div class="cookie-gov-section" id="cookie-gov-section">
+      <div class="cookie-gov-header">
+        <div class="cookie-gov-title-group">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5"/>
+            <path d="M8.5 8.5v.01"/>
+            <path d="M7.5 15.5v.01"/>
+            <path d="M16 16v.01"/>
+          </svg>
+          <span class="cookie-gov-title">Cookie Governance</span>
+        </div>
+        <span class="cookie-gov-badge" id="cookie-gov-badge">Auditing...</span>
+      </div>
+
+      <div class="cookie-counts-row">
+        <div class="cookie-count-box">
+          <span class="cookie-num text-success" id="cookie-essential-count">-</span>
+          <span class="cookie-label">Essential / Strict</span>
+        </div>
+        <div class="cookie-count-divider"></div>
+        <div class="cookie-count-box">
+          <span class="cookie-num text-danger" id="cookie-tracking-count">-</span>
+          <span class="cookie-label">Ad / Trackers</span>
+        </div>
+      </div>
+
+      <button class="strict-cookies-btn" id="btn-enforce-strict-cookies">
+        <div class="strict-btn-content">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="m9 12 2 2 4-4"/>
+          </svg>
+          <span id="strict-btn-text">1-Click Strict Cookies (Disable All Others)</span>
+        </div>
+      </button>
+
+      <div class="cookie-status-msg hidden" id="cookie-status-msg">
+        <span id="cookie-status-text">✅ Purged non-essential cookies!</span>
+        <button class="cookie-reload-btn" id="btn-cookie-reload">Reload Tab ↻</button>
+      </div>
+    </div>
+
     <!-- SCROLLABLE DATA BREACH HISTORY SECTION AT BOTTOM -->
     <div class="breach-section" id="breach-section">
       <div class="breach-header">
