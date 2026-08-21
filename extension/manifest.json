@@ -31,7 +31,6 @@
     },
     "default_title": "Guardra Privacy Rating"
   },
-  "options_page": "options/options.html",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",

@@ -1,6 +1,37 @@
 const DEFAULT_API_BASE = "https://guardra-api.botvaibhav.dev";
 
 const EMBEDDED_STANDALONE_DATABASE = {
+  "boat-lifestyle.com": {
+    name: "Boat Lifestyle",
+    grade: "D",
+    score: 38,
+    color: "red",
+    summary: "Personal data of 7.5 million Boat customers was leaked on dark web forums in April 2024, exposing names, phone numbers, and addresses. Extensive commercial marketing retargeting.",
+    breaches: [
+      {
+        name: "Boat Lifestyle 7.5M Customer Records Leak",
+        domain: "boat-lifestyle.com",
+        breach_date: "April 2024",
+        pwn_count: 7500000,
+        data_classes: ["Full names", "Phone numbers", "Email addresses", "Shipping addresses", "Customer IDs"],
+        article_url: "https://www.thehindu.com/sci-tech/technology/personal-data-of-over-75-million-boat-customers-leaked-on-dark-web/article68037375.ece",
+        description: "Personal data of 7.5 million customers leaked on dark web forums by hacker 'ShopifyGUY', exposing PII and delivery addresses."
+      }
+    ],
+    rubric: {
+      data_sharing: { score: 35, max: 100, label: "Shared Across Ad Networks & Marketing Partners", risk: "high" },
+      retention: { score: 40, max: 100, label: "Order & Device History Retained for Advertising", risk: "medium" },
+      tracking_cookies: { score: 30, max: 100, label: "Multiple Ad Pixels (Meta, Google, Criteo)", risk: "high" },
+      user_rights: { score: 60, max: 100, label: "DPDP Grievance Officer Disclosed", risk: "medium" },
+      breach_history: { score: 20, max: 100, label: "7.5 Million Records Leaked in April 2024", risk: "critical" },
+      readability: { score: 55, max: 100, label: "Standard E-Commerce Terms", risk: "medium" }
+    },
+    compliance: {
+      dpdp: { compliant: true, grievance_officer: "Grievance Officer, Imagine Marketing Ltd (Boat)", grievance_email: "privacy@boat-lifestyle.com", redressal_period_days: 30, erasure_right_disclosed: true },
+      gdpr: { compliant: false, dpo_contact: null, lawful_basis_stated: false, erasure_art17_disclosed: false },
+      ccpa: { compliant: false, opt_out_link: null, do_not_sell: false }
+    }
+  },
   "amazon.com": {
     name: "Amazon",
     grade: "D",
@@ -269,24 +300,36 @@ async function getApiBase() {
 async function fetchSiteRating(domain) {
   const apiBase = await getApiBase();
   
-  // 1. If remote server configured, query remote server
+  // 1. Mandatory server query with audit logging
   if (apiBase && apiBase.startsWith("http")) {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2500);
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
       const resp = await fetch(`${apiBase}/api/policy/rating?domain=${encodeURIComponent(domain)}`, {
-        signal: controller.signal
+        signal: controller.signal,
+        headers: {
+          "X-Guardra-Client": "Extension-v1.0",
+          "Accept": "application/json"
+        }
       });
       clearTimeout(timeoutId);
       if (resp.ok) {
-        return await resp.json();
+        const liveRating = await resp.json();
+        // Cache in local storage for instantaneous tab switching
+        await chrome.storage.local.set({ [`cached_rating_${domain}`]: liveRating });
+        return liveRating;
       }
     } catch (e) {
-      console.warn("Remote server unreachable, using standalone database:", e);
+      console.warn("Server ping error, falling back to local dataset:", e);
     }
   }
 
-  // 2. Standalone embedded database lookup
+  // 2. Fallback to cached or standalone database only if server is unreachable
+  const cached = await chrome.storage.local.get(`cached_rating_${domain}`);
+  if (cached && cached[`cached_rating_${domain}`]) {
+    return cached[`cached_rating_${domain}`];
+  }
+
   for (const [key, val] of Object.entries(EMBEDDED_STANDALONE_DATABASE)) {
     if (domain === key || domain.endsWith("." + key) || key.endsWith("." + domain)) {
       return {
@@ -296,6 +339,7 @@ async function fetchSiteRating(domain) {
         score: val.score,
         color: val.color,
         summary: val.summary,
+        breaches: val.breaches || [],
         rubric: val.rubric,
         compliance: val.compliance,
         category: "Web Platform",

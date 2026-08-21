@@ -291,6 +291,24 @@
         rootHost.remove();
       });
     } else {
+      const breaches = currentRating?.breaches || [];
+      const breachHtml = breaches.length > 0 ? `
+        <div class="section-card" style="border-color: rgba(239,68,68,0.4); background: rgba(239,68,68,0.08);">
+          <div class="meta-row" style="color: #f87171; font-weight:600;">
+            <span>🚨 Breach: ${breaches[0].breach_date || "Recorded"}</span>
+            <span>${breaches.length} Incident${breaches.length > 1 ? "s" : ""}</span>
+          </div>
+          <div style="font-size:10px; color:#e4e4e7; margin-top:2px; line-height:1.2;">
+            ${breaches[0].name}
+          </div>
+          ${breaches[0].article_url ? `
+            <a href="${breaches[0].article_url}" target="_blank" style="color:#38bdf8; font-size:9.5px; margin-top:3px; text-decoration:none; display:inline-block; font-weight:500;">
+              🔗 Read Investigative Article &rarr;
+            </a>
+          ` : ""}
+        </div>
+      ` : "";
+
       shadowRoot.innerHTML = `
         <style>${css}</style>
         <div class="panel-container">
@@ -317,12 +335,14 @@
             </div>
           </div>
 
+          ${breachHtml}
+
           <div class="section-card">
             <div class="meta-row">
               <span>Trackers Detected (${trackerCount})</span>
             </div>
             <div style="font-size:10px; color:#71717a; margin-top:2px;">
-              ${detectedTrackers.length > 0 ? detectedTrackers.map(t => t.name).join(", ") : "Amazon Ad Systems, Analytics Pixels"}
+              ${detectedTrackers.length > 0 ? detectedTrackers.map(t => t.name).join(", ") : "Analytics Pixels"}
             </div>
           </div>
 
