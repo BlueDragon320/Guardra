@@ -14,11 +14,11 @@ const EMBEDDED_STANDALONE_DATABASE = {
         breach_date: "April 2024",
         pwn_count: 7500000,
         data_classes: ["Full names", "Phone numbers", "Email addresses", "Shipping addresses", "Customer IDs"],
-        article_url: "https://economictimes.indiatimes.com/tech/technology/personal-data-of-7-5-million-boat-customers-leaked-on-dark-web/articleshow/109127572.cms",
+        article_url: "https://news.google.com/search?q=Boat+Lifestyle+7.5+million+data+breach+April+2024",
         articles: [
-          { source: "Economic Times", url: "https://economictimes.indiatimes.com/tech/technology/personal-data-of-7-5-million-boat-customers-leaked-on-dark-web/articleshow/109127572.cms" },
-          { source: "India Today", url: "https://www.indiatoday.in/technology/news/story/boat-lifestyle-data-breach-personal-details-of-over-75-lakh-customers-leaked-on-dark-web-2524673-2024-04-08" },
-          { source: "News18 Tech", url: "https://www.news18.com/tech/boat-lifestyle-data-breach-7-5-million-users-data-leaked-on-dark-web-all-details-8844837.html" }
+          { source: "Google News Coverage", url: "https://news.google.com/search?q=Boat+Lifestyle+7.5+million+data+breach+April+2024" },
+          { source: "DuckDuckGo Intel", url: "https://duckduckgo.com/?q=Boat+Lifestyle+7.5+million+customer+data+leak+April+2024" },
+          { source: "Security Incident Feed", url: "https://duckduckgo.com/?q=Boat+Lifestyle+ShopifyGUY+dark+web+leak" }
         ],
         description: "Personal data of 7.5 million customers leaked on dark web forums by hacker 'ShopifyGUY', exposing PII and delivery addresses."
       }
