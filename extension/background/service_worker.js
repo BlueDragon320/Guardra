@@ -590,7 +590,9 @@ async function enforceStrictCookies(domain, tabUrl) {
     const tabs = await chrome.tabs.query({});
     for (const t of tabs) {
       if (t.url && extractDomain(t.url) === cleanDom) {
-        chrome.tabs.sendMessage(t.id, { type: "STRICT_COOKIES_ENFORCED", domain: cleanDom }).catch(() => {});
+        chrome.tabs.sendMessage(t.id, { type: "STRICT_COOKIES_ENFORCED", domain: cleanDom }, () => {
+          if (chrome.runtime.lastError) {}
+        });
       }
     }
   } catch (e) {}

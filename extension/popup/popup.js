@@ -252,7 +252,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       const tabs = await chrome.tabs.query({});
       tabs.forEach(t => {
         if (t.id && t.url && (t.url.startsWith("http://") || t.url.startsWith("https://"))) {
-          chrome.tabs.sendMessage(t.id, { type: "TOGGLE_INPAGE_SHIELD", enabled }).catch(() => {});
+          chrome.tabs.sendMessage(t.id, { type: "TOGGLE_INPAGE_SHIELD", enabled }, () => {
+            if (chrome.runtime.lastError) {}
+          });
         }
       });
     });

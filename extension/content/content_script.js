@@ -312,6 +312,7 @@
       shadowRoot.getElementById("guardra-close-pill").addEventListener("click", (e) => {
         e.stopPropagation();
         isDismissed = true;
+        chrome.storage.local.set({ guardra_inpage_enabled: false });
         rootHost.remove();
       });
     } else {
@@ -435,16 +436,20 @@
   function sendTelemetry() {
     const trackers = scanTrackers();
 
-    chrome.runtime.sendMessage({
-      type: "BROWSER_ACTIVITY",
-      data: {
-        url: window.location.href,
-        hostname: window.location.hostname,
-        trackers_detected: trackers,
-        tracker_count: trackers.length,
-        auto_actions: autoActionsExecuted
-      }
-    }).catch(() => {});
+    try {
+      chrome.runtime.sendMessage({
+        type: "BROWSER_ACTIVITY",
+        data: {
+          url: window.location.href,
+          hostname: window.location.hostname,
+          trackers_detected: trackers,
+          tracker_count: trackers.length,
+          auto_actions: autoActionsExecuted
+        }
+      }, () => {
+        if (chrome.runtime.lastError) {}
+      });
+    } catch (e) {}
   }
 
   // 6. Request rating and initialize on page
@@ -470,6 +475,22 @@
   }
 
   // 7. Strict Cookie Enforcement & Always-On In-Page Shield listeners
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === "local" && changes.guardra_inpage_enabled !== undefined) {
+      const enabled = changes.guardra_inpage_enabled.newValue !== false;
+      if (!enabled) {
+        isDismissed = true;
+        const rootHost = document.getElementById("guardra-inpage-root");
+        if (rootHost) rootHost.remove();
+      } else {
+        isDismissed = false;
+        if (currentRating) {
+          _doRenderFloatingPill(currentRating);
+        }
+      }
+    }
+  });
+
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.type === "TOGGLE_INPAGE_SHIELD") {
       if (msg.enabled === false) {
