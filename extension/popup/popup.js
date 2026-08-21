@@ -284,7 +284,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const essentialEl = document.getElementById("cookie-essential-count");
 
     strictBtn.style.opacity = "0.7";
-    strictBtnText.textContent = "Purging non-essential cookies...";
+    strictBtnText.textContent = "Disabling optional cookies...";
 
     const tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
     const tabUrl = tabs && tabs[0] ? tabs[0].url : `https://${domain}`;
@@ -294,21 +294,21 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (res && res.success) {
         if (badge) {
           badge.className = "cookie-gov-badge enforced";
-          badge.textContent = "Strict Enforced";
+          badge.textContent = "Only Necessary";
         }
         if (strictBtn) {
           strictBtn.className = "strict-cookies-btn enforced";
-          strictBtnText.textContent = "Strict Cookies Enforced (Essential Only)";
+          strictBtnText.textContent = "Optional Cookies Disabled (Only Necessary)";
         }
         if (trackingEl) trackingEl.textContent = "0";
         if (essentialEl && res.kept !== undefined) essentialEl.textContent = res.kept;
 
         if (statusMsg && statusText) {
-          statusText.textContent = `✅ Purged ${res.removed} tracking cookies! Strictly essential preserved.`;
+          statusText.textContent = `✅ Disabled ${res.removed} optional cookies! Only necessary preserved for logins & shopping.`;
           statusMsg.classList.remove("hidden");
         }
       } else {
-        strictBtnText.textContent = "1-Click Strict Cookies (Disable All Others)";
+        strictBtnText.textContent = "Optional Cookies Disabler (Only Necessary)";
       }
     });
   });
@@ -527,11 +527,11 @@ function loadCookieGovernance(domain, tabUrl) {
     if (res.isEnforced || res.tracking === 0) {
       if (badge) {
         badge.className = "cookie-gov-badge enforced";
-        badge.textContent = "Strict Active";
+        badge.textContent = "Only Necessary";
       }
       if (strictBtn) {
         strictBtn.className = "strict-cookies-btn enforced";
-        strictBtnText.textContent = "Strict Cookies Enforced (Essential Only)";
+        strictBtnText.textContent = "Optional Cookies Disabled (Only Necessary)";
       }
     } else {
       if (badge) {
@@ -540,7 +540,7 @@ function loadCookieGovernance(domain, tabUrl) {
       }
       if (strictBtn) {
         strictBtn.className = "strict-cookies-btn";
-        strictBtnText.textContent = `1-Click Strict Cookies (${res.tracking} Trackers Detected)`;
+        strictBtnText.textContent = `🛡️ Optional Cookies Disabler (${res.tracking} Optional Found)`;
       }
     }
   });

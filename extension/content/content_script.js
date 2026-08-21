@@ -37,13 +37,13 @@
     return detected;
   }
 
-  // 2. Automate Cookie Banner "Reject All" Clicks & Dark Pattern unchecking
+  // 2. Automate Cookie Banner "Reject Optional / Only Necessary" Clicks & Dark Pattern unchecking
   function automateCookieRejection() {
     const checkboxes = Array.from(document.querySelectorAll("input[type='checkbox']"));
     let uncheckedCount = 0;
     checkboxes.forEach((cb) => {
       const label = (cb.labels && cb.labels[0] ? cb.labels[0].textContent : "") + (cb.name || "") + (cb.id || "");
-      const isMarketing = /(marketing|tracking|analytics|advertising|profiling|partners|commercial)/i.test(label);
+      const isMarketing = /(marketing|tracking|analytics|advertising|profiling|partners|commercial|optional|third-party)/i.test(label);
       if (cb.checked && !cb.disabled && isMarketing) {
         cb.checked = false;
         cb.dispatchEvent(new Event("change", { bubbles: true }));
@@ -52,7 +52,7 @@
     });
 
     if (uncheckedCount > 0) {
-      autoActionsExecuted.push(`Unchecked ${uncheckedCount} pre-ticked tracking checkboxes`);
+      autoActionsExecuted.push(`Unchecked ${uncheckedCount} optional tracking checkboxes`);
     }
 
     const rejectSelectors = [
@@ -61,13 +61,20 @@
       "#CybotCookiebotDialogBodyButtonDecline",
       "#didomi-notice-disagree-button",
       ".qc-cmp2-buttons-desktop button:last-child",
+      ".klaro .cm-btn-decline",
+      ".axeptio_btn_dismiss",
+      "#axeptio_btn_refuse",
       "button[aria-label*='reject' i]",
       "button[aria-label*='decline' i]",
       "button[aria-label*='deny' i]",
       "button[id*='reject' i]",
       "button[class*='reject' i]",
       "button[id*='decline' i]",
-      "button[class*='decline' i]"
+      "button[class*='decline' i]",
+      "button[id*='necessary' i]",
+      "button[class*='necessary' i]",
+      "a[id*='reject' i]",
+      "a[class*='reject' i]"
     ];
 
     for (const selector of rejectSelectors) {
@@ -75,8 +82,8 @@
       if (btn && btn.offsetParent !== null) {
         try {
           btn.click();
-          autoActionsExecuted.push("Auto-clicked 'Reject All' on Cookie Consent Banner");
-          updateFloatingPill("Auto-rejected cookies");
+          autoActionsExecuted.push("Optional Cookies Disabler auto-clicked 'Reject Optional' on Consent Banner");
+          updateFloatingPill("Optional Cookies Disabled");
           return true;
         } catch (e) {}
       }
@@ -91,14 +98,19 @@
         text === "decline all" ||
         text === "deny all" ||
         text === "reject non-essential" ||
+        text === "reject optional" ||
+        text === "reject optional cookies" ||
         text === "only necessary cookies" ||
         text === "necessary only" ||
+        text === "use necessary cookies only" ||
+        text === "essential cookies only" ||
+        text === "continue without accepting" ||
         text === "refuse all"
       ) {
         try {
           btn.click();
-          autoActionsExecuted.push(`Auto-clicked '${btn.textContent.trim()}'`);
-          updateFloatingPill(`Auto-rejected: ${btn.textContent.trim()}`);
+          autoActionsExecuted.push(`Optional Cookies Disabler auto-clicked '${btn.textContent.trim()}'`);
+          updateFloatingPill(`Optional Cookies Disabled (${btn.textContent.trim()})`);
           return true;
         } catch (e) {}
       }
@@ -347,15 +359,40 @@
           </div>
 
           <div style="display:flex; flex-direction:column; gap:4px;">
-            <a href="mailto:${grievanceEmail}?subject=STATUTORY DATA ERASURE NOTICE under DPDP Act 2023 Section 12&body=To the Grievance Officer of ${domain},%0D%0A%0D%0APlease execute the erasure of all personal data concerning my account under Section 12 of the DPDP Act 2023." class="action-btn" target="_blank">
-              ✉️ Send 1-Click DPDP Erasure Notice
+            <button class="action-btn" id="guardra-btn-disable-optional" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color:#fff; border:none; padding:7px 8px; border-radius:4px; font-weight:600; cursor:pointer;">
+              🛡️ Optional Cookies Disabler (Only Necessary)
+            </button>
+            <div id="guardra-optional-feedback" style="display:none; font-size:9.5px; color:#34d399; text-align:center; padding:2px;">
+              ✅ Non-essential cookies disabled! Only necessary kept.
+            </div>
+            <a href="mailto:${grievanceEmail}?subject=STATUTORY DATA ERASURE NOTICE under DPDP Act 2023 Section 12&body=To the Grievance Officer of ${domain},%0D%0A%0D%0APlease execute the erasure of all personal data concerning my account under Section 12 of the DPDP Act 2023." class="secondary-btn" target="_blank" style="text-align:center;">
+              ✉️ Generate DPDP Deletion Notice
             </a>
-            <a href="http://localhost:5173" target="_blank" class="secondary-btn">
+            <a href="http://localhost:5173" target="_blank" class="secondary-btn" style="text-align:center;">
               📊 Open Guardra Web Suite
             </a>
           </div>
         </div>
       `;
+
+      const disableBtn = shadowRoot.getElementById("guardra-btn-disable-optional");
+      if (disableBtn) {
+        disableBtn.addEventListener("click", () => {
+          disableBtn.textContent = "Disabling optional cookies...";
+          chrome.runtime.sendMessage({
+            type: "ENFORCE_STRICT_COOKIES",
+            domain: domain,
+            url: window.location.href
+          }, (res) => {
+            automateCookieRejection();
+            disableBtn.textContent = "✅ Only Necessary Cookies Active";
+            disableBtn.style.background = "#27272a";
+            disableBtn.style.color = "#34d399";
+            const fb = shadowRoot.getElementById("guardra-optional-feedback");
+            if (fb) fb.style.display = "block";
+          });
+        });
+      }
 
       shadowRoot.getElementById("guardra-minimize-panel").addEventListener("click", () => {
         isExpanded = false;

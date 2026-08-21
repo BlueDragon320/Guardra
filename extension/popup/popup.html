@@ -128,7 +128,7 @@
       </div>
     </div>
 
-    <!-- 1-Click Strict Cookies Governance Section -->
+    <!-- 1-Click Optional Cookies Disabler Section -->
     <div class="cookie-gov-section" id="cookie-gov-section">
       <div class="cookie-gov-header">
         <div class="cookie-gov-title-group">
@@ -138,7 +138,7 @@
             <path d="M7.5 15.5v.01"/>
             <path d="M16 16v.01"/>
           </svg>
-          <span class="cookie-gov-title">Cookie Governance</span>
+          <span class="cookie-gov-title">Optional Cookies Disabler</span>
         </div>
         <span class="cookie-gov-badge" id="cookie-gov-badge">Auditing...</span>
       </div>
@@ -146,27 +146,27 @@
       <div class="cookie-counts-row">
         <div class="cookie-count-box">
           <span class="cookie-num text-success" id="cookie-essential-count">-</span>
-          <span class="cookie-label">Essential / Strict</span>
+          <span class="cookie-label">Necessary (Kept)</span>
         </div>
         <div class="cookie-count-divider"></div>
         <div class="cookie-count-box">
           <span class="cookie-num text-danger" id="cookie-tracking-count">-</span>
-          <span class="cookie-label">Ad / Trackers</span>
+          <span class="cookie-label">Optional Trackers</span>
         </div>
       </div>
 
-      <button class="strict-cookies-btn" id="btn-enforce-strict-cookies">
+      <button class="strict-cookies-btn" id="btn-enforce-strict-cookies" title="Disable optional marketing cookies while keeping shopping cart and login active">
         <div class="strict-btn-content">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
             <path d="m9 12 2 2 4-4"/>
           </svg>
-          <span id="strict-btn-text">1-Click Strict Cookies (Disable All Others)</span>
+          <span id="strict-btn-text">🛡️ Optional Cookies Disabler (Only Necessary)</span>
         </div>
       </button>
 
       <div class="cookie-status-msg hidden" id="cookie-status-msg">
-        <span id="cookie-status-text">✅ Purged non-essential cookies!</span>
+        <span id="cookie-status-text">✅ Optional cookies disabled! Only necessary preserved.</span>
         <button class="cookie-reload-btn" id="btn-cookie-reload">Reload Tab ↻</button>
       </div>
     </div>
