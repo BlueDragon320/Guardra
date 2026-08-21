@@ -107,11 +107,15 @@
       </button>
 
       <div class="secondary-btns">
-        <button class="secondary-btn" id="btn-check-breach">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 14h-2v-2h2zm0-4h-2V7h2z"/>
-          </svg>
-          Breach Portal
+        <button class="secondary-btn" id="btn-check-breach" title="View data leak source & article">
+          <div class="breach-btn-inner">
+            <span class="breach-dot-icon" id="breach-indicator-dot"></span>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 14h-2v-2h2zm0-4h-2V7h2z"/>
+            </svg>
+            <span>Breach Check</span>
+            <span id="breach-count-badge" class="breach-badge-pill">0</span>
+          </div>
         </button>
         <button class="secondary-btn" id="btn-toggle-details">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

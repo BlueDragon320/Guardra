@@ -440,6 +440,49 @@ body {
   border-color: #3f3f46;
 }
 
+.breach-btn-inner {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.breach-dot-icon {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #71717a;
+  display: inline-block;
+}
+
+.breach-dot-icon.red {
+  background: #ef4444;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.8);
+}
+
+.breach-dot-icon.green {
+  background: #10b981;
+}
+
+.breach-badge-pill {
+  font-size: 8px;
+  font-family: monospace;
+  font-weight: 700;
+  padding: 1px 4.5px;
+  border-radius: 9999px;
+  background: #27272a;
+  color: #a1a1aa;
+}
+
+.breach-badge-pill.red {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.breach-badge-pill.green {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+}
+
 /* Rubric Details */
 .rubric-details {
   background: var(--bg-card);

@@ -218,6 +218,71 @@ export default function PolicyAnalyzer({ selectedDomain, onTriggerDeletion }) {
             </div>
           </div>
 
+          {/* Verified Data Breach History Section */}
+          <div className="bg-white dark:bg-[#121215] border border-zinc-200 dark:border-[#27272a] rounded-lg p-5 space-y-3 transition-colors">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                <span>🚨 Data Breach History & Public Security Incidents</span>
+              </h3>
+              <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${
+                rating.breaches && rating.breaches.length > 0
+                  ? "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800"
+                  : "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800"
+              }`}>
+                {rating.breaches && rating.breaches.length > 0 ? `${rating.breaches.length} Incident(s) Recorded` : "0 Breaches (Clean Record)"}
+              </span>
+            </div>
+
+            {rating.breaches && rating.breaches.length > 0 ? (
+              <div className="space-y-3">
+                {rating.breaches.map((b, idx) => (
+                  <div key={idx} className="p-3.5 bg-red-50/40 dark:bg-red-950/20 border border-red-200 dark:border-red-900/40 rounded-lg space-y-2 text-xs">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="font-semibold text-zinc-900 dark:text-zinc-100">{b.name}</span>
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 shrink-0">
+                        {b.breach_date || "Disclosed"}
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                      {b.description}
+                    </p>
+
+                    {b.data_classes && b.data_classes.length > 0 && (
+                      <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                        <span className="text-[10px] text-zinc-500">Compromised Data:</span>
+                        {b.data_classes.map((cls, cIdx) => (
+                          <span key={cIdx} className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-200/70 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-300 font-mono">
+                            {cls}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    {b.article_url && (
+                      <div className="pt-1">
+                        <a
+                          href={b.article_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-[11px] text-sky-600 dark:text-sky-400 hover:underline font-medium"
+                        >
+                          <span>🔗 Read Verified Investigative Report</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-3 bg-emerald-50/30 dark:bg-emerald-950/10 border border-emerald-200/60 dark:border-emerald-900/30 rounded-md text-xs text-emerald-800 dark:text-emerald-400 flex items-center gap-2">
+                <span>✓</span>
+                <span>Clean Security Profile: No major publicly exposed data breaches or uncontained leaks identified for this domain.</span>
+              </div>
+            )}
+          </div>
+
           {/* Key Clauses */}
           {rating.key_clauses && rating.key_clauses.length > 0 && (
             <div className="bg-white dark:bg-[#121215] border border-zinc-200 dark:border-[#27272a] rounded-lg p-5 space-y-2 transition-colors">

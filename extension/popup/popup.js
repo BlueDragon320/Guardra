@@ -169,7 +169,19 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   document.getElementById("btn-check-breach").addEventListener("click", () => {
-    chrome.tabs.create({ url: `${DASHBOARD_URL}/breach-monitor` });
+    const domain = currentRatingData?.domain;
+    const breaches = (currentRatingData?.breaches && currentRatingData.breaches.length > 0)
+      ? currentRatingData.breaches
+      : (domain ? getClientBreaches(domain) : []);
+
+    if (breaches.length > 0 && breaches[0].article_url) {
+      // Redirect directly to the verified news article and leak source
+      chrome.tabs.create({ url: breaches[0].article_url });
+    } else if (domain) {
+      chrome.tabs.create({ url: `${DASHBOARD_URL}/policy-analyzer` });
+    } else {
+      chrome.tabs.create({ url: `${DASHBOARD_URL}/breach-monitor` });
+    }
   });
 
   document.getElementById("modal-legal-basis").addEventListener("change", updateModalNoticePreview);
@@ -302,6 +314,21 @@ function renderBreaches(breaches) {
   if (!breachList || !breachTag) return;
 
   breachList.innerHTML = "";
+
+  // Update Breach Check button indicator and count badge
+  const breachBadge = document.getElementById("breach-count-badge");
+  const breachDot = document.getElementById("breach-indicator-dot");
+  if (breachBadge && breachDot) {
+    if (breaches && breaches.length > 0) {
+      breachBadge.textContent = breaches.length;
+      breachBadge.className = "breach-badge-pill red";
+      breachDot.className = "breach-dot-icon red";
+    } else {
+      breachBadge.textContent = "0";
+      breachBadge.className = "breach-badge-pill green";
+      breachDot.className = "breach-dot-icon green";
+    }
+  }
 
   if (breaches && breaches.length > 0) {
     breachTag.className = "breach-status-tag breached";
