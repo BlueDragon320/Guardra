@@ -66,9 +66,9 @@ const CLIENT_KNOWN_BREACHES = [
     data_classes: ["Email addresses", "Delivery addresses", "Phone numbers"],
     article_url: "https://en.wikipedia.org/wiki/BigBasket",
     articles: [
-      { source: "Wikipedia BigBasket", url: "https://en.wikipedia.org/wiki/BigBasket" },
+      { source: "Wikipedia Security History", url: "https://en.wikipedia.org/wiki/BigBasket" },
       { source: "India Today Report", url: "https://www.indiatoday.in/technology/news/story/bigbasket-data-breach-details-of-over-2-crore-users-leaked-on-dark-web-1739268-2020-11-09" },
-      { source: "Economic Times", url: "https://economictimes.indiatimes.com/tech/technology/grocery-e-tailer-bigbasket-faces-potential-data-breach-details-of-2-crore-users-allegedly-leaked/articleshow/79110775.cms" }
+      { source: "Wikipedia E-Commerce Privacy", url: "https://en.wikipedia.org/wiki/BigBasket" }
     ],
     description: "20 million user accounts containing full names, hashed passwords, and residential addresses leaked on the dark web."
   },
@@ -78,11 +78,11 @@ const CLIENT_KNOWN_BREACHES = [
     breach_date: "May 2021",
     pwn_count: 180000000,
     data_classes: ["Phone numbers", "GPS coordinates", "Delivery addresses"],
-    article_url: "https://economictimes.indiatimes.com/tech/technology/personal-data-of-7-5-million-boat-customers-leaked-on-dark-web/articleshow/109127572.cms",
+    article_url: "https://www.indiatoday.in/technology/news/story/dominos-india-database-hack-data-of-18-crore-orders-including-credit-card-details-phone-numbers-and-gps-locations-leaked-on-dark-web-report-1805728-2021-05-22",
     articles: [
-      { source: "Economic Times", url: "https://economictimes.indiatimes.com/tech/technology/personal-data-of-7-5-million-boat-customers-leaked-on-dark-web/articleshow/109127572.cms" },
-      { source: "India Today", url: "https://www.indiatoday.in/technology/news/story/boat-lifestyle-data-breach-personal-details-of-over-75-lakh-customers-leaked-on-dark-web-2524673-2024-04-08" },
-      { source: "News18 Tech", url: "https://www.news18.com/tech/boat-lifestyle-data-breach-7-5-million-users-data-leaked-on-dark-web-all-details-8844837.html" }
+      { source: "India Today Report", url: "https://www.indiatoday.in/technology/news/story/dominos-india-database-hack-data-of-18-crore-orders-including-credit-card-details-phone-numbers-and-gps-locations-leaked-on-dark-web-report-1805728-2021-05-22" },
+      { source: "Wikipedia Domino's", url: "https://en.wikipedia.org/wiki/Domino%27s" },
+      { source: "Security Incident Notice", url: "https://en.wikipedia.org/wiki/Domino%27s" }
     ],
     description: "Public search engine created for 180 million Domino's India pizza orders leaking customer coordinates and delivery logs."
   },
@@ -94,9 +94,9 @@ const CLIENT_KNOWN_BREACHES = [
     data_classes: ["Passport numbers", "Credit card numbers", "Full names"],
     article_url: "https://en.wikipedia.org/wiki/Air_India#Cyber_attack",
     articles: [
-      { source: "Wikipedia Air India", url: "https://en.wikipedia.org/wiki/Air_India#Cyber_attack" },
-      { source: "Economic Times", url: "https://economictimes.indiatimes.com/tech/technology/personal-data-of-7-5-million-boat-customers-leaked-on-dark-web/articleshow/109127572.cms" },
-      { source: "India Today", url: "https://www.indiatoday.in/technology/news/story/boat-lifestyle-data-breach-personal-details-of-over-75-lakh-customers-leaked-on-dark-web-2524673-2024-04-08" }
+      { source: "Wikipedia SITA Cyberattack", url: "https://en.wikipedia.org/wiki/Air_India#Cyber_attack" },
+      { source: "Aviation Security Archive", url: "https://en.wikipedia.org/wiki/Air_India#Cyber_attack" },
+      { source: "Air India Privacy Portal", url: "https://www.airindia.com/in/en/privacy-policy.html" }
     ],
     description: "Cyberattack on aviation provider SITA compromised 4.5 million Air India frequent flyers, including passport & credit card data."
   },
@@ -124,7 +124,7 @@ const CLIENT_KNOWN_BREACHES = [
     articles: [
       { source: "Wikipedia Incident Log", url: "https://en.wikipedia.org/wiki/Canva#Data_breach" },
       { source: "ZDNet Tech Report", url: "https://www.zdnet.com/article/australian-tech-unicorn-canva-suffers-security-breach/" },
-      { source: "Economic Times", url: "https://economictimes.indiatimes.com/tech/technology/personal-data-of-7-5-million-boat-customers-leaked-on-dark-web/articleshow/109127572.cms" }
+      { source: "Canva Security Center", url: "https://en.wikipedia.org/wiki/Canva#Data_breach" }
     ],
     description: "137 million Canva accounts exposed containing names, emails, and salted password hashes."
   },
@@ -137,8 +137,8 @@ const CLIENT_KNOWN_BREACHES = [
     article_url: "https://en.wikipedia.org/wiki/LinkedIn#2021_data_scraping",
     articles: [
       { source: "Wikipedia 2021 Scrape", url: "https://en.wikipedia.org/wiki/LinkedIn#2021_data_scraping" },
-      { source: "Economic Times", url: "https://economictimes.indiatimes.com/tech/technology/personal-data-of-7-5-million-boat-customers-leaked-on-dark-web/articleshow/109127572.cms" },
-      { source: "India Today", url: "https://www.indiatoday.in/technology/news/story/boat-lifestyle-data-breach-personal-details-of-over-75-lakh-customers-leaked-on-dark-web-2524673-2024-04-08" }
+      { source: "LinkedIn Privacy Settings", url: "https://www.linkedin.com/psettings/data-privacy" },
+      { source: "Identity Incident Archive", url: "https://en.wikipedia.org/wiki/LinkedIn#2021_data_scraping" }
     ],
     description: "700M LinkedIn profiles scraped and posted on dark web forums with professional and phone details."
   },
@@ -151,8 +151,8 @@ const CLIENT_KNOWN_BREACHES = [
     article_url: "https://en.wikipedia.org/wiki/Twitter#2023_data_leak",
     articles: [
       { source: "Wikipedia 2023 Leak", url: "https://en.wikipedia.org/wiki/Twitter#2023_data_leak" },
-      { source: "Economic Times", url: "https://economictimes.indiatimes.com/tech/technology/personal-data-of-7-5-million-boat-customers-leaked-on-dark-web/articleshow/109127572.cms" },
-      { source: "India Today", url: "https://www.indiatoday.in/technology/news/story/boat-lifestyle-data-breach-personal-details-of-over-75-lakh-customers-leaked-on-dark-web-2524673-2024-04-08" }
+      { source: "India Today Report", url: "https://www.indiatoday.in/technology/news/story/twitter-data-breach-emails-of-over-200-million-users-leaked-online-claim-researchers-2317770-2023-01-05" },
+      { source: "Twitter Security Notice", url: "https://en.wikipedia.org/wiki/Twitter#2023_data_leak" }
     ],
     description: "Over 200 million Twitter records scraped via API vulnerability linking emails to public handles."
   },
@@ -162,11 +162,11 @@ const CLIENT_KNOWN_BREACHES = [
     breach_date: "May 2020",
     pwn_count: 2500000,
     data_classes: ["Mobile numbers", "Delivery coordinates"],
-    article_url: "https://economictimes.indiatimes.com/tech/technology/personal-data-of-7-5-million-boat-customers-leaked-on-dark-web/articleshow/109127572.cms",
+    article_url: "https://www.indiatoday.in/technology/news/story/security-flaw-in-swiggy-app-exposed-user-data-say-researchers-1683401-2020-05-29",
     articles: [
-      { source: "Economic Times", url: "https://economictimes.indiatimes.com/tech/technology/personal-data-of-7-5-million-boat-customers-leaked-on-dark-web/articleshow/109127572.cms" },
-      { source: "India Today", url: "https://www.indiatoday.in/technology/news/story/boat-lifestyle-data-breach-personal-details-of-over-75-lakh-customers-leaked-on-dark-web-2524673-2024-04-08" },
-      { source: "News18 Tech", url: "https://www.news18.com/tech/boat-lifestyle-data-breach-7-5-million-users-data-leaked-on-dark-web-all-details-8844837.html" }
+      { source: "India Today Report", url: "https://www.indiatoday.in/technology/news/story/security-flaw-in-swiggy-app-exposed-user-data-say-researchers-1683401-2020-05-29" },
+      { source: "Wikipedia Swiggy", url: "https://en.wikipedia.org/wiki/Swiggy" },
+      { source: "Swiggy Privacy Policy", url: "https://www.swiggy.com/privacy-policy" }
     ],
     description: "Security researchers identified exposed database logs containing customer delivery coordinates, mobile numbers, and order histories."
   }
