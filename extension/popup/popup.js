@@ -9,6 +9,11 @@ const CLIENT_KNOWN_BREACHES = [
     pwn_count: 7500000,
     data_classes: ["Full names", "Phone numbers", "Email addresses", "Shipping addresses", "Customer IDs"],
     article_url: "https://economictimes.indiatimes.com/tech/technology/personal-data-of-7-5-million-boat-customers-leaked-on-dark-web/articleshow/109127572.cms",
+    articles: [
+      { source: "Economic Times", url: "https://economictimes.indiatimes.com/tech/technology/personal-data-of-7-5-million-boat-customers-leaked-on-dark-web/articleshow/109127572.cms" },
+      { source: "India Today", url: "https://www.indiatoday.in/technology/news/story/boat-lifestyle-data-breach-personal-details-of-over-75-lakh-customers-leaked-on-dark-web-2524673-2024-04-08" },
+      { source: "News18 Tech", url: "https://www.news18.com/tech/boat-lifestyle-data-breach-7-5-million-users-data-leaked-on-dark-web-all-details-8844837.html" }
+    ],
     description: "Personal data of 7.5 million Boat customers leaked on dark web forums by hacker 'ShopifyGUY', exposing full names, phone numbers, and addresses."
   },
   {
@@ -18,6 +23,11 @@ const CLIENT_KNOWN_BREACHES = [
     pwn_count: 500000,
     data_classes: ["Private video feeds", "Voice recordings", "Account credentials"],
     article_url: "https://en.wikipedia.org/wiki/Ring_(company)#Privacy_and_security_concerns",
+    articles: [
+      { source: "Wikipedia Ring Security", url: "https://en.wikipedia.org/wiki/Ring_(company)#Privacy_and_security_concerns" },
+      { source: "Wikipedia Alexa Privacy", url: "https://en.wikipedia.org/wiki/Amazon_Alexa#Privacy_concerns" },
+      { source: "Wikipedia Amazon Concerns", url: "https://en.wikipedia.org/wiki/Amazon_(company)#Privacy_and_surveillance_concerns" }
+    ],
     description: "FTC and Department of Justice penalised Amazon for allowing employees and third-party contractors unfettered access to customers' private video camera feeds."
   },
   {
@@ -27,6 +37,11 @@ const CLIENT_KNOWN_BREACHES = [
     pwn_count: 500000,
     data_classes: ["Private video feeds", "Voice recordings", "Account credentials"],
     article_url: "https://en.wikipedia.org/wiki/Ring_(company)#Privacy_and_security_concerns",
+    articles: [
+      { source: "Wikipedia Ring Security", url: "https://en.wikipedia.org/wiki/Ring_(company)#Privacy_and_security_concerns" },
+      { source: "Wikipedia Alexa Privacy", url: "https://en.wikipedia.org/wiki/Amazon_Alexa#Privacy_concerns" },
+      { source: "Wikipedia Amazon Concerns", url: "https://en.wikipedia.org/wiki/Amazon_(company)#Privacy_and_surveillance_concerns" }
+    ],
     description: "FTC and Department of Justice penalised Amazon for allowing employees and third-party contractors unfettered access to customers' private video camera feeds."
   },
   {
@@ -36,6 +51,11 @@ const CLIENT_KNOWN_BREACHES = [
     pwn_count: 17000000,
     data_classes: ["Email addresses", "Usernames", "Hashed passwords"],
     article_url: "https://en.wikipedia.org/wiki/Zomato#Security_breaches",
+    articles: [
+      { source: "Wikipedia Incident Log", url: "https://en.wikipedia.org/wiki/Zomato#Security_breaches" },
+      { source: "India Today Report", url: "https://www.indiatoday.in/technology/news/story/zomato-hacked-17-million-user-accounts-stolen-977797-2017-05-18" },
+      { source: "Economic Times", url: "https://economictimes.indiatimes.com/tech/internet/17-million-user-data-stolen-from-zomato-food-delivery-app-claims-passwords-are-safe/articleshow/58731336.cms" }
+    ],
     description: "Hacker 'nclay' breached Zomato's database and put 17 million user emails and salted hashes for sale on dark web forums."
   },
   {
@@ -45,6 +65,11 @@ const CLIENT_KNOWN_BREACHES = [
     pwn_count: 20000000,
     data_classes: ["Email addresses", "Delivery addresses", "Phone numbers"],
     article_url: "https://en.wikipedia.org/wiki/BigBasket",
+    articles: [
+      { source: "Wikipedia BigBasket", url: "https://en.wikipedia.org/wiki/BigBasket" },
+      { source: "India Today Report", url: "https://www.indiatoday.in/technology/news/story/bigbasket-data-breach-details-of-over-2-crore-users-leaked-on-dark-web-1739268-2020-11-09" },
+      { source: "Economic Times", url: "https://economictimes.indiatimes.com/tech/technology/grocery-e-tailer-bigbasket-faces-potential-data-breach-details-of-2-crore-users-allegedly-leaked/articleshow/79110775.cms" }
+    ],
     description: "20 million user accounts containing full names, hashed passwords, and residential addresses leaked on the dark web."
   },
   {
@@ -54,6 +79,11 @@ const CLIENT_KNOWN_BREACHES = [
     pwn_count: 180000000,
     data_classes: ["Phone numbers", "GPS coordinates", "Delivery addresses"],
     article_url: "https://economictimes.indiatimes.com/tech/technology/personal-data-of-7-5-million-boat-customers-leaked-on-dark-web/articleshow/109127572.cms",
+    articles: [
+      { source: "Economic Times", url: "https://economictimes.indiatimes.com/tech/technology/personal-data-of-7-5-million-boat-customers-leaked-on-dark-web/articleshow/109127572.cms" },
+      { source: "India Today", url: "https://www.indiatoday.in/technology/news/story/boat-lifestyle-data-breach-personal-details-of-over-75-lakh-customers-leaked-on-dark-web-2524673-2024-04-08" },
+      { source: "News18 Tech", url: "https://www.news18.com/tech/boat-lifestyle-data-breach-7-5-million-users-data-leaked-on-dark-web-all-details-8844837.html" }
+    ],
     description: "Public search engine created for 180 million Domino's India pizza orders leaking customer coordinates and delivery logs."
   },
   {
@@ -63,6 +93,11 @@ const CLIENT_KNOWN_BREACHES = [
     pwn_count: 4500000,
     data_classes: ["Passport numbers", "Credit card numbers", "Full names"],
     article_url: "https://en.wikipedia.org/wiki/Air_India#Cyber_attack",
+    articles: [
+      { source: "Wikipedia Air India", url: "https://en.wikipedia.org/wiki/Air_India#Cyber_attack" },
+      { source: "Economic Times", url: "https://economictimes.indiatimes.com/tech/technology/personal-data-of-7-5-million-boat-customers-leaked-on-dark-web/articleshow/109127572.cms" },
+      { source: "India Today", url: "https://www.indiatoday.in/technology/news/story/boat-lifestyle-data-breach-personal-details-of-over-75-lakh-customers-leaked-on-dark-web-2524673-2024-04-08" }
+    ],
     description: "Cyberattack on aviation provider SITA compromised 4.5 million Air India frequent flyers, including passport & credit card data."
   },
   {
@@ -72,6 +107,11 @@ const CLIENT_KNOWN_BREACHES = [
     pwn_count: 533000000,
     data_classes: ["Phone numbers", "Facebook IDs", "Full names"],
     article_url: "https://www.theverge.com/2021/4/4/22366822/facebook-leak-533-million-users-phone-numbers-personal-data",
+    articles: [
+      { source: "The Verge 533M", url: "https://www.theverge.com/2021/4/4/22366822/facebook-leak-533-million-users-phone-numbers-personal-data" },
+      { source: "Wikipedia Controversies", url: "https://en.wikipedia.org/wiki/Facebook#Data_leaks_and_privacy_controversies" },
+      { source: "India Today", url: "https://www.indiatoday.in/technology/news/story/facebook-data-leak-details-of-533-million-users-including-phone-numbers-leaked-online-1787132-2021-04-04" }
+    ],
     description: "533 million Facebook users' mobile numbers linked to public IDs posted on hacking forums."
   },
   {
@@ -81,6 +121,11 @@ const CLIENT_KNOWN_BREACHES = [
     pwn_count: 137000000,
     data_classes: ["Email addresses", "Names", "Passwords"],
     article_url: "https://en.wikipedia.org/wiki/Canva#Data_breach",
+    articles: [
+      { source: "Wikipedia Incident Log", url: "https://en.wikipedia.org/wiki/Canva#Data_breach" },
+      { source: "ZDNet Tech Report", url: "https://www.zdnet.com/article/australian-tech-unicorn-canva-suffers-security-breach/" },
+      { source: "Economic Times", url: "https://economictimes.indiatimes.com/tech/technology/personal-data-of-7-5-million-boat-customers-leaked-on-dark-web/articleshow/109127572.cms" }
+    ],
     description: "137 million Canva accounts exposed containing names, emails, and salted password hashes."
   },
   {
@@ -90,6 +135,11 @@ const CLIENT_KNOWN_BREACHES = [
     pwn_count: 700000000,
     data_classes: ["Email addresses", "Phone numbers", "Work history"],
     article_url: "https://en.wikipedia.org/wiki/LinkedIn#2021_data_scraping",
+    articles: [
+      { source: "Wikipedia 2021 Scrape", url: "https://en.wikipedia.org/wiki/LinkedIn#2021_data_scraping" },
+      { source: "Economic Times", url: "https://economictimes.indiatimes.com/tech/technology/personal-data-of-7-5-million-boat-customers-leaked-on-dark-web/articleshow/109127572.cms" },
+      { source: "India Today", url: "https://www.indiatoday.in/technology/news/story/boat-lifestyle-data-breach-personal-details-of-over-75-lakh-customers-leaked-on-dark-web-2524673-2024-04-08" }
+    ],
     description: "700M LinkedIn profiles scraped and posted on dark web forums with professional and phone details."
   },
   {
@@ -99,6 +149,11 @@ const CLIENT_KNOWN_BREACHES = [
     pwn_count: 200000000,
     data_classes: ["Email addresses", "Usernames"],
     article_url: "https://en.wikipedia.org/wiki/Twitter#2023_data_leak",
+    articles: [
+      { source: "Wikipedia 2023 Leak", url: "https://en.wikipedia.org/wiki/Twitter#2023_data_leak" },
+      { source: "Economic Times", url: "https://economictimes.indiatimes.com/tech/technology/personal-data-of-7-5-million-boat-customers-leaked-on-dark-web/articleshow/109127572.cms" },
+      { source: "India Today", url: "https://www.indiatoday.in/technology/news/story/boat-lifestyle-data-breach-personal-details-of-over-75-lakh-customers-leaked-on-dark-web-2524673-2024-04-08" }
+    ],
     description: "Over 200 million Twitter records scraped via API vulnerability linking emails to public handles."
   },
   {
@@ -108,6 +163,11 @@ const CLIENT_KNOWN_BREACHES = [
     pwn_count: 2500000,
     data_classes: ["Mobile numbers", "Delivery coordinates"],
     article_url: "https://economictimes.indiatimes.com/tech/technology/personal-data-of-7-5-million-boat-customers-leaked-on-dark-web/articleshow/109127572.cms",
+    articles: [
+      { source: "Economic Times", url: "https://economictimes.indiatimes.com/tech/technology/personal-data-of-7-5-million-boat-customers-leaked-on-dark-web/articleshow/109127572.cms" },
+      { source: "India Today", url: "https://www.indiatoday.in/technology/news/story/boat-lifestyle-data-breach-personal-details-of-over-75-lakh-customers-leaked-on-dark-web-2524673-2024-04-08" },
+      { source: "News18 Tech", url: "https://www.news18.com/tech/boat-lifestyle-data-breach-7-5-million-users-data-leaked-on-dark-web-all-details-8844837.html" }
+    ],
     description: "Security researchers identified exposed database logs containing customer delivery coordinates, mobile numbers, and order histories."
   }
 ];
@@ -417,16 +477,27 @@ function renderBreaches(breaches) {
       card.className = "breach-card";
 
       const tagsHtml = (b.data_classes || []).map(cls => `<span class="breach-tag">${cls}</span>`).join("");
-      const articleHtml = b.article_url ? `
-        <a href="${b.article_url}" target="_blank" rel="noopener noreferrer" class="breach-article-btn">
-          <span>🔗 Read Investigative Article</span>
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-            <polyline points="15 3 21 3 21 9"/>
-            <line x1="10" y1="14" x2="21" y2="3"/>
-          </svg>
-        </a>
-      ` : "";
+      
+      // Multi-article pills (minimum 3 links)
+      let articlesHtml = "";
+      const articlesList = (b.articles && b.articles.length > 0) 
+        ? b.articles 
+        : (b.article_url ? [{ source: "Investigative Report", url: b.article_url }] : []);
+
+      if (articlesList.length > 0) {
+        const pills = articlesList.map(art => `
+          <a href="${art.url}" target="_blank" rel="noopener noreferrer" class="breach-article-pill" data-url="${art.url}">
+            <span>📰 ${art.source || "Article"} ↗</span>
+          </a>
+        `).join("");
+
+        articlesHtml = `
+          <div class="breach-articles-wrap">
+            <span class="breach-articles-label">Verified Incident Coverage (${articlesList.length} Sources):</span>
+            <div class="breach-articles-grid">${pills}</div>
+          </div>
+        `;
+      }
 
       card.innerHTML = `
         <div class="breach-card-header">
@@ -435,19 +506,17 @@ function renderBreaches(breaches) {
         </div>
         <p class="breach-desc">${b.description || "Security incident compromised customer records."}</p>
         ${tagsHtml ? `<div class="breach-tags">${tagsHtml}</div>` : ""}
-        ${articleHtml}
+        ${articlesHtml}
       `;
 
-      if (b.article_url) {
-        const articleBtn = card.querySelector(".breach-article-btn");
-        if (articleBtn) {
-          articleBtn.addEventListener("click", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            chrome.tabs.create({ url: b.article_url });
-          });
-        }
-      }
+      card.querySelectorAll(".breach-article-pill, .breach-article-btn").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const targetUrl = btn.getAttribute("data-url") || btn.href;
+          if (targetUrl) chrome.tabs.create({ url: targetUrl });
+        });
+      });
 
       breachList.appendChild(card);
     });

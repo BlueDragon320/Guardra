@@ -14,7 +14,12 @@ const EMBEDDED_STANDALONE_DATABASE = {
         breach_date: "April 2024",
         pwn_count: 7500000,
         data_classes: ["Full names", "Phone numbers", "Email addresses", "Shipping addresses", "Customer IDs"],
-        article_url: "https://www.thehindu.com/sci-tech/technology/personal-data-of-over-75-million-boat-customers-leaked-on-dark-web/article68037375.ece",
+        article_url: "https://economictimes.indiatimes.com/tech/technology/personal-data-of-7-5-million-boat-customers-leaked-on-dark-web/articleshow/109127572.cms",
+        articles: [
+          { source: "Economic Times", url: "https://economictimes.indiatimes.com/tech/technology/personal-data-of-7-5-million-boat-customers-leaked-on-dark-web/articleshow/109127572.cms" },
+          { source: "India Today", url: "https://www.indiatoday.in/technology/news/story/boat-lifestyle-data-breach-personal-details-of-over-75-lakh-customers-leaked-on-dark-web-2524673-2024-04-08" },
+          { source: "News18 Tech", url: "https://www.news18.com/tech/boat-lifestyle-data-breach-7-5-million-users-data-leaked-on-dark-web-all-details-8844837.html" }
+        ],
         description: "Personal data of 7.5 million customers leaked on dark web forums by hacker 'ShopifyGUY', exposing PII and delivery addresses."
       }
     ],
@@ -38,6 +43,22 @@ const EMBEDDED_STANDALONE_DATABASE = {
     score: 38,
     color: "amber",
     summary: "Deep tracking of purchase intent, voice recordings (Alexa), and browsing telemetry. Extensive internal behavioral advertising.",
+    breaches: [
+      {
+        name: "Amazon Ring & Alexa Privacy Violations",
+        domain: "amazon.com",
+        breach_date: "May 2023",
+        pwn_count: 500000,
+        data_classes: ["Private video feeds", "Voice recordings", "Account credentials", "Device identifiers"],
+        article_url: "https://en.wikipedia.org/wiki/Ring_(company)#Privacy_and_security_concerns",
+        articles: [
+          { source: "Wikipedia Ring Security", url: "https://en.wikipedia.org/wiki/Ring_(company)#Privacy_and_security_concerns" },
+          { source: "Wikipedia Alexa Privacy", url: "https://en.wikipedia.org/wiki/Amazon_Alexa#Privacy_concerns" },
+          { source: "Wikipedia Amazon Concerns", url: "https://en.wikipedia.org/wiki/Amazon_(company)#Privacy_and_surveillance_concerns" }
+        ],
+        description: "FTC and Department of Justice penalised Amazon for allowing employees and third-party contractors unfettered access to customers' private video camera feeds."
+      }
+    ],
     rubric: {
       data_sharing: { score: 35, max: 100, label: "Shared Across Amazon Ad Network & Partners", risk: "high" },
       retention: { score: 30, max: 100, label: "Retains Purchase & Voice History Indefinitely", risk: "high" },
@@ -58,6 +79,22 @@ const EMBEDDED_STANDALONE_DATABASE = {
     score: 38,
     color: "amber",
     summary: "Deep tracking of purchase intent, delivery location history, and browsing telemetry. Aligned with DPDP Act 2023 grievance provisions in India.",
+    breaches: [
+      {
+        name: "Amazon Ring & Alexa Privacy Violations",
+        domain: "amazon.in",
+        breach_date: "May 2023",
+        pwn_count: 500000,
+        data_classes: ["Private video feeds", "Voice recordings", "Account credentials", "Device identifiers"],
+        article_url: "https://en.wikipedia.org/wiki/Ring_(company)#Privacy_and_security_concerns",
+        articles: [
+          { source: "Wikipedia Ring Security", url: "https://en.wikipedia.org/wiki/Ring_(company)#Privacy_and_security_concerns" },
+          { source: "Wikipedia Alexa Privacy", url: "https://en.wikipedia.org/wiki/Amazon_Alexa#Privacy_concerns" },
+          { source: "Wikipedia Amazon Concerns", url: "https://en.wikipedia.org/wiki/Amazon_(company)#Privacy_and_surveillance_concerns" }
+        ],
+        description: "FTC and Department of Justice penalised Amazon for allowing employees and third-party contractors unfettered access to customers' private video camera feeds."
+      }
+    ],
     rubric: {
       data_sharing: { score: 35, max: 100, label: "Shared Across Amazon Ad Network & Third-Party Merchants", risk: "high" },
       retention: { score: 30, max: 100, label: "Retains Purchase & Device History Indefinitely", risk: "high" },
