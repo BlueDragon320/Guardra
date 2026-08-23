@@ -108,6 +108,34 @@ def _seed_cached_policies():
         conn.close()
 
 
+@app.get("/")
+async def root():
+    return {
+        "service": "Guardra Privacy Suite API",
+        "version": "2.0.0",
+        "status": "online",
+        "documentation": "/docs",
+        "admin_endpoints": "/api/admin/stats",
+        "health": "/api/health"
+    }
+
+
+@app.get("/admin")
+async def admin_root():
+    static_admin = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "admin.html")
+    if os.path.exists(static_admin):
+        from fastapi.responses import FileResponse
+        return FileResponse(static_admin)
+    from app.routers.admin import get_admin_dashboard_stats
+    return await get_admin_dashboard_stats()
+
+
+@app.get("/api/admin")
+async def admin_api_root():
+    from app.routers.admin import get_admin_dashboard_stats
+    return await get_admin_dashboard_stats()
+
+
 @app.get("/api/health")
 async def health_check():
     return {
