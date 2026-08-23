@@ -927,14 +927,20 @@ input:checked + .slider:before {
   transform: translateX(14px);
 }
 
-/* Light Theme Variables & Overrides */
+/* Light Theme Variables & Overrides — Ultra High Contrast & Midnight Fidelity */
 body.light-theme {
-  --bg-primary: #f8fafc;
+  --bg-primary: #f4f4f6;
   --bg-card: #ffffff;
-  --bg-hover: #f1f5f9;
-  --text-main: #0f172a;
-  --text-muted: #64748b;
-  --border-color: #e2e8f0;
+  --bg-hover: #e8e8ed;
+  --text-main: #09090b;
+  --text-muted: #4b5563;
+  --border-color: #d1d5db;
+  --color-accent: #e11d48;
+}
+
+body.light-theme {
+  color: #09090b;
+  background-color: #f4f4f6;
 }
 
 body.light-theme .site-card,
@@ -945,106 +951,160 @@ body.light-theme .rubric-details,
 body.light-theme .breach-section,
 body.light-theme .inpage-toggle-card {
   background: #ffffff;
-  border-color: #e2e8f0;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  border-color: #d1d5db;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
 body.light-theme .brand-title,
 body.light-theme .site-name,
 body.light-theme .section-title,
 body.light-theme .cookie-gov-title,
-body.light-theme .inpage-toggle-title {
-  color: #0f172a;
+body.light-theme .inpage-toggle-title,
+body.light-theme .grade-score {
+  color: #000000;
+  font-weight: 800;
+}
+
+body.light-theme .site-domain {
+  color: #374151;
+  font-weight: 600;
 }
 
 body.light-theme .cookie-gov-title-group {
-  color: #0f172a;
+  color: #000000;
+  font-weight: 700;
 }
 
 body.light-theme .cookie-label,
 body.light-theme .stat-label {
-  color: #64748b;
+  color: #374151;
+  font-weight: 700;
+}
+
+body.light-theme .stat-value {
+  color: #000000;
+  font-weight: 800;
 }
 
 body.light-theme .summary-box {
-  color: #334155;
+  color: #1f2937;
+  font-weight: 500;
 }
 
 body.light-theme .primary-btn {
-  background: #0f172a;
+  background: #000000;
   color: #ffffff;
+  font-weight: 700;
 }
 
 body.light-theme .primary-btn:hover {
-  background: #1e293b;
+  background: #FF6B50;
+  color: #ffffff;
 }
 
 body.light-theme .cookie-counts-row,
 body.light-theme .rubric-row,
 body.light-theme .grievance-block {
-  background: #f8fafc;
-  border-color: #e2e8f0;
+  background: #f3f4f6;
+  border-color: #d1d5db;
+  color: #111827;
 }
 
 body.light-theme .cookie-gov-badge,
 body.light-theme .breach-status-tag {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
-  color: #475569;
+  background: #e5e7eb;
+  border-color: #9ca3af;
+  color: #111827;
+  font-weight: 700;
 }
 
 body.light-theme .breach-card {
-  background: rgba(239, 68, 68, 0.05);
-  border-color: rgba(239, 68, 68, 0.25);
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.4);
 }
 
 body.light-theme .breach-title {
   color: #991b1b;
+  font-weight: 800;
 }
 
 body.light-theme .breach-desc {
-  color: #334155;
+  color: #1f2937;
+  font-weight: 500;
 }
 
 body.light-theme .breach-tag {
-  background: #e2e8f0;
-  color: #1e293b;
+  background: #e5e7eb;
+  color: #111827;
+  font-weight: 600;
 }
 
 body.light-theme .breach-article-pill,
 body.light-theme .cookie-reload-btn {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
-  color: #0f172a;
+  background: #e5e7eb;
+  border-color: #9ca3af;
+  color: #000000;
+  font-weight: 700;
 }
 
 body.light-theme .secondary-btn,
 body.light-theme .icon-btn {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
-  color: #1e293b;
+  background: #ffffff;
+  border-color: #d1d5db;
+  color: #111827;
+  font-weight: 600;
 }
 
 body.light-theme .secondary-btn:hover,
 body.light-theme .icon-btn:hover {
-  background: #e2e8f0;
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+body.light-theme .cookie-item-card {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+body.light-theme .cookie-item-name {
+  color: #000000;
+  font-weight: 700;
+}
+
+body.light-theme .cookie-item-desc {
+  color: #374151;
+  font-weight: 500;
+}
+
+body.light-theme .cookie-items-header {
+  color: #111827;
+  font-weight: 700;
+}
+
+body.light-theme .cookie-items-badge {
+  background: #ffffff;
+  border-color: #d1d5db;
+  color: #000000;
+  font-weight: 700;
 }
 
 body.light-theme .modal-content {
   background: #ffffff;
-  border-color: #e2e8f0;
+  border-color: #d1d5db;
+  color: #000000;
 }
 
 body.light-theme .modal-body input,
 body.light-theme .modal-body select,
 body.light-theme .modal-preview-box {
-  background: #f8fafc;
-  border-color: #e2e8f0;
-  color: #0f172a;
+  background: #f9fafb;
+  border-color: #d1d5db;
+  color: #000000;
+  font-weight: 600;
 }
 
 body.light-theme .slider {
-  background-color: #cbd5e1;
+  background-color: #9ca3af;
 }
 
 body.light-theme input:checked + .slider {
