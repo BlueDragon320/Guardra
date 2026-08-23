@@ -9,6 +9,7 @@ import ControlHub from "./pages/ControlHub";
 import IdentityWizard from "./pages/IdentityWizard";
 import EducationHub from "./pages/EducationHub";
 import Regulators from "./pages/Regulators";
+import AdminDashboard from "./pages/AdminDashboard";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -70,6 +71,12 @@ export default function App() {
           {activeTab === "dashboard" && (
             <Dashboard 
               setActiveTab={setActiveTab} 
+              onScanDomain={handleScanDomain} 
+            />
+          )}
+
+          {activeTab === "admin-dashboard" && (
+            <AdminDashboard 
               onScanDomain={handleScanDomain} 
             />
           )}

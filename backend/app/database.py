@@ -46,6 +46,74 @@ def init_db():
     )
     """)
 
+    # Persists all analyzed website data
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS websites (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        domain TEXT UNIQUE NOT NULL,
+        name TEXT,
+        category TEXT,
+        overall_score REAL,
+        grade TEXT,
+        grade_color TEXT,
+        pillar_scores TEXT,
+        compliance TEXT,
+        findings TEXT,
+        key_concerns TEXT,
+        key_clauses TEXT,
+        policy_text TEXT,
+        policy_url TEXT,
+        cookie_data TEXT,
+        tracker_data TEXT,
+        dark_pattern_data TEXT,
+        breach_history TEXT,
+        is_top_5000 INTEGER DEFAULT 0,
+        tranco_rank INTEGER,
+        source TEXT DEFAULT 'manual',
+        scan_count INTEGER DEFAULT 1,
+        first_analyzed_at TEXT,
+        last_analyzed_at TEXT,
+        updated_at TEXT
+    )
+    """)
+
+    # Per-site cookie preferences (block/allow/ignore overrides)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS cookie_preferences (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        domain TEXT NOT NULL,
+        cookie_name TEXT NOT NULL,
+        cookie_category TEXT,
+        action TEXT DEFAULT 'block',
+        created_at TEXT,
+        updated_at TEXT,
+        UNIQUE(domain, cookie_name)
+    )
+    """)
+
+    # Global cookie rules (applied across ALL websites unless overridden)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS global_cookie_rules (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        cookie_pattern TEXT NOT NULL UNIQUE,
+        cookie_category TEXT,
+        default_action TEXT DEFAULT 'block',
+        description TEXT,
+        created_at TEXT
+    )
+    """)
+
+    # Admin action audit trail
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS admin_audit_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        action TEXT NOT NULL,
+        target TEXT,
+        details TEXT,
+        performed_at TEXT
+    )
+    """)
+
     # Check if default user profile exists
     cursor.execute("SELECT id FROM user_profile WHERE id = 'default'")
     if not cursor.fetchone():

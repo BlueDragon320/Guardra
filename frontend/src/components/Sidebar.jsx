@@ -17,6 +17,7 @@ import { triggerExtensionDownload } from "../services/api";
 export default function Sidebar({ activeTab, setActiveTab }) {
   const navItems = [
     { id: "dashboard", label: "Overview", icon: Layers, badge: null },
+    { id: "admin-dashboard", label: "Admin Console", icon: Sliders, badge: "DB" },
     { id: "policy-analyzer", label: "Policy Rating", icon: Search, badge: "DPDP" },
     { id: "deletion-assistant", label: "Data Erasure", icon: Trash2, badge: null },
     { id: "breach-monitor", label: "Breach Check", icon: AlertTriangle, badge: null },

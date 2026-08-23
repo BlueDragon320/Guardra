@@ -1,4 +1,6 @@
-const API_BASE = "https://guardra-api.botvaibhav.dev/api";
+const API_BASE = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+  ? "http://localhost:8000/api"
+  : "https://guardra-api.botvaibhav.dev/api";
 
 export async function fetchHealth() {
   const res = await fetch(`${API_BASE}/health`);
@@ -157,3 +159,128 @@ export async function toggleFootprintAction(actionId) {
   if (!res.ok) throw new Error("Failed to toggle action");
   return res.json();
 }
+
+// ===== Admin & Cookie Management API =====
+
+export async function getAdminStats() {
+  const res = await fetch(`${API_BASE}/admin/stats`);
+  if (!res.ok) throw new Error("Failed to fetch admin stats");
+  return res.json();
+}
+
+export async function getAdminWebsites({ page = 1, pageSize = 50, sortBy = "overall_score", sortOrder = "desc", gradeFilter, categoryFilter, sourceFilter, search, top5000Only } = {}) {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    page_size: pageSize.toString(),
+    sort_by: sortBy,
+    sort_order: sortOrder
+  });
+  if (gradeFilter) params.append("grade_filter", gradeFilter);
+  if (categoryFilter) params.append("category_filter", categoryFilter);
+  if (sourceFilter) params.append("source_filter", sourceFilter);
+  if (search) params.append("search", search);
+  if (top5000Only) params.append("top_5000_only", "true");
+
+  const res = await fetch(`${API_BASE}/admin/websites?${params.toString()}`);
+  if (!res.ok) throw new Error("Failed to fetch admin websites");
+  return res.json();
+}
+
+export async function getWebsiteDetail(domain) {
+  const res = await fetch(`${API_BASE}/admin/websites/${encodeURIComponent(domain)}`);
+  if (!res.ok) throw new Error("Failed to fetch website details");
+  return res.json();
+}
+
+export async function addAdminWebsite(data) {
+  const res = await fetch(`${API_BASE}/admin/websites`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || "Failed to add website");
+  }
+  return res.json();
+}
+
+export async function rescanWebsite(domain) {
+  const res = await fetch(`${API_BASE}/admin/websites/${encodeURIComponent(domain)}/rescan`, {
+    method: "POST"
+  });
+  if (!res.ok) throw new Error("Failed to rescan website");
+  return res.json();
+}
+
+export async function deleteAdminWebsite(domain) {
+  const res = await fetch(`${API_BASE}/admin/websites/${encodeURIComponent(domain)}`, {
+    method: "DELETE"
+  });
+  if (!res.ok) throw new Error("Failed to delete website");
+  return res.json();
+}
+
+export async function getWebsiteCookies(domain) {
+  const res = await fetch(`${API_BASE}/admin/websites/${encodeURIComponent(domain)}/cookies`);
+  if (!res.ok) throw new Error("Failed to fetch website cookies");
+  return res.json();
+}
+
+export async function updateWebsiteCookies(domain, preferences) {
+  const res = await fetch(`${API_BASE}/admin/websites/${encodeURIComponent(domain)}/cookies`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ preferences })
+  });
+  if (!res.ok) throw new Error("Failed to update website cookies");
+  return res.json();
+}
+
+export async function getGlobalCookieRules() {
+  const res = await fetch(`${API_BASE}/admin/cookie-rules`);
+  if (!res.ok) throw new Error("Failed to fetch global cookie rules");
+  return res.json();
+}
+
+export async function createGlobalCookieRule(rule) {
+  const res = await fetch(`${API_BASE}/admin/cookie-rules`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(rule)
+  });
+  if (!res.ok) throw new Error("Failed to create global cookie rule");
+  return res.json();
+}
+
+export async function deleteGlobalCookieRule(ruleId) {
+  const res = await fetch(`${API_BASE}/admin/cookie-rules/${ruleId}`, {
+    method: "DELETE"
+  });
+  if (!res.ok) throw new Error("Failed to delete global cookie rule");
+  return res.json();
+}
+
+export async function refreshTop5000() {
+  const res = await fetch(`${API_BASE}/admin/top-5000/refresh`, {
+    method: "POST"
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || "Failed to trigger top 5000 refresh");
+  }
+  return res.json();
+}
+
+export async function getTop5000Status() {
+  const res = await fetch(`${API_BASE}/admin/top-5000/status`);
+  if (!res.ok) throw new Error("Failed to fetch top 5000 status");
+  return res.json();
+}
+
+export async function getAdminAuditLog(page = 1, pageSize = 50) {
+  const res = await fetch(`${API_BASE}/admin/audit-log?page=${page}&page_size=${pageSize}`);
+  if (!res.ok) throw new Error("Failed to fetch audit log");
+  return res.json();
+}
+
