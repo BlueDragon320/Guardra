@@ -626,6 +626,9 @@
     } catch (e) {}
   }
 
+  // Broadcast telemetry immediately
+  sendTelemetry();
+  
   // 6. Request rating and initialize on page
   function init() {
     scanTrackers();

@@ -370,18 +370,25 @@ async function adjustRatingForCookies(rating, domain) {
 }
 
 async function fetchSiteRating(domain) {
+  const start = Date.now();
   const rating = await fetchSiteRatingRaw(domain);
+  const end = Date.now();
+  if (rating) {
+    rating.latency = end - start;
+  }
   return await adjustRatingForCookies(rating, domain);
 }
 
 async function fetchSiteRatingRaw(domain) {
+  const requestStart = Date.now();
   if (!domain) return null;
   const cleanDom = domain.replace(/^www\./, "").toLowerCase();
 
   // Try local API first, then remote API
   const endpoints = [
+    `http://localhost:8756/api/policy/rating?domain=${encodeURIComponent(cleanDom)}`,
     `http://localhost:8000/api/policy/rating?domain=${encodeURIComponent(cleanDom)}`,
-    `${REMOTE_API_BASE}/api/policy/rating?domain=${encodeURIComponent(cleanDom)}`
+    `https://guardra-api.botvaibhav.dev/api/policy/rating?domain=${encodeURIComponent(cleanDom)}`
   ];
 
   for (const endpoint of endpoints) {
@@ -682,6 +689,51 @@ chrome.cookies.onChanged.addListener(async (changeInfo) => {
 });
 
 // Listen for messages from content script or popup
+
+async function reportBrowserActivity(tabUrl, domain, trackers) {
+  const cleanDom = (domain || "").replace(/^www\./, "").toLowerCase();
+  if (!cleanDom) return;
+
+  const endpoints = [
+    "http://localhost:8756/api/hub/telemetry",
+    "http://localhost:8000/api/hub/telemetry",
+    "https://guardra-api.botvaibhav.dev/api/hub/telemetry"
+  ];
+  
+  let score = 0;
+  let grade = "N/A";
+  try {
+    const cached = await chrome.storage.local.get(`cached_rating_${cleanDom}`);
+    if (cached && cached[`cached_rating_${cleanDom}`]) {
+  const start = Date.now();
+  let latency = 0;
+  for (const endpoint of endpoints) {
+    try {
+      const resp = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          domain: cleanDom,
+          url: tabUrl,
+          action_type: "Active Tab Scanned",
+          details: `Detected ${trackers ? trackers.length : 0} trackers on ${cleanDom}`,
+          trackers_detected: trackers || [],
+          auto_actions_taken: [],
+          client_time: start,
+          score: rating ? (rating.score || rating.overall_score) : 60,
+          grade: rating ? rating.grade : "C",
+          response_time_ms: latency || 35
+        })
+      });
+      const end = Date.now();
+      if (resp.ok) {
+        latency = end - start;
+        break;
+      }
+    } catch (e) {}
+  }
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "REMOVE_SINGLE_COOKIE") {
     const { domain, name, storeId, path, secure, url } = message;
@@ -860,22 +912,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         chrome.storage.local.set({ [`tab_session_${tabId}`]: session });
       });
     }
-    getApiBase().then((apiBase) => {
-      if (apiBase && apiBase.startsWith("http")) {
-        fetch(`${apiBase}/api/hub/telemetry/active-session`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            domain: data.hostname,
-            url: data.url,
-            action_type: data.auto_actions && data.auto_actions.length > 0 ? "Automated Privacy Actions" : "Active Tab Scanned",
-            details: data.auto_actions && data.auto_actions.length > 0 ? data.auto_actions.join("; ") : `Detected ${data.tracker_count} trackers on ${data.hostname}`,
-            trackers_detected: data.trackers_detected || [],
-            auto_actions_taken: data.auto_actions || []
-          })
-        }).catch(() => {});
-      }
-    });
+    reportBrowserActivity(data.url, data.hostname, data.trackers_detected);
   }
 });
 
