@@ -300,15 +300,29 @@
       .secondary-btn:hover { background: #27272a; color: #fff; }
     `;
 
+    const activeCookies = [];
+    try {
+      if (document.cookie) {
+        document.cookie.split(";").forEach(c => {
+          const name = c.split("=")[0].trim();
+          if (name) activeCookies.push(name);
+        });
+      }
+      Object.keys(localStorage).forEach(k => {
+        if (!activeCookies.includes(k)) activeCookies.push(k);
+      });
+    } catch (e) {}
+
     if (!isExpanded) {
       shadowRoot.innerHTML = `
         <style>${css}</style>
         <div class="pill-container" id="guardra-pill">
           <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#10b981;"></span>
-          <span style="font-weight:600;">Guardra:</span>
+          <span style="font-weight:700;">Guardra:</span>
           <span>${domain}</span>
           <span class="grade-pill">${grade} (${score}/100)</span>
-          <span style="color:#a1a1aa;">${trackerCount} Trackers</span>
+          <span style="color:#f87171; font-weight:600;">⚡ ${trackerCount} Trackers</span>
+          <span style="color:#e4e4e7; font-weight:600;">🍪 ${activeCookies.length} Cookies</span>
           <button class="close-btn" id="guardra-close-pill">✕</button>
         </div>
       `;
@@ -327,18 +341,6 @@
       });
     } else {
       const breaches = currentRating?.breaches || [];
-      const activeCookies = [];
-      try {
-        if (document.cookie) {
-          document.cookie.split(";").forEach(c => {
-            const name = c.split("=")[0].trim();
-            if (name) activeCookies.push(name);
-          });
-        }
-        Object.keys(localStorage).forEach(k => {
-          if (!activeCookies.includes(k)) activeCookies.push(k);
-        });
-      } catch (e) {}
 
       const breachHtml = breaches.length > 0 ? `
         <div class="section-card" style="border-color: rgba(239,68,68,0.4); background: rgba(239,68,68,0.08);">
@@ -385,22 +387,32 @@
 
           ${breachHtml}
 
-          <div class="section-card" style="padding: 10px; gap: 6px;">
-            <div class="meta-row" style="font-weight: 700; font-size: 11px;">
-              <span>⚡ Active Script Trackers (${detectedTrackers.length})</span>
+          <!-- Expandable Trackers Section -->
+          <div class="section-card" style="padding: 0; overflow: hidden;">
+            <div id="guardra-trackers-header" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; cursor: pointer; background: #18181b; user-select: none;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-weight: 700; font-size: 11px; color: #f4f4f5;">⚡ Trackers</span>
+                <span style="background: rgba(239,68,68,0.2); color: #fca5a5; border: 1px solid rgba(239,68,68,0.35); font-size: 9.5px; font-weight: 700; padding: 1px 6px; border-radius: 10px;">${detectedTrackers.length}</span>
+              </div>
+              <span id="guardra-trackers-icon" style="font-size: 9px; color: #a1a1aa;">▼</span>
             </div>
-            <div style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px;">
+            <div id="guardra-trackers-body" style="padding: 8px 10px; display: flex; flex-wrap: wrap; gap: 5px; border-top: 1px solid #27272a;">
               ${detectedTrackers.length > 0 
                 ? detectedTrackers.map(t => `<span style="display: inline-flex; align-items: center; font-weight: 600; font-size: 9.5px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.35); color: #f87171; padding: 3px 8px; border-radius: 4px;">${t.name}</span>`).join("") 
                 : `<span style="color: #71717a; font-size: 10px; font-style: italic;">None detected on page</span>`}
             </div>
           </div>
 
-          <div class="section-card" style="padding: 10px; gap: 6px;">
-            <div class="meta-row" style="font-weight: 700; font-size: 11px;">
-              <span>🍪 Active Cookies & Storage (${activeCookies.length})</span>
+          <!-- Expandable Cookies Section -->
+          <div class="section-card" style="padding: 0; overflow: hidden;">
+            <div id="guardra-cookies-header" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; cursor: pointer; background: #18181b; user-select: none;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-weight: 700; font-size: 11px; color: #f4f4f5;">🍪 Cookies</span>
+                <span style="background: rgba(161,161,170,0.2); color: #e4e4e7; border: 1px solid rgba(161,161,170,0.35); font-size: 9.5px; font-weight: 700; padding: 1px 6px; border-radius: 10px;">${activeCookies.length}</span>
+              </div>
+              <span id="guardra-cookies-icon" style="font-size: 9px; color: #a1a1aa;">▼</span>
             </div>
-            <div style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px;">
+            <div id="guardra-cookies-body" style="padding: 8px 10px; display: flex; flex-wrap: wrap; gap: 5px; border-top: 1px solid #27272a; max-height: 120px; overflow-y: auto;">
               ${activeCookies.length > 0 
                 ? activeCookies.map(c => `<span style="display: inline-flex; align-items: center; font-weight: 600; font-family: monospace; font-size: 9.5px; background: #18181b; border: 1px solid #3f3f46; color: #f4f4f5; padding: 3px 8px; border-radius: 4px;">${c}</span>`).join("") 
                 : `<span style="color: #71717a; font-size: 10px; font-style: italic;">No cookies stored</span>`}
@@ -460,6 +472,28 @@
           chrome.storage.local.set({ guardra_inpage_enabled: false });
           isDismissed = true;
           if (rootHost) rootHost.remove();
+        });
+      }
+
+      const trackersHeader = shadowRoot.getElementById("guardra-trackers-header");
+      const trackersBody = shadowRoot.getElementById("guardra-trackers-body");
+      const trackersIcon = shadowRoot.getElementById("guardra-trackers-icon");
+      if (trackersHeader && trackersBody) {
+        trackersHeader.addEventListener("click", () => {
+          const isHidden = trackersBody.style.display === "none";
+          trackersBody.style.display = isHidden ? "flex" : "none";
+          if (trackersIcon) trackersIcon.textContent = isHidden ? "▼" : "▲";
+        });
+      }
+
+      const cookiesHeader = shadowRoot.getElementById("guardra-cookies-header");
+      const cookiesBody = shadowRoot.getElementById("guardra-cookies-body");
+      const cookiesIcon = shadowRoot.getElementById("guardra-cookies-icon");
+      if (cookiesHeader && cookiesBody) {
+        cookiesHeader.addEventListener("click", () => {
+          const isHidden = cookiesBody.style.display === "none";
+          cookiesBody.style.display = isHidden ? "flex" : "none";
+          if (cookiesIcon) cookiesIcon.textContent = isHidden ? "▼" : "▲";
         });
       }
 
