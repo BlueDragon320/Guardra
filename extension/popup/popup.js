@@ -260,6 +260,22 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
+  // Auto-Disable Cookies Toggle
+  const autoCookieToggle = document.getElementById("toggle-auto-disable-cookies");
+  if (autoCookieToggle) {
+    const storedAutoCookie = await chrome.storage.local.get("guardra_auto_disable_cookies");
+    autoCookieToggle.checked = storedAutoCookie.guardra_auto_disable_cookies !== false;
+
+    autoCookieToggle.addEventListener("change", async () => {
+      const enabled = autoCookieToggle.checked;
+      await chrome.storage.local.set({ guardra_auto_disable_cookies: enabled });
+
+      if (enabled) {
+        document.getElementById("btn-enforce-strict-cookies")?.click();
+      }
+    });
+  }
+
   const autoCookieToggle = document.getElementById("toggle-auto-disable-cookies");
   if (autoCookieToggle) {
     const storedAuto = await chrome.storage.local.get("guardra_auto_disable_cookies");
