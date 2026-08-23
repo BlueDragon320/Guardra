@@ -239,7 +239,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  // 2. In-Page Always-On Website Shield Toggle
+  // 2. In-Page Always-On Website Shield & Auto Cookie Disabler Toggles
   const inpageToggle = document.getElementById("toggle-inpage-shield");
   if (inpageToggle) {
     const storedInpage = await chrome.storage.local.get("guardra_inpage_enabled");
@@ -257,6 +257,29 @@ document.addEventListener("DOMContentLoaded", async () => {
           });
         }
       });
+    });
+  }
+
+  const autoCookieToggle = document.getElementById("toggle-auto-disable-cookies");
+  if (autoCookieToggle) {
+    const storedAuto = await chrome.storage.local.get("guardra_auto_disable_cookies");
+    autoCookieToggle.checked = storedAuto.guardra_auto_disable_cookies !== false;
+
+    autoCookieToggle.addEventListener("change", async () => {
+      const enabled = autoCookieToggle.checked;
+      await chrome.storage.local.set({ guardra_auto_disable_cookies: enabled });
+
+      if (enabled && currentRatingData?.domain) {
+        const tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+        const tabUrl = tabs && tabs[0] ? tabs[0].url : `https://${currentRatingData.domain}`;
+        chrome.runtime.sendMessage({ 
+          type: "ENFORCE_STRICT_COOKIES", 
+          domain: currentRatingData.domain, 
+          url: tabUrl 
+        }, () => {
+          loadCookieGovernance(currentRatingData.domain, tabUrl);
+        });
+      }
     });
   }
 

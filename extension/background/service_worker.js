@@ -337,7 +337,44 @@ async function getApiBase() {
   return result.apiBase || LOCAL_API_BASE;
 }
 
+
+async function adjustRatingForCookies(rating, domain) {
+  if (!rating || !rating.rubric || !rating.rubric.tracking_cookies) return rating;
+  const cleanDom = domain.replace(/^www\./, "");
+  const storageKey = `strict_cookies_${cleanDom}`;
+  const stored = await chrome.storage.local.get([storageKey, "guardra_auto_disable_cookies"]);
+  const isEnforced = (stored[storageKey] && stored[storageKey].enforced) || stored.guardra_auto_disable_cookies;
+
+  if (isEnforced) {
+    rating.rubric.tracking_cookies.score = 100;
+    rating.rubric.tracking_cookies.label = "Tracking Cookies Neutralized";
+    rating.rubric.tracking_cookies.risk = "low";
+    
+    let totalScore = 0;
+    let count = 0;
+    for (const key in rating.rubric) {
+      totalScore += rating.rubric[key].score;
+      count++;
+    }
+    if (count > 0) {
+      rating.score = Math.round(totalScore / count);
+      if (rating.score >= 90) rating.grade = "A+";
+      else if (rating.score >= 80) rating.grade = "A";
+      else if (rating.score >= 70) rating.grade = "B";
+      else if (rating.score >= 60) rating.grade = "C";
+      else if (rating.score >= 50) rating.grade = "D";
+      else rating.grade = "F";
+    }
+  }
+  return rating;
+}
+
 async function fetchSiteRating(domain) {
+  const rating = await fetchSiteRatingRaw(domain);
+  return await adjustRatingForCookies(rating, domain);
+}
+
+async function fetchSiteRatingRaw(domain) {
   if (!domain) return null;
   const cleanDom = domain.replace(/^www\./, "").toLowerCase();
 
@@ -446,9 +483,41 @@ async function updateTabState(tabId, url) {
   });
 }
 
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (changeInfo.status === "complete" && tab.url) {
     updateTabState(tabId, tab.url);
+
+    // If auto-disable non-essential cookies is active or domain is in strict mode, enforce automatically
+    const domain = extractDomain(tab.url);
+    if (domain) {
+      const stored = await chrome.storage.local.get(["guardra_auto_disable_cookies", `strict_cookies_${domain}`]);
+      if (stored.guardra_auto_disable_cookies !== false || stored[`strict_cookies_${domain}`]?.enforced) {
+        enforceStrictCookies(domain, tab.url);
+      }
+    }
+  }
+});
+
+// Continuous real-time interceptor: instantly purge tracking cookies as soon as they are written by third-party scripts
+chrome.cookies.onChanged.addListener(async (changeInfo) => {
+  if (changeInfo.removed) return;
+  const cookie = changeInfo.cookie;
+  if (!cookie || !cookie.domain) return;
+
+  const cleanDom = cookie.domain.replace(/^\./, "").toLowerCase();
+  const stored = await chrome.storage.local.get(["guardra_auto_disable_cookies", `strict_cookies_${cleanDom}`]);
+  const isAutoEnabled = stored.guardra_auto_disable_cookies !== false || stored[`strict_cookies_${cleanDom}`]?.enforced;
+
+  if (isAutoEnabled && !isEssentialCookie(cookie)) {
+    const protocol = cookie.secure ? "https:" : "http:";
+    const cookieUrl = `${protocol}//${cleanDom}${cookie.path}`;
+    try {
+      await chrome.cookies.remove({
+        url: cookieUrl,
+        name: cookie.name,
+        storeId: cookie.storeId
+      });
+    } catch (e) {}
   }
 });
 
@@ -534,8 +603,8 @@ async function auditDomainCookies(domain, tabUrl) {
 
   const cleanDom = domain.replace(/^www\./, "");
   const storageKey = `strict_cookies_${cleanDom}`;
-  const stored = await chrome.storage.local.get(storageKey);
-  const isEnforced = !!stored[storageKey]?.enforced;
+  const stored = await chrome.storage.local.get([storageKey, "guardra_auto_disable_cookies"]);
+  const isEnforced = !!stored[storageKey]?.enforced || !!stored.guardra_auto_disable_cookies;
 
   return {
     domain: cleanDom,
@@ -604,6 +673,7 @@ async function enforceStrictCookies(domain, tabUrl) {
         chrome.tabs.sendMessage(t.id, { type: "STRICT_COOKIES_ENFORCED", domain: cleanDom }, () => {
           if (chrome.runtime.lastError) {}
         });
+        updateTabState(t.id, t.url);
       }
     }
   } catch (e) {}
@@ -616,6 +686,31 @@ async function enforceStrictCookies(domain, tabUrl) {
     removedNames
   };
 }
+
+
+chrome.cookies.onChanged.addListener(async (changeInfo) => {
+  if (changeInfo.removed) return;
+  const cookie = changeInfo.cookie;
+  if (isEssentialCookie(cookie)) return;
+
+  const cleanDom = cookie.domain.replace(/^\./, "");
+  const storageKey = `strict_cookies_${cleanDom}`;
+  const stored = await chrome.storage.local.get([storageKey, "guardra_auto_disable_cookies"]);
+  
+  const isEnforced = (stored[storageKey] && stored[storageKey].enforced) || stored.guardra_auto_disable_cookies;
+
+  if (isEnforced) {
+    const protocol = cookie.secure ? "https:" : "http:";
+    const cookieUrl = `${protocol}//${cleanDom}${cookie.path}`;
+    try {
+      await chrome.cookies.remove({
+        url: cookieUrl,
+        name: cookie.name,
+        storeId: cookie.storeId
+      });
+    } catch (e) {}
+  }
+});
 
 // Listen for messages from content script or popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

@@ -152,17 +152,17 @@
 
   function renderFloatingPill(rating) {
     if (isDismissed) return;
-    chrome.storage.local.get("guardra_inpage_enabled", (res) => {
+    chrome.storage.local.get(["guardra_inpage_enabled", "guardra_auto_disable_cookies"], (res) => {
       if (res.guardra_inpage_enabled === false) {
         const rootHost = document.getElementById("guardra-inpage-root");
         if (rootHost) rootHost.remove();
         return;
       }
-      _doRenderFloatingPill(rating);
+      _doRenderFloatingPill(rating, res.guardra_auto_disable_cookies);
     });
   }
 
-  function _doRenderFloatingPill(rating) {
+  function _doRenderFloatingPill(rating, autoDisableCookies = false) {
     if (isDismissed) return;
     currentRating = rating;
     const domain = window.location.hostname.replace(/^www\./, "");
@@ -384,15 +384,37 @@
             <a href="mailto:${grievanceEmail}?subject=STATUTORY DATA ERASURE NOTICE under DPDP Act 2023 Section 12&body=To the Grievance Officer of ${domain},%0D%0A%0D%0APlease execute the erasure of all personal data concerning my account under Section 12 of the DPDP Act 2023." class="secondary-btn" target="_blank" style="text-align:center;">
               ✉️ Generate DPDP Deletion Notice
             </a>
-            <a href="http://localhost:5173" target="_blank" class="secondary-btn" style="text-align:center;">
-              📊 Open Guardra Web Suite
-            </a>
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#18181b; border:1px solid #27272a; border-radius:4px; padding:6px 8px; font-size:10px; margin-top:2px;">
+              <div>
+                <div style="font-weight:600; color:#f4f4f5;">Auto-Disable Tracking</div>
+                <div style="font-size:9px; color:#71717a;">Auto-prune optional cookies</div>
+              </div>
+              <input type="checkbox" id="guardra-chk-auto-cookies" style="cursor:pointer;" />
+            </div>
             <button id="guardra-btn-disable-alwayson" style="background:none; border:none; color:#71717a; font-size:9px; cursor:pointer; text-align:center; padding:3px; margin-top:2px; text-decoration:underline;">
               🔕 Turn Off Always-On Badge on Websites
             </button>
           </div>
         </div>
       `;
+
+      const autoChk = shadowRoot.getElementById("guardra-chk-auto-cookies");
+      if (autoChk) {
+        chrome.storage.local.get("guardra_auto_disable_cookies", (st) => {
+          autoChk.checked = st.guardra_auto_disable_cookies !== false;
+        });
+        autoChk.addEventListener("change", () => {
+          const enabled = autoChk.checked;
+          chrome.storage.local.set({ guardra_auto_disable_cookies: enabled });
+          if (enabled) {
+            chrome.runtime.sendMessage({
+              type: "ENFORCE_STRICT_COOKIES",
+              domain: domain,
+              url: window.location.href
+            });
+          }
+        });
+      }
 
       const disableAlwaysOnBtn = shadowRoot.getElementById("guardra-btn-disable-alwayson");
       if (disableAlwaysOnBtn) {
