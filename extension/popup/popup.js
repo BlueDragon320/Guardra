@@ -623,19 +623,24 @@ function loadCookieGovernance(domain, tabUrl, tabId) {
         nameEl.className = "cookie-item-name";
         nameEl.textContent = t.name || "Tracker Script";
         
-        const isMeta = (t.name || "").toLowerCase().includes("meta") || (t.name || "").toLowerCase().includes("facebook");
-        const isGoogle = (t.name || "").toLowerCase().includes("google") || (t.name || "").toLowerCase().includes("analytics");
-        
         const badgeEl = document.createElement("span");
         badgeEl.className = "cookie-item-badge tracking";
-        badgeEl.textContent = isMeta ? "Advertising / Social" : (isGoogle ? "Analytics" : "Script Tracker");
+        
+        let badgeText = "Analytics Tracker";
+        const tName = (t.name || "").toLowerCase();
+        if (tName.includes("meta") || tName.includes("facebook")) {
+          badgeText = "Advertising / Social Tracker";
+        } else if (tName.includes("google") || tName.includes("analytics")) {
+          badgeText = "Analytics Tracker";
+        } else {
+          badgeText = "Advertising / Social Tracker";
+        }
+        badgeEl.textContent = badgeText;
         nameEl.appendChild(badgeEl);
         
         const descEl = document.createElement("div");
         descEl.className = "cookie-item-desc";
-        descEl.textContent = isMeta 
-          ? "Tracks cross-site ad conversions" 
-          : (isGoogle ? "Monitors visitor page interactions" : "Third-Party Telemetry Script");
+        descEl.textContent = "Third-Party Telemetry Script";
         
         infoDiv.appendChild(nameEl);
         infoDiv.appendChild(descEl);
@@ -650,12 +655,16 @@ function loadCookieGovernance(domain, tabUrl, tabId) {
         btn.onclick = () => {
           btn.textContent = "Disabling...";
           btn.disabled = true;
+          
           chrome.runtime.sendMessage({
             type: "BLOCK_TRACKER_SCRIPT",
-            trackerName: t.name,
-            domain: domain,
-            url: tabUrl
+            tracker: t
           }, (response) => {
+            if (t.cookies && Array.isArray(t.cookies)) {
+              t.cookies.forEach(c => {
+                chrome.runtime.sendMessage({ type: "REMOVE_SINGLE_COOKIE", cookie: c });
+              });
+            }
             btn.textContent = "✅ Disabled";
             btn.classList.add("disabled");
             card.classList.add("disabled-card");

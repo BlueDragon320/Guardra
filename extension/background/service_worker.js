@@ -772,6 +772,46 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  if (message.type === "BLOCK_TRACKER_SCRIPT") {
+    const { trackerName, domain, url, tabId } = message;
+    
+    getDomainCookies(domain, url).then(cookies => {
+      let patterns = [];
+      const tName = (trackerName || "").toLowerCase();
+      if (tName.includes("google") || tName.includes("doubleclick")) patterns = [/^(_ga|_gid|_gat|_gcl|__utm|gtag|gads|1P_JAR|NID|DSID|IDE)/i];
+      else if (tName.includes("meta") || tName.includes("facebook")) patterns = [/^(_fbp|_fbc|datr|sb|fr|c_user|xs|act|presence)/i];
+      else if (tName.includes("tiktok")) patterns = [/^(_ttp|_tt)/i];
+      else if (tName.includes("microsoft") || tName.includes("clarity")) patterns = [/^(_clck|_clsk|MUID)/i];
+      else if (tName.includes("hotjar")) patterns = [/^(_hj)/i];
+      else if (tName.includes("criteo")) patterns = [/^(cto_)/i];
+      else patterns = KNOWN_TRACKER_COOKIE_PATTERNS;
+
+      const cookiesToRemove = cookies.filter(c => patterns.some(p => p.test(c.name)));
+      
+      const removePromises = cookiesToRemove.map(c => {
+        const protocol = c.secure ? "https:" : "http:";
+        const cleanDom = c.domain.replace(/^\./, "");
+        const cookieUrl = `${protocol}//${cleanDom}${c.path}`;
+        return chrome.cookies.remove({ url: cookieUrl, name: c.name, storeId: c.storeId }).catch(() => {});
+      });
+
+      return Promise.all(removePromises);
+    }).then(() => {
+      if (tabId) {
+        chrome.tabs.sendMessage(tabId, {
+          type: "NEUTRALIZE_TRACKER",
+          trackerName: trackerName
+        }, () => {
+          if (chrome.runtime.lastError) {}
+        });
+      }
+      sendResponse({ success: true, trackerName });
+    }).catch(err => {
+      sendResponse({ success: false, error: err.message });
+    });
+    return true;
+  }
+
   if (message.type === "GET_CURRENT_RATING") {
     if (message.domain) {
       fetchSiteRating(message.domain).then(rating => {
