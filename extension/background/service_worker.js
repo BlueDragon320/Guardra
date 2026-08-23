@@ -693,6 +693,8 @@ chrome.cookies.onChanged.addListener(async (changeInfo) => {
 async function reportBrowserActivity(tabUrl, domain, trackers) {
   const cleanDom = (domain || "").replace(/^www\./, "").toLowerCase();
   if (!cleanDom) return;
+  
+  let rating = await fetchSiteRating(cleanDom);
 
   const endpoints = [
     "http://localhost:8756/api/hub/telemetry",
@@ -700,11 +702,6 @@ async function reportBrowserActivity(tabUrl, domain, trackers) {
     "https://guardra-api.botvaibhav.dev/api/hub/telemetry"
   ];
   
-  let score = 0;
-  let grade = "N/A";
-  try {
-    const cached = await chrome.storage.local.get(`cached_rating_${cleanDom}`);
-    if (cached && cached[`cached_rating_${cleanDom}`]) {
   const start = Date.now();
   let latency = 0;
   for (const endpoint of endpoints) {
