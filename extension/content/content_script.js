@@ -385,7 +385,7 @@
               ✉️ Generate DPDP Deletion Notice
             </a>
             <button id="guardra-btn-auto-disable-cookies" style="background:none; border:none; color:#71717a; font-size:9px; cursor:pointer; text-align:center; padding:3px; margin-top:2px; text-decoration:underline;">
-              [Status: Loading...] Always Auto-Disable Non-Essential Cookies
+              🛡️ Auto-Disable Non-Essential Cookies (All Sites)
             </button>
             <button id="guardra-btn-disable-alwayson" style="background:none; border:none; color:#71717a; font-size:9px; cursor:pointer; text-align:center; padding:3px; margin-top:2px; text-decoration:underline;">
               🔕 Turn Off Always-On Badge on Websites
@@ -398,13 +398,15 @@
       if (autoBtn) {
         chrome.storage.local.get("guardra_auto_disable_cookies", (st) => {
           const isAuto = st.guardra_auto_disable_cookies !== false;
-          autoBtn.textContent = isAuto ? "✅ Always Auto-Disable Non-Essential Cookies" : "⚪ Always Auto-Disable Non-Essential Cookies";
+          autoBtn.textContent = isAuto ? "✅ Auto-Disable Cookies (All Sites): ON" : "⚪ Auto-Disable Cookies (All Sites): OFF";
+          autoBtn.style.color = isAuto ? "#34d399" : "#71717a";
         });
         autoBtn.addEventListener("click", () => {
           chrome.storage.local.get("guardra_auto_disable_cookies", (st) => {
             const enabled = st.guardra_auto_disable_cookies === false;
             chrome.storage.local.set({ guardra_auto_disable_cookies: enabled });
-            autoBtn.textContent = enabled ? "✅ Always Auto-Disable Non-Essential Cookies" : "⚪ Always Auto-Disable Non-Essential Cookies";
+            autoBtn.textContent = enabled ? "✅ Auto-Disable Cookies (All Sites): ON" : "⚪ Auto-Disable Cookies (All Sites): OFF";
+            autoBtn.style.color = enabled ? "#34d399" : "#71717a";
             if (enabled) {
               chrome.runtime.sendMessage({
                 type: "ENFORCE_STRICT_COOKIES",
