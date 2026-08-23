@@ -248,137 +248,157 @@
 
     const css = `
       * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+      ::selection { background: #FF6B50; color: #fff; }
       .pill-container {
         display: flex;
         align-items: center;
         gap: 8px;
-        background: #121215;
-        color: #f4f4f5;
-        border: 1px solid #27272a;
-        border-radius: 20px;
-        padding: 6px 12px;
+        background: rgba(17, 17, 17, 0.92);
+        backdrop-filter: blur(14px);
+        color: #ebebeb;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 14px;
+        padding: 6px 14px;
         font-size: 11px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+        box-shadow: 0 12px 36px rgba(0,0,0,0.75);
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
         user-select: none;
       }
       .pill-container:hover {
-        background: #18181b;
-        border-color: #3f3f46;
+        background: #181818;
+        border-color: rgba(255, 255, 255, 0.25);
+        transform: translateY(-2px);
+      }
+      .logo-shield {
+        background: #ffffff;
+        color: #000000;
+        font-weight: 900;
+        font-size: 11px;
+        width: 18px;
+        height: 18px;
+        border-radius: 4px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.25s ease;
+      }
+      .pill-container:hover .logo-shield {
+        transform: rotate(12deg);
       }
       .grade-pill {
-        background: #27272a;
-        padding: 1px 6px;
-        border-radius: 4px;
-        font-weight: 700;
+        background: #1a1a1a;
+        padding: 2px 7px;
+        border-radius: 6px;
+        font-weight: 800;
         font-family: monospace;
+        border: 1px solid #2a2a2a;
       }
       .close-btn {
         background: none;
         border: none;
-        color: #71717a;
+        color: #888888;
         cursor: pointer;
-        font-size: 18px;
+        font-size: 16px;
         line-height: 1;
-        padding: 2px 6px;
-        margin-left: 4px;
+        padding: 2px 4px;
+        margin-left: 2px;
         transition: all 0.2s ease;
       }
       .close-btn:hover {
         opacity: 1;
-        color: #fff;
-        transform: scale(1.1);
+        color: #FF6B50;
+        transform: scale(1.15);
       }
       .pill-chip {
-        background: #27272a;
+        background: #161616;
         padding: 2px 8px;
-        border-radius: 12px;
+        border-radius: 10px;
         font-weight: 600;
         font-size: 10px;
-        color: #f4f4f5;
+        color: #aaaaaa;
+        border: 1px solid #222222;
         display: inline-flex;
         align-items: center;
       }
 
       /* Expanded Panel */
       .panel-container {
-        width: 320px;
+        width: 330px;
         max-height: calc(100vh - 40px);
         overflow-y: auto;
         overflow-x: hidden;
-        background: #121215;
-        border: 1px solid #27272a;
-        border-radius: 8px;
-        padding: 12px;
-        box-shadow: 0 15px 40px rgba(0,0,0,0.7);
-        color: #f4f4f5;
+        background: #050505;
+        border: 1px solid #222222;
+        border-radius: 18px;
+        padding: 14px;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.88);
+        color: #ebebeb;
         font-size: 11px;
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: 12px;
         scrollbar-width: thin;
-        scrollbar-color: #3f3f46 #18181b;
+        scrollbar-color: #333333 #111111;
       }
       .panel-container::-webkit-scrollbar {
         width: 5px;
       }
       .panel-container::-webkit-scrollbar-track {
-        background: #18181b;
+        background: #111111;
         border-radius: 4px;
       }
       .panel-container::-webkit-scrollbar-thumb {
-        background: #3f3f46;
+        background: #333333;
         border-radius: 4px;
-      }
-      .panel-container::-webkit-scrollbar-thumb:hover {
-        background: #52525b;
       }
       .panel-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        border-bottom: 1px solid #27272a;
-        padding-bottom: 8px;
+        border-bottom: 1px solid #222222;
+        padding-bottom: 10px;
       }
-      .site-title { font-weight: 600; font-size: 12px; }
-      .meta-row { display: flex; justify-content: space-between; color: #a1a1aa; font-size: 10px; }
+      .site-title { font-weight: 800; font-size: 13px; color: #fff; }
+      .meta-row { display: flex; justify-content: space-between; color: #888888; font-size: 10.5px; }
       .section-card {
-        background: #09090b;
-        border: 1px solid #27272a;
-        border-radius: 6px;
-        padding: 8px;
+        background: #111111;
+        border: 1px solid #222222;
+        border-radius: 12px;
+        padding: 10px;
         display: flex;
         flex-direction: column;
-        gap: 4px;
+        gap: 6px;
       }
       .action-btn {
-        background: #f4f4f5;
-        color: #09090b;
+        background: #FF6B50;
+        color: #000000;
         border: none;
-        border-radius: 4px;
-        padding: 6px 8px;
-        font-size: 10px;
-        font-weight: 600;
+        border-radius: 8px;
+        padding: 8px 10px;
+        font-size: 11px;
+        font-weight: 700;
         cursor: pointer;
         text-align: center;
         display: block;
         text-decoration: none;
+        transition: all 0.2s ease;
       }
-      .action-btn:hover { opacity: 0.9; }
+      .action-btn:hover { background: #E55A40; color: #ffffff; }
       .secondary-btn {
-        background: #18181b;
-        color: #d4d4d8;
-        border: 1px solid #27272a;
-        border-radius: 4px;
-        padding: 5px 8px;
-        font-size: 10px;
+        background: #161616;
+        color: #ebebeb;
+        border: 1px solid #333333;
+        border-radius: 8px;
+        padding: 7px 10px;
+        font-size: 10.5px;
         cursor: pointer;
         text-align: center;
         text-decoration: none;
         display: block;
+        transition: all 0.2s ease;
       }
-      .secondary-btn:hover { background: #27272a; color: #fff; }
+      .secondary-btn:hover { background: #ffffff; color: #000000; }
 
       .expandable-header {
         display: flex;
@@ -388,6 +408,7 @@
         padding: 4px 0;
         font-weight: 700;
         font-size: 11px;
+        color: #fff;
       }
       .expandable-content {
         display: flex;
@@ -398,22 +419,8 @@
         overflow-y: auto;
         padding-right: 4px;
         scrollbar-width: thin;
-        scrollbar-color: #3f3f46 #18181b;
+        scrollbar-color: #333333 #111111;
         transition: max-height 0.25s ease;
-      }
-      .expandable-content::-webkit-scrollbar {
-        width: 4px;
-      }
-      .expandable-content::-webkit-scrollbar-track {
-        background: #18181b;
-        border-radius: 4px;
-      }
-      .expandable-content::-webkit-scrollbar-thumb {
-        background: #3f3f46;
-        border-radius: 4px;
-      }
-      .expandable-content::-webkit-scrollbar-thumb:hover {
-        background: #52525b;
       }
       .expandable-content.collapsed {
         max-height: 0;
@@ -433,11 +440,11 @@
         align-items: center;
         font-weight: 700;
         font-size: 10px;
-        background: rgba(239, 68, 68, 0.15);
-        border: 1px solid rgba(239, 68, 68, 0.35);
-        color: #f87171;
-        padding: 6px 12px;
-        border-radius: 20px;
+        background: rgba(255, 107, 80, 0.15);
+        border: 1px solid rgba(255, 107, 80, 0.35);
+        color: #FF6B50;
+        padding: 4px 10px;
+        border-radius: 12px;
         white-space: nowrap;
       }
       .cookie-chip {
@@ -446,11 +453,11 @@
         font-weight: 700;
         font-family: monospace;
         font-size: 10px;
-        background: #18181b;
-        border: 1px solid #3f3f46;
-        color: #f4f4f5;
-        padding: 6px 12px;
-        border-radius: 20px;
+        background: #181818;
+        border: 1px solid #333333;
+        color: #ebebeb;
+        padding: 4px 10px;
+        border-radius: 12px;
         white-space: nowrap;
       }
     `;
@@ -459,9 +466,8 @@
       shadowRoot.innerHTML = `
         <style>${css}</style>
         <div class="pill-container" id="guardra-pill">
-          <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#10b981;"></span>
-          <span style="font-weight:600;">Guardra:</span>
-          <span>${domain}</span>
+          <span class="logo-shield">G.</span>
+          <span style="font-weight:700;">${domain}</span>
           <span class="grade-pill">${grade} (${score}/100)</span>
           <span class="pill-chip">⚡ ${detectedTrackers.length} Trackers</span>
           <span class="pill-chip">🍪 ${activeCookies.length} Cookies</span>
@@ -485,16 +491,16 @@
       const breaches = currentRating?.breaches || [];
 
       const breachHtml = breaches.length > 0 ? `
-        <div class="section-card" style="border-color: rgba(239,68,68,0.4); background: rgba(239,68,68,0.08);">
-          <div class="meta-row" style="color: #f87171; font-weight:600;">
+        <div class="section-card" style="border-color: rgba(255,107,80,0.4); background: rgba(255,107,80,0.08);">
+          <div class="meta-row" style="color: #FF6B50; font-weight:700;">
             <span>🚨 Breach: ${breaches[0].breach_date || "Recorded"}</span>
             <span>${breaches.length} Incident${breaches.length > 1 ? "s" : ""}</span>
           </div>
-          <div style="font-size:10px; color:#e4e4e7; margin-top:2px; line-height:1.2;">
+          <div style="font-size:10px; color:#ebebeb; margin-top:2px; line-height:1.2;">
             ${breaches[0].name}
           </div>
           ${breaches[0].article_url ? `
-            <a href="${breaches[0].article_url}" target="_blank" style="color:#38bdf8; font-size:9.5px; margin-top:3px; text-decoration:none; display:inline-block; font-weight:500;">
+            <a href="${breaches[0].article_url}" target="_blank" style="color:#FF6B50; font-size:9.5px; margin-top:3px; text-decoration:none; display:inline-block; font-weight:600;">
               🔗 Read Investigative Article &rarr;
             </a>
           ` : ""}
@@ -505,9 +511,12 @@
         <style>${css}</style>
         <div class="panel-container">
           <div class="panel-header">
-            <div>
-              <div class="site-title">🛡️ Guardra — ${domain}</div>
-              <div style="font-size:10px; color:#71717a;">Privacy Policy & Telemetry Audit</div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span class="logo-shield">G.</span>
+              <div>
+                <div class="site-title">${domain}</div>
+                <div style="font-size:9.5px; color:#888888; font-family:monospace; text-transform:uppercase; letter-spacing:0.05em;">Midnight Audit</div>
+              </div>
             </div>
             <button class="close-btn" id="guardra-minimize-panel">✕</button>
           </div>
