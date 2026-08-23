@@ -484,7 +484,7 @@
               <span>⚡ Trackers (${detectedTrackers.length})</span>
               <span class="toggle-icon" id="guardra-trackers-icon">▼</span>
             </div>
-            <div class="expandable-content" id="guardra-trackers-content" style="max-height: 1000px;">
+            <div class="expandable-content" id="guardra-trackers-content">
               ${detectedTrackers.length > 0 
                 ? detectedTrackers.map(t => `<span class="tracker-chip">${t.name}</span>`).join("") 
                 : `<span style="color: #71717a; font-size: 10px; font-style: italic;">None detected on page</span>`}
@@ -496,7 +496,7 @@
               <span>🍪 Cookies (${activeCookies.length})</span>
               <span class="toggle-icon" id="guardra-cookies-icon">▼</span>
             </div>
-            <div class="expandable-content" id="guardra-cookies-content" style="max-height: 1000px;">
+            <div class="expandable-content" id="guardra-cookies-content">
               ${activeCookies.length > 0 
                 ? activeCookies.map(c => `<span class="cookie-chip">${c}</span>`).join("") 
                 : `<span style="color: #71717a; font-size: 10px; font-style: italic;">No cookies stored</span>`}
@@ -509,9 +509,13 @@
       const trackersContent = shadowRoot.getElementById("guardra-trackers-content");
       const trackersIcon = shadowRoot.getElementById("guardra-trackers-icon");
       if (trackersHeader && trackersContent) {
-        trackersHeader.addEventListener("click", () => {
-          trackersContent.classList.toggle("collapsed");
-          if (trackersIcon) trackersIcon.classList.toggle("collapsed");
+        trackersHeader.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const isClosed = trackersContent.style.display === "none";
+          trackersContent.style.display = isClosed ? "flex" : "none";
+          if (trackersIcon) {
+            trackersIcon.textContent = isClosed ? "▼" : "▲";
+          }
         });
       }
 
@@ -519,15 +523,20 @@
       const cookiesContent = shadowRoot.getElementById("guardra-cookies-content");
       const cookiesIcon = shadowRoot.getElementById("guardra-cookies-icon");
       if (cookiesHeader && cookiesContent) {
-        cookiesHeader.addEventListener("click", () => {
-          cookiesContent.classList.toggle("collapsed");
-          if (cookiesIcon) cookiesIcon.classList.toggle("collapsed");
+        cookiesHeader.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const isClosed = cookiesContent.style.display === "none";
+          cookiesContent.style.display = isClosed ? "flex" : "none";
+          if (cookiesIcon) {
+            cookiesIcon.textContent = isClosed ? "▼" : "▲";
+          }
         });
       }
 
       const minBtn = shadowRoot.getElementById("guardra-minimize-panel");
       if (minBtn) {
-        minBtn.addEventListener("click", () => {
+        minBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
           isExpanded = false;
           renderFloatingPill(currentRating);
         });
