@@ -645,6 +645,25 @@
     automatePlatformSettings();
     sendTelemetry();
 
+    const urlLower = window.location.href.toLowerCase();
+    if (urlLower.includes("privacy") || urlLower.includes("privacy-policy")) {
+      const title = document.title || "";
+      const text = document.body ? document.body.innerText.substring(0, 10000) : "";
+      if (text) {
+        try {
+          chrome.runtime.sendMessage({
+            type: "UPDATE_POLICY_CACHE",
+            data: {
+              url: window.location.href,
+              hostname: window.location.hostname,
+              title: title,
+              text: text
+            }
+          });
+        } catch (e) {}
+      }
+    }
+
     const domain = window.location.hostname.replace(/^www\./, "").toLowerCase();
     chrome.runtime.sendMessage({ type: "GET_CURRENT_RATING", domain: domain, url: window.location.href }, (res) => {
       if (res && res.rating) {
