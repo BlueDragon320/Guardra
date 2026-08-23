@@ -353,11 +353,11 @@ async function fetchSiteRatingRaw(domain) {
   if (!domain) return null;
   const cleanDom = domain.replace(/^www\./, "").toLowerCase();
 
-  // Try local API first, then remote API
+  // Try remote production API first, then local fallback
   const endpoints = [
-    `http://localhost:8756/api/policy/rating?domain=${encodeURIComponent(cleanDom)}`,
+    `https://guardra-api.botvaibhav.dev/api/policy/rating?domain=${encodeURIComponent(cleanDom)}`,
     `http://localhost:8000/api/policy/rating?domain=${encodeURIComponent(cleanDom)}`,
-    `https://guardra-api.botvaibhav.dev/api/policy/rating?domain=${encodeURIComponent(cleanDom)}`
+    `http://localhost:8756/api/policy/rating?domain=${encodeURIComponent(cleanDom)}`
   ];
 
   for (const endpoint of endpoints) {
