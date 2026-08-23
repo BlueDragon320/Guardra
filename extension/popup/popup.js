@@ -263,21 +263,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Auto-Disable Cookies Toggle
   const autoCookieToggle = document.getElementById("toggle-auto-disable-cookies");
   if (autoCookieToggle) {
-    const storedAutoCookie = await chrome.storage.local.get("guardra_auto_disable_cookies");
-    autoCookieToggle.checked = storedAutoCookie.guardra_auto_disable_cookies !== false;
-
-    autoCookieToggle.addEventListener("change", async () => {
-      const enabled = autoCookieToggle.checked;
-      await chrome.storage.local.set({ guardra_auto_disable_cookies: enabled });
-
-      if (enabled) {
-        document.getElementById("btn-enforce-strict-cookies")?.click();
-      }
-    });
-  }
-
-  const autoCookieToggle = document.getElementById("toggle-auto-disable-cookies");
-  if (autoCookieToggle) {
     const storedAuto = await chrome.storage.local.get("guardra_auto_disable_cookies");
     autoCookieToggle.checked = storedAuto.guardra_auto_disable_cookies !== false;
 
@@ -286,15 +271,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       await chrome.storage.local.set({ guardra_auto_disable_cookies: enabled });
 
       if (enabled && currentRatingData?.domain) {
-        const tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
-        const tabUrl = tabs && tabs[0] ? tabs[0].url : `https://${currentRatingData.domain}`;
-        chrome.runtime.sendMessage({ 
-          type: "ENFORCE_STRICT_COOKIES", 
-          domain: currentRatingData.domain, 
-          url: tabUrl 
-        }, () => {
-          loadCookieGovernance(currentRatingData.domain, tabUrl);
-        });
+        document.getElementById("btn-enforce-strict-cookies")?.click();
       }
     });
   }
@@ -407,6 +384,23 @@ document.addEventListener("DOMContentLoaded", async () => {
       window.close();
     }
   });
+
+  // Toggle active cookies & trackers itemized list
+  const cookieToggleHeader = document.getElementById("cookie-items-toggle");
+  const cookieContainer = document.getElementById("cookie-items-container");
+  const cookieToggleIcon = document.getElementById("cookie-items-toggle-icon");
+  if (cookieToggleHeader && cookieContainer) {
+    cookieToggleHeader.addEventListener("click", () => {
+      const isHidden = cookieContainer.classList.contains("hidden");
+      if (isHidden) {
+        cookieContainer.classList.remove("hidden");
+        if (cookieToggleIcon) cookieToggleIcon.textContent = "▲";
+      } else {
+        cookieContainer.classList.add("hidden");
+        if (cookieToggleIcon) cookieToggleIcon.textContent = "▼";
+      }
+    });
+  }
 });
 
 async function loadActiveTabRating(forceRefresh = false) {
@@ -569,11 +563,15 @@ function loadCookieGovernance(domain, tabUrl) {
   const strictBtn = document.getElementById("btn-enforce-strict-cookies");
   const strictBtnText = document.getElementById("strict-btn-text");
   const statusMsg = document.getElementById("cookie-status-msg");
+  const trackerList = document.getElementById("cookie-items-list") || document.getElementById("cookie-tracker-list");
+  const totalBadge = document.getElementById("cookie-items-total-badge");
 
   if (!domain) {
     if (badge) badge.textContent = "Inactive";
     if (essentialEl) essentialEl.textContent = "-";
     if (trackingEl) trackingEl.textContent = "-";
+    if (trackerList) trackerList.innerHTML = "";
+    if (totalBadge) totalBadge.textContent = "0";
     return;
   }
 
@@ -587,6 +585,7 @@ function loadCookieGovernance(domain, tabUrl) {
 
     if (essentialEl) essentialEl.textContent = res.essential !== undefined ? res.essential : "1";
     if (trackingEl) trackingEl.textContent = res.tracking !== undefined ? res.tracking : "0";
+    if (totalBadge) totalBadge.textContent = res.cookies ? res.cookies.length : (res.total || 0);
 
     if (res.isEnforced || res.tracking === 0) {
       if (badge) {
@@ -606,6 +605,75 @@ function loadCookieGovernance(domain, tabUrl) {
         strictBtn.className = "strict-cookies-btn";
         strictBtnText.textContent = `🛡️ Optional Cookies Disabler (${res.tracking} Optional Found)`;
       }
+    }
+
+    if (trackerList && res.cookies) {
+      trackerList.innerHTML = "";
+      res.cookies.forEach(c => {
+        const card = document.createElement("div");
+        card.className = "cookie-item-card";
+        
+        const infoDiv = document.createElement("div");
+        infoDiv.className = "cookie-item-info";
+        
+        const nameEl = document.createElement("div");
+        nameEl.className = "cookie-item-name";
+        nameEl.textContent = c.name;
+        
+        const badgeEl = document.createElement("span");
+        badgeEl.className = `cookie-item-badge ${c.isTracking ? 'tracking' : 'essential'}`;
+        badgeEl.textContent = c.category || (c.isTracking ? "Analytics/Advertising" : "Essential");
+        nameEl.appendChild(badgeEl);
+        
+        const descEl = document.createElement("div");
+        descEl.className = "cookie-item-desc";
+        descEl.textContent = get3WordDescription(c.name, c.isTracking);
+        
+        infoDiv.appendChild(nameEl);
+        infoDiv.appendChild(descEl);
+        card.appendChild(infoDiv);
+        
+        if (c.isTracking) {
+          const actionDiv = document.createElement("div");
+          actionDiv.className = "cookie-item-action";
+          
+          const btn = document.createElement("button");
+          btn.className = "btn-disable-single-cookie";
+          btn.textContent = "Disable";
+          btn.onclick = () => {
+            btn.textContent = "Disabling...";
+            btn.disabled = true;
+            chrome.runtime.sendMessage({
+              type: "REMOVE_SINGLE_COOKIE",
+              cookie: c
+            }, (response) => {
+              if (response && response.success) {
+                btn.textContent = "✅ Disabled";
+                btn.classList.add("disabled");
+                card.classList.add("disabled-card");
+                
+                // Update tracking count
+                const currentVal = parseInt(trackingEl.textContent, 10);
+                if (!isNaN(currentVal) && currentVal > 0) {
+                  trackingEl.textContent = currentVal - 1;
+                }
+              } else {
+                btn.textContent = "Failed";
+                btn.disabled = false;
+              }
+            });
+          };
+          actionDiv.appendChild(btn);
+          card.appendChild(actionDiv);
+        } else {
+          const keptDiv = document.createElement("div");
+          keptDiv.className = "cookie-item-kept";
+          keptDiv.textContent = "Protected";
+          card.appendChild(keptDiv);
+        }
+        
+        trackerList.appendChild(card);
+      });
     }
   });
 }
@@ -767,4 +835,29 @@ function sendNoticeEmail() {
   const body = document.getElementById("modal-notice-preview").textContent;
   const mailtoUrl = `mailto:${gEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   window.open(mailtoUrl, "_blank");
+}
+
+const COOKIE_DESCRIPTIONS = {
+  "_ga": "Tracks visitor site usage",
+  "_gid": "Tracks visitor site usage",
+  "_fbp": "Tracks ad conversions (Meta)",
+  "_hjSession": "Records screen user sessions",
+  "_hjSessionUser": "Records screen user sessions",
+  "session_id": "Maintains your login session",
+  "JSESSIONID": "Maintains your login session",
+  "__cf_bm": "Cloudflare bot protection",
+  "cf_clearance": "Cloudflare bot protection",
+  "PHPSESSID": "Maintains your login session",
+  "NID": "Google personalized advertising",
+  "IDE": "Google DoubleClick advertising",
+  "MUID": "Microsoft Bing advertising",
+  "bcookie": "LinkedIn browser identifier",
+  "li_sugr": "LinkedIn browser identifier"
+};
+
+function get3WordDescription(name, isTracking) {
+  for (const [key, desc] of Object.entries(COOKIE_DESCRIPTIONS)) {
+    if (name.includes(key)) return desc;
+  }
+  return isTracking ? "Tracks across websites" : "Maintains basic functionality";
 }

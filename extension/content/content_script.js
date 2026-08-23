@@ -384,13 +384,9 @@
             <a href="mailto:${grievanceEmail}?subject=STATUTORY DATA ERASURE NOTICE under DPDP Act 2023 Section 12&body=To the Grievance Officer of ${domain},%0D%0A%0D%0APlease execute the erasure of all personal data concerning my account under Section 12 of the DPDP Act 2023." class="secondary-btn" target="_blank" style="text-align:center;">
               ✉️ Generate DPDP Deletion Notice
             </a>
-            <div style="display:flex; justify-content:space-between; align-items:center; background:#18181b; border:1px solid #27272a; border-radius:4px; padding:6px 8px; font-size:10px; margin-top:2px;">
-              <div>
-                <div style="font-weight:600; color:#f4f4f5;">Auto-Disable Tracking</div>
-                <div style="font-size:9px; color:#71717a;">Auto-prune optional cookies</div>
-              </div>
-              <input type="checkbox" id="guardra-chk-auto-cookies" style="cursor:pointer;" />
-            </div>
+            <button id="guardra-btn-auto-disable-cookies" style="background:none; border:none; color:#71717a; font-size:9px; cursor:pointer; text-align:center; padding:3px; margin-top:2px; text-decoration:underline;">
+              [Status: Loading...] Always Auto-Disable Non-Essential Cookies
+            </button>
             <button id="guardra-btn-disable-alwayson" style="background:none; border:none; color:#71717a; font-size:9px; cursor:pointer; text-align:center; padding:3px; margin-top:2px; text-decoration:underline;">
               🔕 Turn Off Always-On Badge on Websites
             </button>
@@ -398,21 +394,25 @@
         </div>
       `;
 
-      const autoChk = shadowRoot.getElementById("guardra-chk-auto-cookies");
-      if (autoChk) {
+      const autoBtn = shadowRoot.getElementById("guardra-btn-auto-disable-cookies");
+      if (autoBtn) {
         chrome.storage.local.get("guardra_auto_disable_cookies", (st) => {
-          autoChk.checked = st.guardra_auto_disable_cookies !== false;
+          const isAuto = st.guardra_auto_disable_cookies !== false;
+          autoBtn.textContent = isAuto ? "✅ Always Auto-Disable Non-Essential Cookies" : "⚪ Always Auto-Disable Non-Essential Cookies";
         });
-        autoChk.addEventListener("change", () => {
-          const enabled = autoChk.checked;
-          chrome.storage.local.set({ guardra_auto_disable_cookies: enabled });
-          if (enabled) {
-            chrome.runtime.sendMessage({
-              type: "ENFORCE_STRICT_COOKIES",
-              domain: domain,
-              url: window.location.href
-            });
-          }
+        autoBtn.addEventListener("click", () => {
+          chrome.storage.local.get("guardra_auto_disable_cookies", (st) => {
+            const enabled = st.guardra_auto_disable_cookies === false;
+            chrome.storage.local.set({ guardra_auto_disable_cookies: enabled });
+            autoBtn.textContent = enabled ? "✅ Always Auto-Disable Non-Essential Cookies" : "⚪ Always Auto-Disable Non-Essential Cookies";
+            if (enabled) {
+              chrome.runtime.sendMessage({
+                type: "ENFORCE_STRICT_COOKIES",
+                domain: domain,
+                url: window.location.href
+              });
+            }
+          });
         });
       }
 
@@ -453,7 +453,13 @@
 
   function updateFloatingPill(statusText) {
     if (shadowRoot && !isExpanded) {
-      renderFloatingPill(currentRating);
+      const pill = shadowRoot.getElementById("guardra-pill");
+      if (pill) {
+        pill.innerHTML = `<span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#10b981;"></span><span style="font-weight:600; color:#34d399;">${statusText}</span>`;
+        setTimeout(() => {
+          if (shadowRoot && !isExpanded) renderFloatingPill(currentRating);
+        }, 3000);
+      }
     }
   }
 
@@ -562,5 +568,8 @@
     scanTrackers();
     automateCookieRejection();
     sendTelemetry();
+    if (currentRating) {
+      renderFloatingPill(currentRating);
+    }
   }, 2500);
 })();

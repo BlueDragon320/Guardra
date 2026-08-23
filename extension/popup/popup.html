@@ -172,6 +172,26 @@
         <span id="cookie-status-text">✅ Optional cookies disabled! Only necessary preserved.</span>
         <button class="cookie-reload-btn" id="btn-cookie-reload">Reload Tab ↻</button>
       </div>
+
+      <!-- Itemized Active Trackers & Cookies List with 3-4 Word Descriptions & Individual Disable Buttons -->
+      <div class="cookie-items-wrapper">
+        <div class="cookie-items-header" id="cookie-items-toggle">
+          <div class="cookie-items-header-title">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 12a9 9 0 0 1-9 9m9-9a9 9 0 0 0-9-9m9 9H3m9 9a9 9 0 0 1-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9"/>
+            </svg>
+            <span>Active Trackers & Cookies</span>
+            <span class="cookie-items-badge" id="cookie-items-total-badge">0</span>
+          </div>
+          <span class="cookie-items-toggle-icon" id="cookie-items-toggle-icon">▼</span>
+        </div>
+
+        <div class="cookie-items-container" id="cookie-items-container">
+          <div class="cookie-items-list" id="cookie-items-list">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- SCROLLABLE DATA BREACH HISTORY SECTION AT BOTTOM -->

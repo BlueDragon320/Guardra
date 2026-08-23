@@ -590,15 +590,27 @@ async function auditDomainCookies(domain, tabUrl) {
   let tracking = 0;
   const trackingNames = [];
   const essentialNames = [];
+  const detailedCookies = [];
 
   cookies.forEach(c => {
-    if (isEssentialCookie(c)) {
-      essential++;
-      essentialNames.push(c.name);
-    } else {
+    const isTracking = !isEssentialCookie(c);
+    if (isTracking) {
       tracking++;
       trackingNames.push(c.name);
+    } else {
+      essential++;
+      essentialNames.push(c.name);
     }
+    detailedCookies.push({
+      name: c.name,
+      domain: c.domain,
+      isTracking: isTracking,
+      category: isTracking ? "Tracking/Advertising" : "Strictly Necessary",
+      value: c.value,
+      storeId: c.storeId,
+      path: c.path,
+      secure: c.secure
+    });
   });
 
   const cleanDom = domain.replace(/^www\./, "");
@@ -613,7 +625,8 @@ async function auditDomainCookies(domain, tabUrl) {
     tracking,
     isEnforced,
     trackingNames,
-    essentialNames
+    essentialNames,
+    cookies: detailedCookies
   };
 }
 
@@ -714,6 +727,34 @@ chrome.cookies.onChanged.addListener(async (changeInfo) => {
 
 // Listen for messages from content script or popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === "REMOVE_SINGLE_COOKIE") {
+    const { domain, name, storeId, path, secure, url } = message;
+    let cookieUrl = url;
+    if (!cookieUrl && domain) {
+      const cleanDom = domain.replace(/^\./, "");
+      const protocol = secure ? "https:" : "http:";
+      cookieUrl = `${protocol}//${cleanDom}${path || "/"}`;
+    }
+    
+    if (cookieUrl && name) {
+      const removeDetails = {
+        url: cookieUrl,
+        name: name
+      };
+      if (storeId !== undefined) removeDetails.storeId = storeId;
+
+      chrome.cookies.remove(removeDetails).then((removedCookie) => {
+        sendResponse({ success: !!removedCookie, name: name });
+      }).catch(err => {
+        sendResponse({ success: false, error: err.message });
+      });
+      return true;
+    } else {
+      sendResponse({ success: false, error: "Missing url or domain/name" });
+      return false;
+    }
+  }
+
   if (message.type === "GET_COOKIE_AUDIT") {
     const domain = message.domain;
     const tabUrl = message.url;
