@@ -227,10 +227,17 @@
         border: none;
         color: #71717a;
         cursor: pointer;
-        font-size: 12px;
+        font-size: 18px;
+        line-height: 1;
+        padding: 2px 6px;
         margin-left: 4px;
+        transition: all 0.2s ease;
       }
-      .close-btn:hover { color: #f4f4f5; }
+      .close-btn:hover {
+        opacity: 1;
+        color: #fff;
+        transform: scale(1.1);
+      }
 
       /* Expanded Panel */
       .panel-container {
@@ -320,6 +327,19 @@
       });
     } else {
       const breaches = currentRating?.breaches || [];
+      const activeCookies = [];
+      try {
+        if (document.cookie) {
+          document.cookie.split(";").forEach(c => {
+            const name = c.split("=")[0].trim();
+            if (name) activeCookies.push(name);
+          });
+        }
+        Object.keys(localStorage).forEach(k => {
+          if (!activeCookies.includes(k)) activeCookies.push(k);
+        });
+      } catch (e) {}
+
       const breachHtml = breaches.length > 0 ? `
         <div class="section-card" style="border-color: rgba(239,68,68,0.4); background: rgba(239,68,68,0.08);">
           <div class="meta-row" style="color: #f87171; font-weight:600;">
@@ -365,12 +385,25 @@
 
           ${breachHtml}
 
-          <div class="section-card">
-            <div class="meta-row">
-              <span>Trackers Detected (${trackerCount})</span>
+          <div class="section-card" style="padding: 10px; gap: 6px;">
+            <div class="meta-row" style="font-weight: 700; font-size: 11px;">
+              <span>⚡ Active Script Trackers (${detectedTrackers.length})</span>
             </div>
-            <div style="font-size:10px; color:#71717a; margin-top:2px;">
-              ${detectedTrackers.length > 0 ? detectedTrackers.map(t => t.name).join(", ") : "Analytics Pixels"}
+            <div style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px;">
+              ${detectedTrackers.length > 0 
+                ? detectedTrackers.map(t => `<span style="display: inline-flex; align-items: center; font-weight: 600; font-size: 9.5px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.35); color: #f87171; padding: 3px 8px; border-radius: 4px;">${t.name}</span>`).join("") 
+                : `<span style="color: #71717a; font-size: 10px; font-style: italic;">None detected on page</span>`}
+            </div>
+          </div>
+
+          <div class="section-card" style="padding: 10px; gap: 6px;">
+            <div class="meta-row" style="font-weight: 700; font-size: 11px;">
+              <span>🍪 Active Cookies & Storage (${activeCookies.length})</span>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px;">
+              ${activeCookies.length > 0 
+                ? activeCookies.map(c => `<span style="display: inline-flex; align-items: center; font-weight: 600; font-family: monospace; font-size: 9.5px; background: #18181b; border: 1px solid #3f3f46; color: #f4f4f5; padding: 3px 8px; border-radius: 4px;">${c}</span>`).join("") 
+                : `<span style="color: #71717a; font-size: 10px; font-style: italic;">No cookies stored</span>`}
             </div>
           </div>
 

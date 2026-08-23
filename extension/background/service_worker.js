@@ -459,75 +459,6 @@ async function fetchSiteRatingRaw(domain) {
   };
 }
 
-async function updateTabState(tabId, url) {
-  const domain = extractDomain(url);
-  if (!domain) {
-    chrome.action.setBadgeText({ tabId, text: "" });
-    return;
-  }
-
-  const rating = await fetchSiteRating(domain);
-  const colorMap = {
-    green: "#10b981",
-    amber: "#f59e0b",
-    red: "#ef4444"
-  };
-
-  const badgeColor = colorMap[rating.color] || (rating.score >= 70 ? "#10b981" : (rating.score >= 50 ? "#f59e0b" : "#ef4444"));
-  updateBadge(tabId, rating.grade, badgeColor);
-
-  await chrome.storage.local.set({
-    [`rating_${tabId}`]: rating,
-    currentTabDomain: domain,
-    currentTabRating: rating
-  });
-}
-
-chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-  if (changeInfo.status === "complete" && tab.url) {
-    updateTabState(tabId, tab.url);
-
-    // If auto-disable non-essential cookies is active or domain is in strict mode, enforce automatically
-    const domain = extractDomain(tab.url);
-    if (domain) {
-      const stored = await chrome.storage.local.get(["guardra_auto_disable_cookies", `strict_cookies_${domain}`]);
-      if (stored.guardra_auto_disable_cookies !== false || stored[`strict_cookies_${domain}`]?.enforced) {
-        enforceStrictCookies(domain, tab.url);
-      }
-    }
-  }
-});
-
-// Continuous real-time interceptor: instantly purge tracking cookies as soon as they are written by third-party scripts
-chrome.cookies.onChanged.addListener(async (changeInfo) => {
-  if (changeInfo.removed) return;
-  const cookie = changeInfo.cookie;
-  if (!cookie || !cookie.domain) return;
-
-  const cleanDom = cookie.domain.replace(/^\./, "").toLowerCase();
-  const stored = await chrome.storage.local.get(["guardra_auto_disable_cookies", `strict_cookies_${cleanDom}`]);
-  const isAutoEnabled = stored.guardra_auto_disable_cookies !== false || stored[`strict_cookies_${cleanDom}`]?.enforced;
-
-  if (isAutoEnabled && !isEssentialCookie(cookie)) {
-    const protocol = cookie.secure ? "https:" : "http:";
-    const cookieUrl = `${protocol}//${cleanDom}${cookie.path}`;
-    try {
-      await chrome.cookies.remove({
-        url: cookieUrl,
-        name: cookie.name,
-        storeId: cookie.storeId
-      });
-    } catch (e) {}
-  }
-});
-
-chrome.tabs.onActivated.addListener(async (activeInfo) => {
-  const tab = await chrome.tabs.get(activeInfo.tabId);
-  if (tab && tab.url) {
-    updateTabState(activeInfo.tabId, tab.url);
-  }
-});
-
 // --- Cookie Classification & Governance Engine ---
 const STRICT_ESSENTIAL_COOKIE_PATTERNS = [
   /^(sess|session|sid|token|auth|jwt|bearer|login|user_session|secure_session)/i,
@@ -584,7 +515,7 @@ async function getDomainCookies(domain, tabUrl) {
   return Array.from(cookieMap.values());
 }
 
-async function auditDomainCookies(domain, tabUrl) {
+async function auditDomainCookies(domain, tabUrl, tabId) {
   const cookies = await getDomainCookies(domain, tabUrl);
   let essential = 0;
   let tracking = 0;
@@ -593,19 +524,30 @@ async function auditDomainCookies(domain, tabUrl) {
   const detailedCookies = [];
 
   cookies.forEach(c => {
-    const isTracking = !isEssentialCookie(c);
-    if (isTracking) {
-      tracking++;
-      trackingNames.push(c.name);
-    } else {
+    const isEss = isEssentialCookie(c);
+    if (isEss) {
       essential++;
       essentialNames.push(c.name);
+    } else {
+      tracking++;
+      trackingNames.push(c.name);
     }
+
+    let category = isEss ? "Essential Cookie" : "Analytics/Advertising";
+    const nameLower = (c.name || "").toLowerCase();
+    if (nameLower.includes("ad") || nameLower.startsWith("_fb") || nameLower.includes("criteo") || nameLower.startsWith("_tt") || nameLower.includes("nid") || nameLower.includes("ide")) {
+      category = "Advertising";
+    } else if (nameLower.startsWith("_ga") || nameLower.startsWith("_gi") || nameLower.includes("analytics") || nameLower.includes("hotjar") || nameLower.includes("clarity")) {
+      category = "Analytics";
+    } else if (nameLower.includes("session") || nameLower.includes("auth") || nameLower.includes("login") || nameLower.includes("cart") || nameLower.includes("csrf")) {
+      category = "Essential";
+    }
+
     detailedCookies.push({
       name: c.name,
       domain: c.domain,
-      isTracking: isTracking,
-      category: isTracking ? "Tracking/Advertising" : "Strictly Necessary",
+      isTracking: !isEss,
+      category: category,
       value: c.value,
       storeId: c.storeId,
       path: c.path,
@@ -613,20 +555,34 @@ async function auditDomainCookies(domain, tabUrl) {
     });
   });
 
-  const cleanDom = domain.replace(/^www\./, "");
+  const cleanDom = (domain || "").replace(/^www\./, "");
   const storageKey = `strict_cookies_${cleanDom}`;
-  const stored = await chrome.storage.local.get([storageKey, "guardra_auto_disable_cookies"]);
-  const isEnforced = !!stored[storageKey]?.enforced || !!stored.guardra_auto_disable_cookies;
+  const stored = await chrome.storage.local.get(storageKey);
+  const isEnforced = !!stored[storageKey]?.enforced;
+
+  let trackers = [];
+  if (tabId) {
+    const sessionRes = await chrome.storage.local.get(`tab_session_${tabId}`);
+    const session = sessionRes[`tab_session_${tabId}`] || {};
+    trackers = session.trackers_detected || [];
+  }
+  if (!trackers || trackers.length === 0) {
+    const actRes = await chrome.storage.local.get(`activity_${cleanDom}`);
+    if (actRes[`activity_${cleanDom}`]?.trackers_detected) {
+      trackers = actRes[`activity_${cleanDom}`].trackers_detected;
+    }
+  }
 
   return {
     domain: cleanDom,
-    total: cookies.length,
+    total: cookies.length + (trackers ? trackers.length : 0),
     essential,
     tracking,
     isEnforced,
     trackingNames,
     essentialNames,
-    cookies: detailedCookies
+    cookies: detailedCookies,
+    trackers: trackers || []
   };
 }
 
@@ -758,7 +714,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "GET_COOKIE_AUDIT") {
     const domain = message.domain;
     const tabUrl = message.url;
-    auditDomainCookies(domain, tabUrl).then(stats => {
+    const tabId = message.tabId;
+    auditDomainCookies(domain, tabUrl, tabId).then(stats => {
       sendResponse(stats);
     }).catch(err => {
       sendResponse({ error: err.message, total: 0, essential: 0, tracking: 0 });
@@ -817,6 +774,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // Telemetry sync if remote API configured
   if (message.type === "BROWSER_ACTIVITY") {
     const data = message.data;
+    const tabId = sender.tab ? sender.tab.id : null;
+    if (tabId && data.trackers_detected) {
+      chrome.storage.local.get(`tab_session_${tabId}`).then(res => {
+        const session = res[`tab_session_${tabId}`] || {};
+        session.trackers_detected = data.trackers_detected;
+        chrome.storage.local.set({ [`tab_session_${tabId}`]: session });
+      });
+    }
     getApiBase().then((apiBase) => {
       if (apiBase && apiBase.startsWith("http")) {
         fetch(`${apiBase}/api/hub/telemetry/active-session`, {

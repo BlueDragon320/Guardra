@@ -424,7 +424,7 @@ async function loadActiveTabRating(forceRefresh = false) {
         chrome.runtime.sendMessage({ type: "GET_CURRENT_RATING", domain: domain }, (res) => {
           if (res && res.rating) {
             currentRatingData = res.rating;
-            renderPopup(res.rating);
+            renderPopup(res.rating, activeTab.url, activeTab.id);
           } else {
             const fallbackProfile = {
               domain: domain,
@@ -448,7 +448,7 @@ async function loadActiveTabRating(forceRefresh = false) {
               }
             };
             currentRatingData = fallbackProfile;
-            renderPopup(fallbackProfile);
+            renderPopup(fallbackProfile, activeTab.url, activeTab.id);
           }
         });
         return;
@@ -459,7 +459,7 @@ async function loadActiveTabRating(forceRefresh = false) {
   });
 }
 
-function renderPopup(data) {
+function renderPopup(data, tabUrl, tabId) {
   document.getElementById("site-name").textContent = data.name || data.domain;
   document.getElementById("site-domain").textContent = data.domain;
 
@@ -498,7 +498,7 @@ function renderPopup(data) {
   document.getElementById("summary-text").textContent = data.summary;
 
   // Render Cookie Governance
-  loadCookieGovernance(data.domain);
+  loadCookieGovernance(data.domain, tabUrl, tabId);
 
   // Render Breach History
   const breaches = (data.breaches && data.breaches.length > 0) ? data.breaches : getClientBreaches(data.domain);
@@ -556,7 +556,7 @@ function renderPopup(data) {
   }
 }
 
-function loadCookieGovernance(domain, tabUrl) {
+function loadCookieGovernance(domain, tabUrl, tabId) {
   const badge = document.getElementById("cookie-gov-badge");
   const essentialEl = document.getElementById("cookie-essential-count");
   const trackingEl = document.getElementById("cookie-tracking-count");
@@ -575,7 +575,7 @@ function loadCookieGovernance(domain, tabUrl) {
     return;
   }
 
-  chrome.runtime.sendMessage({ type: "GET_COOKIE_AUDIT", domain, url: tabUrl }, (res) => {
+  chrome.runtime.sendMessage({ type: "GET_COOKIE_AUDIT", domain, url: tabUrl, tabId }, (res) => {
     if (chrome.runtime.lastError || !res) {
       if (badge) badge.textContent = "Audited";
       if (essentialEl) essentialEl.textContent = "3";
@@ -585,7 +585,7 @@ function loadCookieGovernance(domain, tabUrl) {
 
     if (essentialEl) essentialEl.textContent = res.essential !== undefined ? res.essential : "1";
     if (trackingEl) trackingEl.textContent = res.tracking !== undefined ? res.tracking : "0";
-    if (totalBadge) totalBadge.textContent = res.cookies ? res.cookies.length : (res.total || 0);
+    if (totalBadge) totalBadge.textContent = (res.cookies ? res.cookies.length : 0) + (res.trackers ? res.trackers.length : 0);
 
     if (res.isEnforced || res.tracking === 0) {
       if (badge) {
@@ -607,9 +607,44 @@ function loadCookieGovernance(domain, tabUrl) {
       }
     }
 
-    if (trackerList && res.cookies) {
+    if (trackerList && (res.cookies || res.trackers)) {
       trackerList.innerHTML = "";
-      res.cookies.forEach(c => {
+      const trackersToRender = res.trackers || [];
+      const cookiesToRender = res.cookies || [];
+      
+      trackersToRender.forEach(t => {
+        const card = document.createElement("div");
+        card.className = "cookie-item-card";
+        
+        const infoDiv = document.createElement("div");
+        infoDiv.className = "cookie-item-info";
+        
+        const nameEl = document.createElement("div");
+        nameEl.className = "cookie-item-name";
+        nameEl.textContent = t.name || "Tracker Script";
+        
+        const badgeEl = document.createElement("span");
+        badgeEl.className = "cookie-item-badge tracking";
+        badgeEl.textContent = "Script Tracker";
+        nameEl.appendChild(badgeEl);
+        
+        const descEl = document.createElement("div");
+        descEl.className = "cookie-item-desc";
+        descEl.textContent = "Third-Party Telemetry Script";
+        
+        infoDiv.appendChild(nameEl);
+        infoDiv.appendChild(descEl);
+        card.appendChild(infoDiv);
+        
+        const keptDiv = document.createElement("div");
+        keptDiv.className = "cookie-item-kept";
+        keptDiv.textContent = "Detected";
+        card.appendChild(keptDiv);
+        
+        trackerList.appendChild(card);
+      });
+
+      cookiesToRender.forEach(c => {
         const card = document.createElement("div");
         card.className = "cookie-item-card";
         
@@ -622,7 +657,7 @@ function loadCookieGovernance(domain, tabUrl) {
         
         const badgeEl = document.createElement("span");
         badgeEl.className = `cookie-item-badge ${c.isTracking ? 'tracking' : 'essential'}`;
-        badgeEl.textContent = c.category || (c.isTracking ? "Analytics/Advertising" : "Essential");
+        badgeEl.textContent = c.category || (c.isTracking ? "Analytics/Advertising" : "Essential Cookie");
         nameEl.appendChild(badgeEl);
         
         const descEl = document.createElement("div");
@@ -652,7 +687,6 @@ function loadCookieGovernance(domain, tabUrl) {
                 btn.classList.add("disabled");
                 card.classList.add("disabled-card");
                 
-                // Update tracking count
                 const currentVal = parseInt(trackingEl.textContent, 10);
                 if (!isNaN(currentVal) && currentVal > 0) {
                   trackingEl.textContent = currentVal - 1;
