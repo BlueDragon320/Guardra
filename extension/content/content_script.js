@@ -384,8 +384,9 @@
             <a href="mailto:${grievanceEmail}?subject=STATUTORY DATA ERASURE NOTICE under DPDP Act 2023 Section 12&body=To the Grievance Officer of ${domain},%0D%0A%0D%0APlease execute the erasure of all personal data concerning my account under Section 12 of the DPDP Act 2023." class="secondary-btn" target="_blank" style="text-align:center;">
               ✉️ Generate DPDP Deletion Notice
             </a>
-            <button id="guardra-btn-auto-disable-cookies" style="background:none; border:none; color:#71717a; font-size:9px; cursor:pointer; text-align:center; padding:3px; margin-top:2px; text-decoration:underline;">
-              🛡️ Auto-Disable Non-Essential Cookies (All Sites)
+            <button id="guardra-btn-auto-disable-cookies" style="background:none; border:none; color:#71717a; font-size:9px; cursor:pointer; text-align:center; padding:3px; margin-top:2px;">
+              <b>[Status: Loading...] Auto-Disable Tracking (All Sites)</b><br/>
+              <span style="font-size: 8px; color: #a1a1aa;">Auto-prunes optional cookies across all websites</span>
             </button>
             <button id="guardra-btn-disable-alwayson" style="background:none; border:none; color:#71717a; font-size:9px; cursor:pointer; text-align:center; padding:3px; margin-top:2px; text-decoration:underline;">
               🔕 Turn Off Always-On Badge on Websites
@@ -398,15 +399,17 @@
       if (autoBtn) {
         chrome.storage.local.get("guardra_auto_disable_cookies", (st) => {
           const isAuto = st.guardra_auto_disable_cookies !== false;
-          autoBtn.textContent = isAuto ? "✅ Auto-Disable Cookies (All Sites): ON" : "⚪ Auto-Disable Cookies (All Sites): OFF";
-          autoBtn.style.color = isAuto ? "#34d399" : "#71717a";
+          autoBtn.innerHTML = isAuto 
+            ? `<b>✅ Auto-Disable Tracking (All Sites)</b><br/><span style="font-size: 8px; color: #a1a1aa;">Auto-prunes optional cookies across all websites</span>`
+            : `<b>⚪ Auto-Disable Tracking (All Sites)</b><br/><span style="font-size: 8px; color: #a1a1aa;">Auto-prunes optional cookies across all websites</span>`;
         });
         autoBtn.addEventListener("click", () => {
           chrome.storage.local.get("guardra_auto_disable_cookies", (st) => {
             const enabled = st.guardra_auto_disable_cookies === false;
             chrome.storage.local.set({ guardra_auto_disable_cookies: enabled });
-            autoBtn.textContent = enabled ? "✅ Auto-Disable Cookies (All Sites): ON" : "⚪ Auto-Disable Cookies (All Sites): OFF";
-            autoBtn.style.color = enabled ? "#34d399" : "#71717a";
+            autoBtn.innerHTML = enabled 
+              ? `<b>✅ Auto-Disable Tracking (All Sites)</b><br/><span style="font-size: 8px; color: #a1a1aa;">Auto-prunes optional cookies across all websites</span>`
+              : `<b>⚪ Auto-Disable Tracking (All Sites)</b><br/><span style="font-size: 8px; color: #a1a1aa;">Auto-prunes optional cookies across all websites</span>`;
             if (enabled) {
               chrome.runtime.sendMessage({
                 type: "ENFORCE_STRICT_COOKIES",
