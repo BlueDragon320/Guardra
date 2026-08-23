@@ -42,6 +42,7 @@ import {
 export default function AdminDashboard({ onScanDomain }) {
   const [activeSubTab, setActiveSubTab] = useState("websites"); // "websites" | "cookies" | "top5000" | "audit"
   const [stats, setStats] = useState(null);
+  const [backendConnected, setBackendConnected] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -106,8 +107,10 @@ export default function AdminDashboard({ onScanDomain }) {
     try {
       const data = await getAdminStats();
       setStats(data);
+      setBackendConnected(true);
     } catch (err) {
       console.error(err);
+      setBackendConnected(false);
     }
   };
 
@@ -125,8 +128,8 @@ export default function AdminDashboard({ onScanDomain }) {
         sourceFilter: sourceFilter || undefined,
         search: search || undefined
       });
-      setWebsites(data.items || []);
-      setTotalWebsites(data.total || 0);
+      setWebsites(data?.items || []);
+      setTotalWebsites(data?.total || 0);
     } catch (err) {
       setError(err.message || "Failed to load websites");
     } finally {
@@ -140,6 +143,7 @@ export default function AdminDashboard({ onScanDomain }) {
       setCookieRules(data || []);
     } catch (err) {
       console.error(err);
+      setCookieRules([]);
     }
   };
 
@@ -155,9 +159,10 @@ export default function AdminDashboard({ onScanDomain }) {
   const loadAuditLogs = async () => {
     try {
       const data = await getAdminAuditLog(1, 50);
-      setAuditLogs(data.items || []);
+      setAuditLogs(data?.items || []);
     } catch (err) {
       console.error(err);
+      setAuditLogs([]);
     }
   };
 
@@ -295,6 +300,29 @@ export default function AdminDashboard({ onScanDomain }) {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
+      {/* Connection Status Banner */}
+      {!backendConnected ? (
+        <div className="bg-orange-500/10 border border-orange-500/30 text-orange-600 dark:text-orange-400 px-4 py-3 rounded-md text-sm flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🟠</span>
+            <span className="font-medium">Standalone / Offline Mode (Start backend on port 8000 for live pipeline)</span>
+          </div>
+          <button onClick={() => { loadStats(); loadWebsites(); }} className="px-3 py-1 bg-orange-500 hover:bg-orange-600 text-white rounded text-xs transition-colors">
+            Retry Connection
+          </button>
+        </div>
+      ) : (
+        <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 px-4 py-2 rounded-md text-xs flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-sm">🟢</span>
+            <span className="font-medium">Live Backend Connected</span>
+          </div>
+          <button onClick={() => { loadStats(); loadWebsites(); }} className="px-2 py-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-700 dark:text-emerald-300 rounded transition-colors flex items-center gap-1">
+            <RefreshCw className="w-3 h-3" /> Refresh
+          </button>
+        </div>
+      )}
+
       {/* Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-200 dark:border-[#27272a]">
         <div>
@@ -308,6 +336,17 @@ export default function AdminDashboard({ onScanDomain }) {
         </div>
 
         <div className="flex items-center gap-2">
+          {stats?.is_fallback ? (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30" title="Backend on port 8000 offline. Running in standalone fallback mode.">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+              <span>Standalone / Offline Mode</span>
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              <span>Live Server Connected</span>
+            </span>
+          )}
           <button
             onClick={() => setShowAddModal(true)}
             className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-xs font-medium flex items-center gap-1.5 transition-colors shadow-sm"
@@ -524,14 +563,14 @@ export default function AdminDashboard({ onScanDomain }) {
                         Loading websites data...
                       </td>
                     </tr>
-                  ) : websites.length === 0 ? (
+                  ) : (websites || []).length === 0 ? (
                     <tr>
                       <td colSpan="7" className="px-4 py-8 text-center text-zinc-500">
                         No websites match your filter.
                       </td>
                     </tr>
                   ) : (
-                    websites.map((site) => (
+                    (websites || []).map((site) => (
                       <tr key={site.domain} className="hover:bg-zinc-50 dark:hover:bg-[#18181b] transition-colors">
                         <td className="px-4 py-2.5">
                           <button
@@ -592,7 +631,7 @@ export default function AdminDashboard({ onScanDomain }) {
 
             {/* Pagination Controls */}
             <div className="px-4 py-2.5 border-t border-zinc-200 dark:border-[#27272a] bg-zinc-50 dark:bg-[#18181b] flex items-center justify-between text-xs text-zinc-500">
-              <span>Showing {websites.length} of {totalWebsites} websites</span>
+              <span>Showing {(websites || []).length} of {totalWebsites} websites</span>
               <div className="flex items-center gap-2">
                 <button
                   disabled={page <= 1}
@@ -644,7 +683,7 @@ export default function AdminDashboard({ onScanDomain }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-200 dark:divide-[#27272a]">
-                {cookieRules.map((rule) => (
+                {(cookieRules || []).map((rule) => (
                   <tr key={rule.id}>
                     <td className="px-4 py-2.5 font-mono font-bold text-zinc-900 dark:text-zinc-100">
                       {rule.cookie_pattern}
@@ -750,7 +789,7 @@ export default function AdminDashboard({ onScanDomain }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-200 dark:divide-[#27272a]">
-              {auditLogs.map((log) => (
+              {(auditLogs || []).map((log) => (
                 <tr key={log.id}>
                   <td className="px-4 py-2 font-mono text-zinc-400 text-[11px]">
                     {log.performed_at ? log.performed_at.slice(0, 19).replace("T", " ") : ""}
