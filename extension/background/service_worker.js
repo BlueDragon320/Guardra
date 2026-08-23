@@ -469,11 +469,11 @@ const STRICT_ESSENTIAL_COOKIE_PATTERNS = [
 ];
 
 const KNOWN_TRACKER_COOKIE_PATTERNS = [
-  /^(_ga|_gid|_gat|__utm|_gcl_|_gac_|1P_JAR|NID|ANID|IDE|DSID)/i,
-  /^(_fbp|_fbc|fr|tr|datr|sb|c_user|xs|wd)/i,
-  /^(_tt_enable_cookie|_ttp|_ttp_|personalization_id|muc_ads)/i,
-  /^(_clck|_clsk|_uetsid|_uetvid|MUID|SRM_B|MR)/i,
-  /^(cto_|criteo|_hjSession|_hjIncludedIn|_hjTLDTest|_hjid|mp_|mixpanel|amplitude|amplitude_id)/i
+  /^(_ga|_gid|_gat|_gcl|__utm|gtag|gads|1P_JAR|NID|DSID|IDE)/i,
+  /^(_fbp|_fbc|datr|sb|fr|c_user|xs|act|presence)/i,
+  /^(_ttp|_tt)/i,
+  /^(_clck|_clsk|MUID)/i,
+  /^(cto_|_hj)/i
 ];
 
 function isEssentialCookie(cookie) {
@@ -706,9 +706,47 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       });
       return true;
     } else {
-      sendResponse({ success: false, error: "Missing url or domain/name" });
       return false;
     }
+  }
+
+  if (message.type === "BLOCK_TRACKER_SCRIPT") {
+    const { trackerName, domain, url } = message;
+    const cleanDom = (domain || "").replace(/^www\./, "");
+    
+    let patternRegex = null;
+    const lower = (trackerName || "").toLowerCase();
+    if (lower.includes("meta") || lower.includes("facebook")) {
+      patternRegex = /^(_fbp|_fbc|fr|tr|datr|sb|c_user|xs|wd)/i;
+    } else if (lower.includes("google") || lower.includes("analytics")) {
+      patternRegex = /^(_ga|_gid|_gat|__utm|_gcl_|_gac_|1P_JAR|NID|ANID|IDE|DSID)/i;
+    } else if (lower.includes("criteo")) {
+      patternRegex = /^(cto_|criteo)/i;
+    } else if (lower.includes("tiktok")) {
+      patternRegex = /^(_tt_enable_cookie|_ttp)/i;
+    } else if (lower.includes("hotjar")) {
+      patternRegex = /^(_hj)/i;
+    } else if (lower.includes("clarity")) {
+      patternRegex = /^(_clck|_clsk|MUID)/i;
+    }
+
+    if (patternRegex) {
+      chrome.cookies.getAll({ domain: cleanDom }).then(cookies => {
+        cookies.forEach(c => {
+          if (patternRegex.test(c.name)) {
+            const protocol = c.secure ? "https:" : "http:";
+            chrome.cookies.remove({
+              url: `${protocol}//${cleanDom}${c.path}`,
+              name: c.name,
+              storeId: c.storeId
+            }).catch(() => {});
+          }
+        });
+      }).catch(() => {});
+    }
+
+    sendResponse({ success: true, trackerName });
+    return true;
   }
 
   if (message.type === "GET_COOKIE_AUDIT") {

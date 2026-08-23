@@ -623,23 +623,51 @@ function loadCookieGovernance(domain, tabUrl, tabId) {
         nameEl.className = "cookie-item-name";
         nameEl.textContent = t.name || "Tracker Script";
         
+        const isMeta = (t.name || "").toLowerCase().includes("meta") || (t.name || "").toLowerCase().includes("facebook");
+        const isGoogle = (t.name || "").toLowerCase().includes("google") || (t.name || "").toLowerCase().includes("analytics");
+        
         const badgeEl = document.createElement("span");
         badgeEl.className = "cookie-item-badge tracking";
-        badgeEl.textContent = "Script Tracker";
+        badgeEl.textContent = isMeta ? "Advertising / Social" : (isGoogle ? "Analytics" : "Script Tracker");
         nameEl.appendChild(badgeEl);
         
         const descEl = document.createElement("div");
         descEl.className = "cookie-item-desc";
-        descEl.textContent = "Third-Party Telemetry Script";
+        descEl.textContent = isMeta 
+          ? "Tracks cross-site ad conversions" 
+          : (isGoogle ? "Monitors visitor page interactions" : "Third-Party Telemetry Script");
         
         infoDiv.appendChild(nameEl);
         infoDiv.appendChild(descEl);
         card.appendChild(infoDiv);
         
-        const keptDiv = document.createElement("div");
-        keptDiv.className = "cookie-item-kept";
-        keptDiv.textContent = "Detected";
-        card.appendChild(keptDiv);
+        const actionDiv = document.createElement("div");
+        actionDiv.className = "cookie-item-action";
+        
+        const btn = document.createElement("button");
+        btn.className = "btn-disable-single-cookie";
+        btn.textContent = "Disable";
+        btn.onclick = () => {
+          btn.textContent = "Disabling...";
+          btn.disabled = true;
+          chrome.runtime.sendMessage({
+            type: "BLOCK_TRACKER_SCRIPT",
+            trackerName: t.name,
+            domain: domain,
+            url: tabUrl
+          }, (response) => {
+            btn.textContent = "✅ Disabled";
+            btn.classList.add("disabled");
+            card.classList.add("disabled-card");
+            
+            const currentVal = parseInt(trackingEl.textContent, 10);
+            if (!isNaN(currentVal) && currentVal > 0) {
+              trackingEl.textContent = currentVal - 1;
+            }
+          });
+        };
+        actionDiv.appendChild(btn);
+        card.appendChild(actionDiv);
         
         trackerList.appendChild(card);
       });
