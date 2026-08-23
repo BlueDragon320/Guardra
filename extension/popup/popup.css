@@ -724,38 +724,41 @@ body {
 .rubric-meta {
   display: flex;
   justify-content: space-between;
-  font-size: 9px;
-  color: #d4d4d8;
+  font-size: 10px;
+  color: var(--text-main);
+  font-weight: 600;
 }
 
 .rubric-bar-bg {
   width: 100%;
-  height: 4px;
-  background: #27272a;
-  border-radius: 2px;
+  height: 5px;
+  background: var(--bg-hover);
+  border-radius: 3px;
   overflow: hidden;
 }
 
 .rubric-bar-fill {
   height: 100%;
-  border-radius: 2px;
+  border-radius: 3px;
 }
 
 .grievance-block {
   border-top: 1px solid var(--border-color);
   padding-top: 6px;
   margin-top: 2px;
-  font-size: 9px;
+  font-size: 9.5px;
 }
 
 .grievance-title {
   color: var(--text-muted);
+  font-weight: 600;
   margin-bottom: 2px;
 }
 
 .grievance-val {
   font-family: monospace;
   color: #38bdf8;
+  font-weight: 600;
   word-break: break-all;
 }
 
@@ -933,7 +936,7 @@ body.light-theme {
   --bg-card: #ffffff;
   --bg-hover: #e8e8ed;
   --text-main: #09090b;
-  --text-muted: #4b5563;
+  --text-muted: #374151;
   --border-color: #d1d5db;
   --color-accent: #e11d48;
 }
@@ -966,8 +969,29 @@ body.light-theme .grade-score {
 }
 
 body.light-theme .site-domain {
-  color: #374151;
-  font-weight: 600;
+  color: #1f2937;
+  font-weight: 700;
+}
+
+body.light-theme .compliance-badge {
+  background: #f9fafb;
+  border-color: #d1d5db;
+  color: #111827;
+  font-weight: 700;
+}
+
+body.light-theme .compliance-badge.compliant {
+  background: #ecfdf5;
+  border-color: #059669;
+  color: #065f46;
+  font-weight: 800;
+}
+
+body.light-theme .compliance-badge.non-compliant {
+  background: #fef2f2;
+  border-color: #dc2626;
+  color: #991b1b;
+  font-weight: 800;
 }
 
 body.light-theme .cookie-gov-title-group {
@@ -977,7 +1001,7 @@ body.light-theme .cookie-gov-title-group {
 
 body.light-theme .cookie-label,
 body.light-theme .stat-label {
-  color: #374151;
+  color: #1f2937;
   font-weight: 700;
 }
 
@@ -987,8 +1011,10 @@ body.light-theme .stat-value {
 }
 
 body.light-theme .summary-box {
-  color: #1f2937;
-  font-weight: 500;
+  background: #f9fafb;
+  border-color: #d1d5db;
+  color: #111827;
+  font-weight: 600;
 }
 
 body.light-theme .primary-btn {
@@ -1005,9 +1031,33 @@ body.light-theme .primary-btn:hover {
 body.light-theme .cookie-counts-row,
 body.light-theme .rubric-row,
 body.light-theme .grievance-block {
-  background: #f3f4f6;
+  background: #f9fafb;
   border-color: #d1d5db;
-  color: #111827;
+  color: #000000;
+}
+
+body.light-theme .rubric-meta {
+  color: #000000;
+  font-weight: 700;
+}
+
+body.light-theme .rubric-meta span {
+  color: #000000;
+  font-weight: 700;
+}
+
+body.light-theme .rubric-bar-bg {
+  background: #e5e7eb;
+}
+
+body.light-theme .grievance-title {
+  color: #374151;
+  font-weight: 700;
+}
+
+body.light-theme .grievance-val {
+  color: #0369a1;
+  font-weight: 700;
 }
 
 body.light-theme .cookie-gov-badge,
@@ -1029,14 +1079,14 @@ body.light-theme .breach-title {
 }
 
 body.light-theme .breach-desc {
-  color: #1f2937;
-  font-weight: 500;
+  color: #111827;
+  font-weight: 600;
 }
 
 body.light-theme .breach-tag {
   background: #e5e7eb;
   color: #111827;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 body.light-theme .breach-article-pill,
@@ -1049,15 +1099,15 @@ body.light-theme .cookie-reload-btn {
 
 body.light-theme .secondary-btn,
 body.light-theme .icon-btn {
-  background: #ffffff;
+  background: #f3f4f6;
   border-color: #d1d5db;
-  color: #111827;
-  font-weight: 600;
+  color: #000000;
+  font-weight: 700;
 }
 
 body.light-theme .secondary-btn:hover,
 body.light-theme .icon-btn:hover {
-  background: #f3f4f6;
+  background: #e5e7eb;
   border-color: #9ca3af;
 }
 
@@ -1073,12 +1123,12 @@ body.light-theme .cookie-item-name {
 
 body.light-theme .cookie-item-desc {
   color: #374151;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 body.light-theme .cookie-items-header {
-  color: #111827;
-  font-weight: 700;
+  color: #000000;
+  font-weight: 800;
 }
 
 body.light-theme .cookie-items-badge {
