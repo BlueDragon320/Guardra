@@ -136,6 +136,9 @@ async def get_all_sites(limit: int = 1000):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) as count FROM websites")
+        total_count = cursor.fetchone()["count"]
+        
         cursor.execute("SELECT * FROM websites ORDER BY overall_score DESC LIMIT ?", (limit,))
         rows = cursor.fetchall()
         sites = []
@@ -149,10 +152,17 @@ async def get_all_sites(limit: int = 1000):
                 "category": d.get("category", "Web Platform"),
                 "rubric": d.get("pillar_scores", {}),
                 "compliance": d.get("compliance", {}),
-                "summary": d.get("findings", {}).get("summary", "") if isinstance(d.get("findings"), dict) else "",
+                "findings": d.get("findings", {}),
+                "key_concerns": d.get("key_concerns", []),
+                "concerns": d.get("key_concerns", []),
+                "key_clauses": d.get("key_clauses", []),
+                "snippets": d.get("key_clauses", []),
+                "breaches": d.get("breach_history", []),
+                "policy_url": d.get("policy_url") or f"https://{d.get('domain')}/privacy",
+                "summary": d.get("findings", {}).get("summary", "") if isinstance(d.get("findings"), dict) else (d.get("findings") or ""),
                 "last_analyzed_at": d.get("last_analyzed_at")
             })
-        return {"sites": sites, "total": len(sites)}
+        return {"sites": sites, "total": total_count}
     finally:
         conn.close()
 

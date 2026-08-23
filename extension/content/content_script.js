@@ -606,8 +606,16 @@
     }
   }
 
+  let lastTelemetrySent = 0;
+  let lastDomain = "";
+
   // 5. Send Telemetry to background & backend
   function sendTelemetry() {
+    const now = Date.now();
+    if (now - lastTelemetrySent < 15000 && lastDomain === window.location.hostname) return;
+    lastTelemetrySent = now;
+    lastDomain = window.location.hostname;
+
     const trackers = scanTrackers();
 
     try {
@@ -625,6 +633,7 @@
       });
     } catch (e) {}
   }
+
 
   // Broadcast telemetry immediately
   sendTelemetry();

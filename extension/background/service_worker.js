@@ -690,7 +690,15 @@ chrome.cookies.onChanged.addListener(async (changeInfo) => {
 
 // Listen for messages from content script or popup
 
-async function reportBrowserActivity(tabUrl, domain, trackers) {
+const tabLastReported = new Map();
+
+async function reportBrowserActivity(tabId, tabUrl, domain, trackers) {
+  if (tabId) {
+    const lastReported = tabLastReported.get(tabId) || 0;
+    if (Date.now() - lastReported < 20000) return;
+    tabLastReported.set(tabId, Date.now());
+  }
+
   const cleanDom = (domain || "").replace(/^www\./, "").toLowerCase();
   if (!cleanDom) return;
   
@@ -703,7 +711,7 @@ async function reportBrowserActivity(tabUrl, domain, trackers) {
   ];
   
   const start = Date.now();
-  let latency = 0;
+  let latency = rating && rating.latency ? rating.latency : 35;
   for (const endpoint of endpoints) {
     try {
       const resp = await fetch(endpoint, {
@@ -717,14 +725,12 @@ async function reportBrowserActivity(tabUrl, domain, trackers) {
           trackers_detected: trackers || [],
           auto_actions_taken: [],
           client_time: start,
-          score: rating ? (rating.score || rating.overall_score) : 60,
+          score: rating ? (rating.score !== undefined ? Math.round(rating.score) : (rating.overall_score !== undefined ? Math.round(rating.overall_score) : 55)) : 55,
           grade: rating ? rating.grade : "C",
-          response_time_ms: latency || 35
+          response_time_ms: Math.round(latency)
         })
       });
-      const end = Date.now();
       if (resp.ok) {
-        latency = end - start;
         break;
       }
     } catch (e) {}
@@ -909,7 +915,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         chrome.storage.local.set({ [`tab_session_${tabId}`]: session });
       });
     }
-    reportBrowserActivity(data.url, data.hostname, data.trackers_detected);
+    reportBrowserActivity(tabId, data.url, data.hostname, data.trackers_detected);
   }
 });
 
