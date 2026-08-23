@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guardra - Full System Architecture & Data Journey</title>
+  <style>
+    :root {
+      --bg-primary: #0b0f19;
+      --bg-secondary: #111827;
+      --bg-tertiary: #1f2937;
+      --bg-card: rgba(17, 24, 39, 0.85);
+      --border-color: #374151;
+      --border-accent: #3b82f6;
+      --text-primary: #f9fafb;
+      --text-secondary: #9ca3af;
+      --text-muted: #6b7280;
+      --accent-blue: #3b82f6;
+      --accent-cyan: #06b6d4;
+      --accent-green: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+      --accent-purple: #8b5cf6;
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    /* Header */
+    header {
+      background: linear-gradient(180deg, #131d31 0%, #0b0f19 100%);
+      border-bottom: 1px solid var(--border-color);
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 100;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 20px;
+      box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);
+    }
+
+    .brand-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-subtitle {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      padding: 7px 14px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn:hover {
+      background: #2d3748;
+      border-color: var(--accent-blue);
+    }
+
+    .btn-primary {
+      background: #2563eb;
+      border-color: #3b82f6;
+    }
+
+    .btn-primary:hover {
+      background: #1d4ed8;
+    }
+
+    .main-container {
+      display: flex;
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Diagram Viewport */
+    .viewport {
+      flex: 1;
+      height: 100%;
+      position: relative;
+      overflow: hidden;
+      cursor: grab;
+      background-image: 
+        radial-gradient(circle at 50% 50%, rgba(31, 41, 55, 0.4) 0%, transparent 80%),
+        linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      background-size: 100% 100%, 32px 32px, 32px 32px;
+    }
+
+    .viewport:active {
+      cursor: grabbing;
+    }
+
+    #canvas-container {
+      transform-origin: 0 0;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 2400px;
+      height: 1400px;
+      transition: transform 0.05s ease-out;
+    }
+
+    /* Floating Toolbar */
+    .zoom-toolbar {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: var(--bg-card);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 6px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      z-index: 50;
+    }
+
+    .tool-btn {
+      width: 34px;
+      height: 34px;
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.15s;
+    }
+
+    .tool-btn:hover {
+      background: var(--bg-tertiary);
+    }
+
+    .zoom-level-badge {
+      font-size: 0.7rem;
+      text-align: center;
+      color: var(--text-secondary);
+      padding: 4px 0;
+      border-top: 1px solid var(--border-color);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    /* Step Sequence Bar */
+    .stepper-bar {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg-card);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color);
+      border-radius: 30px;
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      z-index: 50;
+    }
+
+    .stepper-indicator {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--accent-cyan);
+      min-width: 140px;
+      text-align: center;
+    }
+
+    /* Sidebar Panel */
+    .sidebar {
+      width: 440px;
+      background: var(--bg-secondary);
+      border-left: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      z-index: 60;
+      box-shadow: -5px 0 25px rgba(0, 0, 0, 0.4);
+    }
+
+    .sidebar-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .sidebar-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .sidebar-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .step-card {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .step-card:hover {
+      border-color: var(--accent-blue);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .step-card.active {
+      border-color: var(--accent-cyan);
+      background: rgba(6, 182, 212, 0.1);
+      box-shadow: 0 0 0 1px var(--accent-cyan);
+    }
+
+    .step-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .step-num {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--accent-blue);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .step-card.active .step-num {
+      background: var(--accent-cyan);
+    }
+
+    .step-title {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .step-desc {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      line-height: 1.45;
+    }
+
+    .step-tag {
+      display: inline-block;
+      font-size: 0.68rem;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--accent-cyan);
+      margin-top: 8px;
+      font-family: monospace;
+    }
+
+    /* SVG Diagram Elements */
+    svg.architecture-svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .cluster-box {
+      fill: rgba(17, 24, 39, 0.7);
+      stroke-width: 2px;
+      rx: 16px;
+    }
+
+    .cluster-client { stroke: #3b82f6; fill: rgba(59, 130, 246, 0.04); }
+    .cluster-gateway { stroke: #8b5cf6; fill: rgba(139, 92, 246, 0.04); }
+    .cluster-backend { stroke: #10b981; fill: rgba(16, 185, 129, 0.04); }
+    .cluster-db { stroke: #f59e0b; fill: rgba(245, 158, 11, 0.04); }
+
+    .cluster-title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      fill: #e5e7eb;
+    }
+
+    .node-box {
+      fill: #1e293b;
+      stroke: #475569;
+      stroke-width: 1.5px;
+      rx: 10px;
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+
+    .node-box:hover {
+      stroke: var(--accent-cyan);
+      fill: #273549;
+    }
+
+    .node-box.highlight {
+      stroke: #38bdf8;
+      stroke-width: 3px;
+      filter: drop-shadow(0 0 12px rgba(56, 189, 248, 0.6));
+    }
+
+    .node-title {
+      font-size: 13px;
+      font-weight: 700;
+      fill: #f8fafc;
+      pointer-events: none;
+    }
+
+    .node-sub {
+      font-size: 11px;
+      fill: #94a3b8;
+      pointer-events: none;
+      font-family: monospace;
+    }
+
+    .node-icon-bg {
+      fill: rgba(255, 255, 255, 0.06);
+      rx: 6px;
+    }
+
+    /* Edge Connections */
+    .edge-line {
+      fill: none;
+      stroke: #4b5563;
+      stroke-width: 2px;
+      stroke-dasharray: 6, 4;
+      transition: all 0.3s;
+    }
+
+    .edge-line.active {
+      stroke: #38bdf8;
+      stroke-width: 3.5px;
+      stroke-dasharray: 8, 4;
+      animation: dash 1s linear infinite;
+      filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.8));
+    }
+
+    @keyframes dash {
+      to {
+        stroke-dashoffset: -24;
+      }
+    }
+
+    .edge-badge {
+      font-size: 11px;
+      font-weight: 800;
+      fill: #fff;
+    }
+
+    .edge-circle {
+      fill: #2563eb;
+      stroke: #1e40af;
+      stroke-width: 1.5px;
+    }
+
+    .edge-circle.active {
+      fill: #06b6d4;
+      stroke: #0891b2;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.15); }
+    }
+
+    /* Tooltip */
+    #info-modal {
+      position: absolute;
+      display: none;
+      background: #111827;
+      border: 1px solid var(--border-accent);
+      border-radius: 8px;
+      padding: 12px 16px;
+      color: #fff;
+      font-size: 0.82rem;
+      max-width: 320px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7);
+      pointer-events: none;
+      z-index: 1000;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-logo">G</div>
+      <div>
+        <div class="brand-title">Guardra Architecture & Data Journey</div>
+        <div class="brand-subtitle">Interactive Zoomable Visualizer: Extension &lt;—&gt; FastAPI Backend Engine</div>
+      </div>
+    </div>
+    <div class="header-controls">
+      <button class="btn" id="btn-fit">🔍 Fit to Screen</button>
+      <button class="btn" id="btn-reset">↺ Reset View</button>
+      <button class="btn btn-primary" id="btn-toggle-auto">▶ Auto Tour</button>
+    </div>
+  </header>
+
+  <!-- Main Work Area -->
+  <div class="main-container">
+    <!-- Viewport for SVG Diagram -->
+    <div class="viewport" id="viewport">
+      <!-- Zoom/Pan Controls -->
+      <div class="zoom-toolbar">
+        <button class="tool-btn" id="zoom-in" title="Zoom In">+</button>
+        <div class="zoom-level-badge" id="zoom-text">100%</div>
+        <button class="tool-btn" id="zoom-out" title="Zoom Out">-</button>
+        <button class="tool-btn" id="zoom-home" title="Reset View">🏠</button>
+      </div>
+
+      <!-- Stepper Controls -->
+      <div class="stepper-bar">
+        <button class="btn" id="btn-prev-step">◀ Previous</button>
+        <div class="stepper-indicator" id="step-indicator">Step 1 of 12</div>
+        <button class="btn btn-primary" id="btn-next-step">Next Step ▶</button>
+      </div>
+
+      <!-- Canvas container for zoom & pan -->
+      <div id="canvas-container">
+        <svg class="architecture-svg" viewBox="0 0 2400 1400" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 8 5 L 0 9 z" fill="#64748b" />
+            </marker>
+            <marker id="arrow-active" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 8 5 L 0 9 z" fill="#38bdf8" />
+            </marker>
+          </defs>
+
+          <!-- ================= 1. CLIENT / EXTENSION CLUSTER ================= -->
+          <rect class="cluster-box cluster-client" x="40" y="40" width="700" height="1300" />
+          <text class="cluster-title" x="70" y="80">1. Client / Browser Extension (MV3)</text>
+
+          <!-- Node 1: Browser Navigation / Webpage -->
+          <g id="node-tab" class="node-group" onclick="selectStep(1)">
+            <rect class="node-box" x="80" y="110" width="300" height="90" />
+            <rect class="node-icon-bg" x="95" y="125" width="36" height="36" />
+            <text x="105" y="148" font-size="18">🌐</text>
+            <text class="node-title" x="145" y="142">User Web Navigation</text>
+            <text class="node-sub" x="145" y="162">Target: e.g. boat-lifestyle.com</text>
+            <text class="node-sub" x="145" y="180">chrome.tabs.onUpdated</text>
+          </g>
+
+          <!-- Node 2: Content Script -->
+          <g id="node-cs" class="node-group" onclick="selectStep(2)">
+            <rect class="node-box" x="80" y="260" width="300" height="110" />
+            <rect class="node-icon-bg" x="95" y="280" width="36" height="36" />
+            <text x="105" y="303" font-size="18">⚡</text>
+            <text class="node-title" x="145" y="292">Content Script Injection</text>
+            <text class="node-sub" x="145" y="312">content_script.js</text>
+            <text class="node-sub" x="145" y="330">DOM Scanner (Meta, GA, TikTok)</text>
+            <text class="node-sub" x="145" y="348">Auto "Reject Optional" Clicks</text>
+          </g>
+
+          <!-- Node 3: Cookies Engine & API -->
+          <g id="node-cookies" class="node-group" onclick="selectStep(4)">
+            <rect class="node-box" x="80" y="440" width="300" height="100" />
+            <rect class="node-icon-bg" x="95" y="460" width="36" height="36" />
+            <text x="105" y="483" font-size="18">🍪</text>
+            <text class="node-title" x="145" y="470">Cookie Governance Engine</text>
+            <text class="node-sub" x="145" y="490">chrome.cookies API</text>
+            <text class="node-sub" x="145" y="510">Strict Essential vs Advertising</text>
+            <text class="node-sub" x="145" y="526">1-Click Neutralizer</text>
+          </g>
+
+          <!-- Node 4: Background Service Worker -->
+          <g id="node-sw" class="node-group" onclick="selectStep(5)">
+            <rect class="node-box" x="420" y="260" width="290" height="280" />
+            <rect class="node-icon-bg" x="435" y="280" width="36" height="36" />
+            <text x="445" y="303" font-size="18">⚙️</text>
+            <text class="node-title" x="485" y="292">Background Service Worker</text>
+            <text class="node-sub" x="485" y="312">service_worker.js</text>
+            <text class="node-sub" x="445" y="350">• Tab URL & Domain Extraction</text>
+            <text class="node-sub" x="445" y="375">• Local & Remote API Dispatch</text>
+            <text class="node-sub" x="445" y="400">• Fallback Database Cascade</text>
+            <text class="node-sub" x="445" y="425">• Badge Color & Letter Grade (A-F)</text>
+            <text class="node-sub" x="445" y="450">• Real-Time Cookie Removal</text>
+            <text class="node-sub" x="445" y="475">• chrome.storage.local Syncer</text>
+            <text class="node-sub" x="445" y="500">• Telemetry Activity Reporter</text>
+          </g>
+
+          <!-- Node 5: Storage Cache -->
+          <g id="node-storage" class="node-group" onclick="selectStep(6)">
+            <rect class="node-box" x="80" y="600" width="300" height="90" />
+            <rect class="node-icon-bg" x="95" y="618" width="36" height="36" />
+            <text x="105" y="641" font-size="18">💾</text>
+            <text class="node-title" x="145" y="630">Local Client Cache</text>
+            <text class="node-sub" x="145" y="650">chrome.storage.local</text>
+            <text class="node-sub" x="145" y="668">cached_rating_{domain}</text>
+          </g>
+
+          <!-- Node 6: Extension Popup UI -->
+          <g id="node-popup" class="node-group" onclick="selectStep(12)">
+            <rect class="node-box" x="80" y="740" width="630" height="570" />
+            <rect class="node-icon-bg" x="95" y="760" width="36" height="36" />
+            <text x="105" y="783" font-size="18">📱</text>
+            <text class="node-title" x="145" y="775">Extension Popup UI</text>
+            <text class="node-sub" x="145" y="795">popup.html & popup.js</text>
+
+            <!-- Embedded Mockup in SVG -->
+            <g transform="translate(100, 820)">
+              <!-- Mock Header -->
+              <rect x="0" y="0" width="590" height="460" rx="8" fill="#0f172a" stroke="#334155" />
+              <rect x="20" y="20" width="100" height="70" rx="8" fill="#ef4444" opacity="0.2" stroke="#ef4444" />
+              <text x="50" y="55" font-size="28" font-weight="900" fill="#ef4444" text-anchor="middle">D</text>
+              <text x="50" y="76" font-size="11" font-weight="700" fill="#ef4444" text-anchor="middle">38/100</text>
+
+              <text x="140" y="45" font-size="18" font-weight="700" fill="#fff">Boat Lifestyle</text>
+              <text x="140" y="65" font-size="12" fill="#94a3b8">boat-lifestyle.com • 7.5M records breached</text>
+              <rect x="140" y="75" width="180" height="18" rx="4" fill="rgba(16, 185, 129, 0.2)" />
+              <text x="150" y="88" font-size="10" fill="#10b981" font-weight="600">✓ DPDP Grievance Officer Disclosed</text>
+
+              <!-- 6 Pillars Bar Chart -->
+              <text x="20" y="125" font-size="12" font-weight="700" fill="#e2e8f0">6-Pillar Privacy Breakdown</text>
+              
+              <text x="20" y="150" font-size="11" fill="#94a3b8">Data Sharing (35%)</text>
+              <rect x="180" y="142" width="220" height="8" rx="4" fill="#334155" />
+              <rect x="180" y="142" width="77" height="8" rx="4" fill="#ef4444" />
+              
+              <text x="20" y="175" font-size="11" fill="#94a3b8">Retention Limits (40%)</text>
+              <rect x="180" y="167" width="220" height="8" rx="4" fill="#334155" />
+              <rect x="180" y="167" width="88" height="8" rx="4" fill="#f59e0b" />
+
+              <text x="20" y="200" font-size="11" fill="#94a3b8">Tracking Cookies (30%)</text>
+              <rect x="180" y="192" width="220" height="8" rx="4" fill="#334155" />
+              <rect x="180" y="192" width="66" height="8" rx="4" fill="#ef4444" />
+
+              <text x="20" y="225" font-size="11" fill="#94a3b8">User Rights & Erasure (60%)</text>
+              <rect x="180" y="217" width="220" height="8" rx="4" fill="#334155" />
+              <rect x="180" y="217" width="132" height="8" rx="4" fill="#10b981" />
+
+              <!-- Action Buttons -->
+              <rect x="20" y="260" width="260" height="42" rx="6" fill="#ef4444" opacity="0.15" stroke="#ef4444" />
+              <text x="150" y="286" font-size="12" font-weight="700" fill="#ef4444" text-anchor="middle">⚡ Disable Optional Cookies</text>
+
+              <rect x="300" y="260" width="270" height="42" rx="6" fill="#2563eb" opacity="0.2" stroke="#3b82f6" />
+              <text x="435" y="286" font-size="12" font-weight="700" fill="#60a5fa" text-anchor="middle">✉️ 1-Click DPDP Deletion Notice</text>
+
+              <!-- Breach card -->
+              <rect x="20" y="320" width="550" height="80" rx="6" fill="#1e293b" stroke="#475569" />
+              <text x="35" y="345" font-size="12" font-weight="700" fill="#f87171">⚠️ 7.5M Customer Records Leaked (April 2024)</text>
+              <text x="35" y="365" font-size="11" fill="#94a3b8">Dark web forum leak by 'ShopifyGUY' exposing shipping addresses & phone numbers.</text>
+              <text x="35" y="385" font-size="10" fill="#38bdf8">🔗 View Verified Security Article & News</text>
+            </g>
+          </g>
+
+          <!-- ================= 2. NETWORK / ROUTING GATEWAY ================= -->
+          <rect class="cluster-box cluster-gateway" x="800" y="40" width="340" height="1300" />
+          <text class="cluster-title" x="830" y="80">2. Network & API Gateway</text>
+
+          <!-- Gateway Node: FastAPI Routers -->
+          <g id="node-gateway" class="node-group" onclick="selectStep(7)">
+            <rect class="node-box" x="825" y="260" width="290" height="350" />
+            <rect class="node-icon-bg" x="840" y="280" width="36" height="36" />
+            <text x="850" y="303" font-size="18">🌐</text>
+            <text class="node-title" x="890" y="292">FastAPI API Gateway</text>
+            <text class="node-sub" x="890" y="312">:8000 / :8756</text>
+            
+            <text class="node-sub" x="845" y="360">GET /api/policy/rating</text>
+            <text class="node-sub" x="845" y="385">POST /api/deletion/generate</text>
+            <text class="node-sub" x="845" y="410">GET /api/breach/check</text>
+            <text class="node-sub" x="845" y="435">POST /api/hub/telemetry</text>
+            <text class="node-sub" x="845" y="460">GET /api/hub/privacy-exposure</text>
+            <text class="node-sub" x="845" y="485">POST /api/deletion/send</text>
+            <text class="node-sub" x="845" y="525">CORS Middleware enabled</text>
+            <text class="node-sub" x="845" y="550">Rate-limiting & caching</text>
+          </g>
+
+          <!-- ================= 3. BACKEND SERVICES CLUSTER ================= -->
+          <rect class="cluster-box cluster-backend" x="1200" y="40" width="680" height="1300" />
+          <text class="cluster-title" x="1230" y="80">3. Backend Analysis & Scoring Engine</text>
+
+          <!-- Node 7: Crawler Service -->
+          <g id="node-crawler" class="node-group" onclick="selectStep(8)">
+            <rect class="node-box" x="1230" y="120" width="300" height="110" />
+            <rect class="node-icon-bg" x="1245" y="140" width="36" height="36" />
+            <text x="1255" y="163" font-size="18">🕷️</text>
+            <text class="node-title" x="1295" y="152">Crawler & Scraper</text>
+            <text class="node-sub" x="1295" y="172">crawler_service.py</text>
+            <text class="node-sub" x="1295" y="190">httpx + BeautifulSoup</text>
+            <text class="node-sub" x="1295" y="208">Heuristic Policy URL Discovery</text>
+          </g>
+
+          <!-- Node 8: Negation-Aware NLP Engine -->
+          <g id="node-nlp" class="node-group" onclick="selectStep(9)">
+            <rect class="node-box" x="1230" y="280" width="620" height="230" />
+            <rect class="node-icon-bg" x="1245" y="300" width="36" height="36" />
+            <text x="1255" y="323" font-size="18">🧠</text>
+            <text class="node-title" x="1295" y="312">Negation-Aware NLP Engine</text>
+            <text class="node-sub" x="1295" y="332">policy_analyzer.py</text>
+            <text class="node-sub" x="1250" y="370">• Context Window Negation Detection (_check_negation)</text>
+            <text class="node-sub" x="1250" y="395">• Polarity Flipping ("we do NOT sell" -> positive bonus)</text>
+            <text class="node-sub" x="1250" y="420">• 6-Pillar Weighted Score Aggregator (0 - 100)</text>
+            <text class="node-sub" x="1250" y="445">• Statutory Law Checker (DPDP Act Sec 12 / GDPR / CCPA)</text>
+            <text class="node-sub" x="1250" y="470">• Plain Language Readability (Flesch-Kincaid index)</text>
+          </g>
+
+          <!-- Node 9: Breach Service -->
+          <g id="node-breach" class="node-group" onclick="selectStep(10)">
+            <rect class="node-box" x="1230" y="550" width="300" height="110" />
+            <rect class="node-icon-bg" x="1245" y="570" width="36" height="36" />
+            <text x="1255" y="593" font-size="18">🛡️</text>
+            <text class="node-title" x="1295" y="582">Breach & k-Anonymity Service</text>
+            <text class="node-sub" x="1295" y="602">breach_service.py</text>
+            <text class="node-sub" x="1295" y="620">SHA-1 5-char Hash Prefix Lookup</text>
+            <text class="node-sub" x="1295" y="638">Domain Leak Cross-Reference</text>
+          </g>
+
+          <!-- Node 10: Deletion Engine -->
+          <g id="node-deletion" class="node-group" onclick="selectStep(11)">
+            <rect class="node-box" x="1560" y="550" width="290" height="110" />
+            <rect class="node-icon-bg" x="1575" y="570" width="36" height="36" />
+            <text x="1585" y="593" font-size="18">⚖️</text>
+            <text class="node-title" x="1625" y="582">Statutory Deletion Engine</text>
+            <text class="node-sub" x="1625" y="602">deletion_service.py</text>
+            <text class="node-sub" x="1625" y="620">DPDP Act 2023 Formats</text>
+            <text class="node-sub" x="1625" y="638">Grievance Desk Routing</text>
+          </g>
+
+          <!-- ================= 4. PERSISTENCE & DATA LAYER ================= -->
+          <rect class="cluster-box cluster-db" x="1930" y="40" width="430" height="1300" />
+          <text class="cluster-title" x="1960" y="80">4. Persistence & External World</text>
+
+          <!-- Node 11: SQLite Database -->
+          <g id="node-sqlite" class="node-group" onclick="selectStep(9)">
+            <rect class="node-box" x="1960" y="260" width="370" height="300" />
+            <rect class="node-icon-bg" x="1975" y="280" width="36" height="36" />
+            <text x="1985" y="303" font-size="18">🗄️</text>
+            <text class="node-title" x="2025" y="292">SQLite Database</text>
+            <text class="node-sub" x="2025" y="312">guardra.db</text>
+            
+            <text class="node-sub" x="1980" y="355">• websites (scores, rubric, expires_at)</text>
+            <text class="node-sub" x="1980" y="380">• policies (raw parsed legal clauses)</text>
+            <text class="node-sub" x="1980" y="405">• deletion_requests (user notices & status)</text>
+            <text class="node-sub" x="1980" y="430">• breach_records (compromised breaches)</text>
+            <text class="node-sub" x="1980" y="455">• browser_pings (activity telemetry)</text>
+            <text class="node-sub" x="1980" y="480">• cookie_rules (tracker classifications)</text>
+            <text class="node-sub" x="1980" y="515">24-hour Auto Invalidation TTL</text>
+          </g>
+
+          <!-- Node 12: External Target Web Server -->
+          <g id="node-webserver" class="node-group" onclick="selectStep(8)">
+            <rect class="node-box" x="1960" y="120" width="370" height="100" />
+            <rect class="node-icon-bg" x="1975" y="138" width="36" height="36" />
+            <text x="1985" y="161" font-size="18">🌐</text>
+            <text class="node-title" x="2025" y="150">Target Website Web Servers</text>
+            <text class="node-sub" x="2025" y="170">https://boat-lifestyle.com/privacy-policy</text>
+            <text class="node-sub" x="2025" y="188">Returns Live Privacy Policy HTML</text>
+          </g>
+
+
+          <!-- ================= NUMBERED DATA FLOW EDGES ================= -->
+
+          <!-- Edge 1: User navigates -> Content script -->
+          <path id="edge-1" class="edge-line" d="M 230 200 L 230 260" marker-end="url(#arrow)" />
+          <circle id="badge-1" class="edge-circle" cx="230" cy="230" r="12" />
+          <text class="edge-badge" x="230" y="234" text-anchor="middle">1</text>
+
+          <!-- Edge 2: Content script -> Cookies -->
+          <path id="edge-2" class="edge-line" d="M 230 370 L 230 440" marker-end="url(#arrow)" />
+          <circle id="badge-2" class="edge-circle" cx="230" cy="405" r="12" />
+          <text class="edge-badge" x="230" y="409" text-anchor="middle">2</text>
+
+          <!-- Edge 3: Content script -> Service Worker -->
+          <path id="edge-3" class="edge-line" d="M 380 315 L 420 315" marker-end="url(#arrow)" />
+          <circle id="badge-3" class="edge-circle" cx="400" cy="315" r="12" />
+          <text class="edge-badge" x="400" y="319" text-anchor="middle">3</text>
+
+          <!-- Edge 4: Service Worker <-> Storage Cache -->
+          <path id="edge-4" class="edge-line" d="M 450 540 L 450 645 L 380 645" marker-end="url(#arrow)" />
+          <circle id="badge-4" class="edge-circle" cx="450" cy="645" r="12" />
+          <text class="edge-badge" x="450" y="649" text-anchor="middle">4</text>
+
+          <!-- Edge 5: Service Worker -> API Gateway -->
+          <path id="edge-5" class="edge-line" d="M 710 380 L 825 380" marker-end="url(#arrow)" />
+          <circle id="badge-5" class="edge-circle" cx="765" cy="380" r="12" />
+          <text class="edge-badge" x="765" y="384" text-anchor="middle">5</text>
+
+          <!-- Edge 6: API Gateway -> SQLite DB Check -->
+          <path id="edge-6" class="edge-line" d="M 1115 320 L 1960 320" marker-end="url(#arrow)" />
+          <circle id="badge-6" class="edge-circle" cx="1500" cy="320" r="12" />
+          <text class="edge-badge" x="1500" y="324" text-anchor="middle">6</text>
+
+          <!-- Edge 7: Gateway (On Cache Miss) -> Crawler -->
+          <path id="edge-7" class="edge-line" d="M 1115 280 L 1180 280 L 1180 170 L 1230 170" marker-end="url(#arrow)" />
+          <circle id="badge-7" class="edge-circle" cx="1180" cy="225" r="12" />
+          <text class="edge-badge" x="1180" y="229" text-anchor="middle">7</text>
+
+          <!-- Edge 8: Crawler -> Target Website Web Server -->
+          <path id="edge-8" class="edge-line" d="M 1530 170 L 1960 170" marker-end="url(#arrow)" />
+          <circle id="badge-8" class="edge-circle" cx="1745" cy="170" r="12" />
+          <text class="edge-badge" x="1745" y="174" text-anchor="middle">8</text>
+
+          <!-- Edge 9: Crawler -> Negation-Aware NLP Engine -->
+          <path id="edge-9" class="edge-line" d="M 1380 230 L 1380 280" marker-end="url(#arrow)" />
+          <circle id="badge-9" class="edge-circle" cx="1380" cy="255" r="12" />
+          <text class="edge-badge" x="1380" y="259" text-anchor="middle">9</text>
+
+          <!-- Edge 10: NLP Engine -> Breach Cross-Reference & DB Write -->
+          <path id="edge-10" class="edge-line" d="M 1850 450 L 1960 450" marker-end="url(#arrow)" />
+          <circle id="badge-10" class="edge-circle" cx="1905" cy="450" r="12" />
+          <text class="edge-badge" x="1905" y="454" text-anchor="middle">10</text>
+
+          <!-- Edge 11: Backend API -> Service Worker Return JSON -->
+          <path id="edge-11" class="edge-line" d="M 825 460 L 710 460" marker-end="url(#arrow)" />
+          <circle id="badge-11" class="edge-circle" cx="765" cy="460" r="12" />
+          <text class="edge-badge" x="765" y="464" text-anchor="middle">11</text>
+
+          <!-- Edge 12: Service Worker -> Extension Popup Rendering -->
+          <path id="edge-12" class="edge-line" d="M 565 540 L 565 740" marker-end="url(#arrow)" />
+          <circle id="badge-12" class="edge-circle" cx="565" cy="650" r="12" />
+          <text class="edge-badge" x="565" y="654" text-anchor="middle">12</text>
+
+        </svg>
+      </div>
+    </div>
+
+    <!-- Interactive Sidebar with numbered walkthrough -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title">Step-by-Step Data Journey</div>
+        <span class="step-tag" id="journey-status">Interactive Mode</span>
+      </div>
+
+      <div class="sidebar-content" id="step-list">
+        <!-- Steps will be rendered here dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Step Definitions
+    const STEPS = [
+      {
+        num: 1,
+        title: "User Enters URL in Browser Tab",
+        desc: "User navigates to any website (e.g., https://boat-lifestyle.com). Chrome triggers navigation lifecycle events.",
+        tag: "chrome.tabs.onUpdated",
+        nodes: ["node-tab"],
+        edges: ["edge-1", "badge-1"],
+        zoom: { x: -50, y: -20, scale: 1.2 }
+      },
+      {
+        num: 2,
+        title: "Content Script Injected on DOM Ready",
+        desc: "content_script.js inspects <script src> tags for 9+ known tracker signatures (Meta Pixel, Google Analytics, Hotjar, TikTok, Criteo).",
+        tag: "extension/content/content_script.js",
+        nodes: ["node-cs"],
+        edges: ["edge-2", "badge-2"],
+        zoom: { x: -50, y: -150, scale: 1.2 }
+      },
+      {
+        num: 3,
+        title: "Auto-Rejection of Dark Pattern CMP Banners",
+        desc: "Content script auto-detects OneTrust, Cookiebot, and Didomi cookie consent modals and auto-clicks 'Reject Optional' / 'Only Necessary'. Dispatches detected trackers to Service Worker.",
+        tag: "BROWSER_ACTIVITY Telemetry",
+        nodes: ["node-cs", "node-sw"],
+        edges: ["edge-3", "badge-3"],
+        zoom: { x: -100, y: -180, scale: 1.1 }
+      },
+      {
+        num: 4,
+        title: "Cookie Classification & Local Storage Lookup",
+        desc: "Service Worker receives domain event, audits cookies via chrome.cookies.getAll, and checks chrome.storage.local for unexpired rating cache (cached_rating_{domain}).",
+        tag: "chrome.cookies + chrome.storage",
+        nodes: ["node-cookies", "node-storage", "node-sw"],
+        edges: ["edge-4", "badge-4"],
+        zoom: { x: -50, y: -300, scale: 1.1 }
+      },
+      {
+        num: 5,
+        title: "Cache Miss: Dispatch Request to Backend API",
+        desc: "If no local cache is found, Service Worker executes a cascading fetch: localhost:8756 -> localhost:8000 -> https://guardra-api.botvaibhav.dev.",
+        tag: "GET /api/policy/rating?domain=boat-lifestyle.com",
+        nodes: ["node-sw", "node-gateway"],
+        edges: ["edge-5", "badge-5"],
+        zoom: { x: -450, y: -180, scale: 1.15 }
+      },
+      {
+        num: 6,
+        title: "API Gateway Queries SQLite Database Cache",
+        desc: "FastAPI checks the websites table in guardra.db. If the record exists and expires_at is in the future, it immediately returns cached rating.",
+        tag: "backend/app/routers/policy.py",
+        nodes: ["node-gateway", "node-sqlite"],
+        edges: ["edge-6", "badge-6"],
+        zoom: { x: -700, y: -180, scale: 0.95 }
+      },
+      {
+        num: 7,
+        title: "Live Analysis Triggered on Missing/Expired Record",
+        desc: "When a domain has not been analyzed or cache expired, the router invokes get_site_rating(domain) in the crawler and analysis engine.",
+        tag: "backend/app/services/policy_analyzer.py",
+        nodes: ["node-gateway", "node-crawler"],
+        edges: ["edge-7", "badge-7"],
+        zoom: { x: -750, y: -50, scale: 1.1 }
+      },
+      {
+        num: 8,
+        title: "Crawler Fetches Live Privacy Policy Document",
+        desc: "Crawler tests standard endpoints (/privacy, /privacy-policy, /legal/privacy) and extracts cleaned plain-text legal disclosures.",
+        tag: "crawler_service.py (httpx + BeautifulSoup)",
+        nodes: ["node-crawler", "node-webserver"],
+        edges: ["edge-8", "badge-8"],
+        zoom: { x: -1100, y: -50, scale: 1.1 }
+      },
+      {
+        num: 9,
+        title: "Negation-Aware NLP Engine Scores 6 Pillars",
+        desc: "NLP Engine scores text using context-window negation checks (distinguishing 'we do NOT sell data' from 'we sell data') across Data Sharing, Retention, Trackers, User Rights, Security & Readability.",
+        tag: "6-Pillar Weighted Rubric (0-100)",
+        nodes: ["node-nlp"],
+        edges: ["edge-9", "badge-9"],
+        zoom: { x: -900, y: -160, scale: 1.05 }
+      },
+      {
+        num: 10,
+        title: "Breach Lookup & Persistence to guardra.db",
+        desc: "Cross-references domain against verified breach logs (k-anonymity verified). Writes final score, grade, rubric, compliance & breach details to SQLite websites table.",
+        tag: "breach_service.py + guardra.db",
+        nodes: ["node-breach", "node-sqlite"],
+        edges: ["edge-10", "badge-10"],
+        zoom: { x: -1100, y: -250, scale: 1.05 }
+      },
+      {
+        num: 11,
+        title: "Backend Responds to Extension Service Worker",
+        desc: "FastAPI returns structured JSON payload. Service Worker caches it in chrome.storage.local, dynamically recalculates score based on active cookies, and sets Toolbar Badge Grade & Color.",
+        tag: "chrome.action.setBadgeText({ text: 'D' })",
+        nodes: ["node-gateway", "node-sw"],
+        edges: ["edge-11", "badge-11"],
+        zoom: { x: -450, y: -200, scale: 1.15 }
+      },
+      {
+        num: 12,
+        title: "User Clicks Extension: Rich Popup Rendered",
+        desc: "Extension Popup renders Trust Score (38/100), Grade D, 6-Pillar Breakdown, DPDP Grievance Officer contacts, 1-Click Cookie Neutralizer, and 1-Click DPDP Sec 12 Deletion Notice Generator.",
+        tag: "extension/popup/popup.html",
+        nodes: ["node-popup", "node-sw"],
+        edges: ["edge-12", "badge-12"],
+        zoom: { x: -50, y: -450, scale: 0.9 }
+      }
+    ];
+
+    let currentStepIndex = 0;
+    let autoTourInterval = null;
+
+    // Pan & Zoom Engine
+    const container = document.getElementById("canvas-container");
+    const viewport = document.getElementById("viewport");
+    let scale = 0.72;
+    let pointX = 50;
+    let pointY = 20;
+    let isPanning = false;
+    let startX = 0;
+    let startY = 0;
+
+    function setTransform() {
+      container.style.transform = `translate(${pointX}px, ${pointY}px) scale(${scale})`;
+      document.getElementById("zoom-text").textContent = `${Math.round(scale * 100)}%`;
+    }
+
+    viewport.addEventListener("mousedown", (e) => {
+      if (e.target.closest(".zoom-toolbar") || e.target.closest(".stepper-bar")) return;
+      isPanning = true;
+      startX = e.clientX - pointX;
+      startY = e.clientY - pointY;
+    });
+
+    window.addEventListener("mouseup", () => {
+      isPanning = false;
+    });
+
+    window.addEventListener("mousemove", (e) => {
+      if (!isPanning) return;
+      pointX = e.clientX - startX;
+      pointY = e.clientY - startY;
+      setTransform();
+    });
+
+    viewport.addEventListener("wheel", (e) => {
+      e.preventDefault();
+      const xs = (e.clientX - pointX) / scale;
+      const ys = (e.clientY - pointY) / scale;
+      const delta = -e.deltaY;
+      const factor = delta > 0 ? 1.1 : 0.9;
+      
+      const newScale = Math.min(Math.max(0.3, scale * factor), 2.5);
+      pointX = e.clientX - xs * newScale;
+      pointY = e.clientY - ys * newScale;
+      scale = newScale;
+      setTransform();
+    });
+
+    // Zoom Buttons
+    document.getElementById("zoom-in").addEventListener("click", () => {
+      scale = Math.min(2.5, scale * 1.2);
+      setTransform();
+    });
+
+    document.getElementById("zoom-out").addEventListener("click", () => {
+      scale = Math.max(0.3, scale / 1.2);
+      setTransform();
+    });
+
+    document.getElementById("zoom-home").addEventListener("click", resetView);
+    document.getElementById("btn-reset").addEventListener("click", resetView);
+    document.getElementById("btn-fit").addEventListener("click", fitToScreen);
+
+    function resetView() {
+      scale = 0.72;
+      pointX = 40;
+      pointY = 20;
+      setTransform();
+    }
+
+    function fitToScreen() {
+      const vWidth = viewport.clientWidth;
+      const vHeight = viewport.clientHeight;
+      scale = Math.min(vWidth / 2450, vHeight / 1450);
+      pointX = (vWidth - 2400 * scale) / 2;
+      pointY = 20;
+      setTransform();
+    }
+
+    // Render Steps in Sidebar
+    const stepListContainer = document.getElementById("step-list");
+    STEPS.forEach((s, idx) => {
+      const card = document.createElement("div");
+      card.className = `step-card ${idx === 0 ? "active" : ""}`;
+      card.id = `step-card-${s.num}`;
+      card.onclick = () => selectStep(s.num);
+      card.innerHTML = `
+        <div class="step-header">
+          <div class="step-num">${s.num}</div>
+          <div class="step-title">${s.title}</div>
+        </div>
+        <div class="step-desc">${s.desc}</div>
+        <div class="step-tag">${s.tag}</div>
+      `;
+      stepListContainer.appendChild(card);
+    });
+
+    function selectStep(stepNum) {
+      currentStepIndex = stepNum - 1;
+      const step = STEPS[currentStepIndex];
+
+      // Update active cards
+      document.querySelectorAll(".step-card").forEach(c => c.classList.remove("active"));
+      const activeCard = document.getElementById(`step-card-${step.num}`);
+      if (activeCard) {
+        activeCard.classList.add("active");
+        activeCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+
+      // Update indicator
+      document.getElementById("step-indicator").textContent = `Step ${step.num} of ${STEPS.length}`;
+
+      // Reset all highlights
+      document.querySelectorAll(".node-box").forEach(n => n.classList.remove("highlight"));
+      document.querySelectorAll(".edge-line").forEach(e => {
+        e.classList.remove("active");
+        e.setAttribute("marker-end", "url(#arrow)");
+      });
+      document.querySelectorAll(".edge-circle").forEach(c => c.classList.remove("active"));
+
+      // Highlight active step elements
+      step.nodes.forEach(nId => {
+        const el = document.querySelector(`#${nId} .node-box`);
+        if (el) el.classList.add("highlight");
+      });
+
+      step.edges.forEach(eId => {
+        const line = document.getElementById(eId);
+        if (line) {
+          line.classList.add("active");
+          if (line.tagName === "path") {
+            line.setAttribute("marker-end", "url(#arrow-active)");
+          }
+        }
+      });
+
+      // Smooth zoom to element area
+      if (step.zoom) {
+        pointX = step.zoom.x;
+        pointY = step.zoom.y;
+        scale = step.zoom.scale;
+        setTransform();
+      }
+    }
+
+    // Step Nav buttons
+    document.getElementById("btn-next-step").addEventListener("click", () => {
+      const nextStep = (currentStepIndex + 1) % STEPS.length + 1;
+      selectStep(nextStep);
+    });
+
+    document.getElementById("btn-prev-step").addEventListener("click", () => {
+      const prevStep = (currentStepIndex - 1 + STEPS.length) % STEPS.length + 1;
+      selectStep(prevStep);
+    });
+
+    // Auto Tour
+    const autoBtn = document.getElementById("btn-toggle-auto");
+    autoBtn.addEventListener("click", () => {
+      if (autoTourInterval) {
+        clearInterval(autoTourInterval);
+        autoTourInterval = null;
+        autoBtn.textContent = "▶ Auto Tour";
+        autoBtn.classList.remove("btn-primary");
+        document.getElementById("journey-status").textContent = "Interactive Mode";
+      } else {
+        autoBtn.textContent = "⏸ Pause Tour";
+        autoBtn.classList.add("btn-primary");
+        document.getElementById("journey-status").textContent = "Auto Touring...";
+        autoTourInterval = setInterval(() => {
+          const nextStep = (currentStepIndex + 1) % STEPS.length + 1;
+          selectStep(nextStep);
+        }, 3200);
+      }
+    });
+
+    // Initial View setup
+    window.addEventListener("load", () => {
+      fitToScreen();
+      selectStep(1);
+    });
+  </script>
+</body>
+</html>
