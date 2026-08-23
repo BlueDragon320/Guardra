@@ -181,8 +181,20 @@
     const color = rating?.color === "green" || rating?.grade_color === "green" || score >= 70 
       ? "#10b981" 
       : (rating?.color === "red" || rating?.grade_color === "red" || score < 50 ? "#ef4444" : "#f59e0b");
-    const trackerCount = detectedTrackers.length;
     const grievanceEmail = rating?.compliance?.dpdp?.grievance_email || `privacy@${domain}`;
+
+    const activeCookies = [];
+    try {
+      if (document.cookie) {
+        document.cookie.split(";").forEach(c => {
+          const name = c.split("=")[0].trim();
+          if (name) activeCookies.push(name);
+        });
+      }
+      Object.keys(localStorage).forEach(k => {
+        if (!activeCookies.includes(k)) activeCookies.push(k);
+      });
+    } catch (e) {}
 
     const css = `
       * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
@@ -204,16 +216,6 @@
       .pill-container:hover {
         background: #18181b;
         border-color: #3f3f46;
-      }
-      .shield-icon {
-        width: 14px;
-        height: 14px;
-        border-radius: 50%;
-        background: #27272a;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 8px;
       }
       .grade-pill {
         background: #27272a;
@@ -237,6 +239,16 @@
         opacity: 1;
         color: #fff;
         transform: scale(1.1);
+      }
+      .pill-chip {
+        background: #27272a;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 10px;
+        color: #f4f4f5;
+        display: inline-flex;
+        align-items: center;
       }
 
       /* Expanded Panel */
@@ -298,31 +310,92 @@
         display: block;
       }
       .secondary-btn:hover { background: #27272a; color: #fff; }
-    `;
 
-    const activeCookies = [];
-    try {
-      if (document.cookie) {
-        document.cookie.split(";").forEach(c => {
-          const name = c.split("=")[0].trim();
-          if (name) activeCookies.push(name);
-        });
+      .expandable-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        padding: 4px 0;
+        font-weight: 700;
+        font-size: 11px;
       }
-      Object.keys(localStorage).forEach(k => {
-        if (!activeCookies.includes(k)) activeCookies.push(k);
-      });
-    } catch (e) {}
+      .expandable-content {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 6px;
+        max-height: 120px;
+        overflow-y: auto;
+        padding-right: 4px;
+        scrollbar-width: thin;
+        scrollbar-color: #3f3f46 #18181b;
+        transition: max-height 0.25s ease;
+      }
+      .expandable-content::-webkit-scrollbar {
+        width: 4px;
+      }
+      .expandable-content::-webkit-scrollbar-track {
+        background: #18181b;
+        border-radius: 4px;
+      }
+      .expandable-content::-webkit-scrollbar-thumb {
+        background: #3f3f46;
+        border-radius: 4px;
+      }
+      .expandable-content::-webkit-scrollbar-thumb:hover {
+        background: #52525b;
+      }
+      .expandable-content.collapsed {
+        max-height: 0;
+        margin-top: 0;
+        overflow: hidden;
+        padding: 0;
+      }
+      .toggle-icon {
+        transition: transform 0.3s ease;
+        font-size: 10px;
+      }
+      .toggle-icon.collapsed {
+        transform: rotate(-90deg);
+      }
+      .tracker-chip {
+        display: inline-flex;
+        align-items: center;
+        font-weight: 700;
+        font-size: 10px;
+        background: rgba(239, 68, 68, 0.15);
+        border: 1px solid rgba(239, 68, 68, 0.35);
+        color: #f87171;
+        padding: 6px 12px;
+        border-radius: 20px;
+        white-space: nowrap;
+      }
+      .cookie-chip {
+        display: inline-flex;
+        align-items: center;
+        font-weight: 700;
+        font-family: monospace;
+        font-size: 10px;
+        background: #18181b;
+        border: 1px solid #3f3f46;
+        color: #f4f4f5;
+        padding: 6px 12px;
+        border-radius: 20px;
+        white-space: nowrap;
+      }
+    `;
 
     if (!isExpanded) {
       shadowRoot.innerHTML = `
         <style>${css}</style>
         <div class="pill-container" id="guardra-pill">
           <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#10b981;"></span>
-          <span style="font-weight:700;">Guardra:</span>
+          <span style="font-weight:600;">Guardra:</span>
           <span>${domain}</span>
           <span class="grade-pill">${grade} (${score}/100)</span>
-          <span style="color:#f87171; font-weight:600;">⚡ ${trackerCount} Trackers</span>
-          <span style="color:#e4e4e7; font-weight:600;">🍪 ${activeCookies.length} Cookies</span>
+          <span class="pill-chip">⚡ ${detectedTrackers.length} Trackers</span>
+          <span class="pill-chip">🍪 ${activeCookies.length} Cookies</span>
           <button class="close-btn" id="guardra-close-pill">✕</button>
         </div>
       `;
@@ -387,139 +460,59 @@
 
           ${breachHtml}
 
-          <!-- Expandable Trackers Section -->
-          <div class="section-card" style="padding: 0; overflow: hidden;">
-            <div id="guardra-trackers-header" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; cursor: pointer; background: #18181b; user-select: none;">
-              <div style="display: flex; align-items: center; gap: 6px;">
-                <span style="font-weight: 700; font-size: 11px; color: #f4f4f5;">⚡ Trackers</span>
-                <span style="background: rgba(239,68,68,0.2); color: #fca5a5; border: 1px solid rgba(239,68,68,0.35); font-size: 9.5px; font-weight: 700; padding: 1px 6px; border-radius: 10px;">${detectedTrackers.length}</span>
-              </div>
-              <span id="guardra-trackers-icon" style="font-size: 9px; color: #a1a1aa;">▼</span>
+          <div class="section-card" style="padding: 10px;">
+            <div class="expandable-header" id="guardra-trackers-header">
+              <span>⚡ Trackers (${detectedTrackers.length})</span>
+              <span class="toggle-icon" id="guardra-trackers-icon">▼</span>
             </div>
-            <div id="guardra-trackers-body" style="padding: 8px 10px; display: flex; flex-wrap: wrap; gap: 5px; border-top: 1px solid #27272a;">
+            <div class="expandable-content" id="guardra-trackers-content" style="max-height: 1000px;">
               ${detectedTrackers.length > 0 
-                ? detectedTrackers.map(t => `<span style="display: inline-flex; align-items: center; font-weight: 600; font-size: 9.5px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.35); color: #f87171; padding: 3px 8px; border-radius: 4px;">${t.name}</span>`).join("") 
+                ? detectedTrackers.map(t => `<span class="tracker-chip">${t.name}</span>`).join("") 
                 : `<span style="color: #71717a; font-size: 10px; font-style: italic;">None detected on page</span>`}
             </div>
           </div>
 
-          <!-- Expandable Cookies Section -->
-          <div class="section-card" style="padding: 0; overflow: hidden;">
-            <div id="guardra-cookies-header" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; cursor: pointer; background: #18181b; user-select: none;">
-              <div style="display: flex; align-items: center; gap: 6px;">
-                <span style="font-weight: 700; font-size: 11px; color: #f4f4f5;">🍪 Cookies</span>
-                <span style="background: rgba(161,161,170,0.2); color: #e4e4e7; border: 1px solid rgba(161,161,170,0.35); font-size: 9.5px; font-weight: 700; padding: 1px 6px; border-radius: 10px;">${activeCookies.length}</span>
-              </div>
-              <span id="guardra-cookies-icon" style="font-size: 9px; color: #a1a1aa;">▼</span>
+          <div class="section-card" style="padding: 10px;">
+            <div class="expandable-header" id="guardra-cookies-header">
+              <span>🍪 Cookies (${activeCookies.length})</span>
+              <span class="toggle-icon" id="guardra-cookies-icon">▼</span>
             </div>
-            <div id="guardra-cookies-body" style="padding: 8px 10px; display: flex; flex-wrap: wrap; gap: 5px; border-top: 1px solid #27272a; max-height: 120px; overflow-y: auto;">
+            <div class="expandable-content" id="guardra-cookies-content" style="max-height: 1000px;">
               ${activeCookies.length > 0 
-                ? activeCookies.map(c => `<span style="display: inline-flex; align-items: center; font-weight: 600; font-family: monospace; font-size: 9.5px; background: #18181b; border: 1px solid #3f3f46; color: #f4f4f5; padding: 3px 8px; border-radius: 4px;">${c}</span>`).join("") 
+                ? activeCookies.map(c => `<span class="cookie-chip">${c}</span>`).join("") 
                 : `<span style="color: #71717a; font-size: 10px; font-style: italic;">No cookies stored</span>`}
             </div>
-          </div>
-
-          <div style="display:flex; flex-direction:column; gap:4px;">
-            <button class="action-btn" id="guardra-btn-disable-optional" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color:#fff; border:none; padding:7px 8px; border-radius:4px; font-weight:600; cursor:pointer;">
-              🛡️ Optional Cookies Disabler (Only Necessary)
-            </button>
-            <div id="guardra-optional-feedback" style="display:none; font-size:9.5px; color:#34d399; text-align:center; padding:2px;">
-              ✅ Non-essential cookies disabled! Only necessary kept.
-            </div>
-            <a href="mailto:${grievanceEmail}?subject=STATUTORY DATA ERASURE NOTICE under DPDP Act 2023 Section 12&body=To the Grievance Officer of ${domain},%0D%0A%0D%0APlease execute the erasure of all personal data concerning my account under Section 12 of the DPDP Act 2023." class="secondary-btn" target="_blank" style="text-align:center;">
-              ✉️ Generate DPDP Deletion Notice
-            </a>
-            <button id="guardra-btn-auto-disable-cookies" style="background:none; border:none; color:#71717a; font-size:9px; cursor:pointer; text-align:center; padding:3px; margin-top:2px;">
-              <b>[Status: Loading...] Auto-Disable Tracking (All Sites)</b><br/>
-              <span style="font-size: 8px; color: #a1a1aa;">Auto-prunes optional cookies across all websites</span>
-            </button>
-            <button id="guardra-btn-disable-alwayson" style="background:none; border:none; color:#71717a; font-size:9px; cursor:pointer; text-align:center; padding:3px; margin-top:2px; text-decoration:underline;">
-              🔕 Turn Off Always-On Badge on Websites
-            </button>
           </div>
         </div>
       `;
 
-      const autoBtn = shadowRoot.getElementById("guardra-btn-auto-disable-cookies");
-      if (autoBtn) {
-        chrome.storage.local.get("guardra_auto_disable_cookies", (st) => {
-          const isAuto = st.guardra_auto_disable_cookies !== false;
-          autoBtn.innerHTML = isAuto 
-            ? `<b>✅ Auto-Disable Tracking (All Sites)</b><br/><span style="font-size: 8px; color: #a1a1aa;">Auto-prunes optional cookies across all websites</span>`
-            : `<b>⚪ Auto-Disable Tracking (All Sites)</b><br/><span style="font-size: 8px; color: #a1a1aa;">Auto-prunes optional cookies across all websites</span>`;
-        });
-        autoBtn.addEventListener("click", () => {
-          chrome.storage.local.get("guardra_auto_disable_cookies", (st) => {
-            const enabled = st.guardra_auto_disable_cookies === false;
-            chrome.storage.local.set({ guardra_auto_disable_cookies: enabled });
-            autoBtn.innerHTML = enabled 
-              ? `<b>✅ Auto-Disable Tracking (All Sites)</b><br/><span style="font-size: 8px; color: #a1a1aa;">Auto-prunes optional cookies across all websites</span>`
-              : `<b>⚪ Auto-Disable Tracking (All Sites)</b><br/><span style="font-size: 8px; color: #a1a1aa;">Auto-prunes optional cookies across all websites</span>`;
-            if (enabled) {
-              chrome.runtime.sendMessage({
-                type: "ENFORCE_STRICT_COOKIES",
-                domain: domain,
-                url: window.location.href
-              });
-            }
-          });
-        });
-      }
-
-      const disableAlwaysOnBtn = shadowRoot.getElementById("guardra-btn-disable-alwayson");
-      if (disableAlwaysOnBtn) {
-        disableAlwaysOnBtn.addEventListener("click", () => {
-          chrome.storage.local.set({ guardra_inpage_enabled: false });
-          isDismissed = true;
-          if (rootHost) rootHost.remove();
-        });
-      }
-
       const trackersHeader = shadowRoot.getElementById("guardra-trackers-header");
-      const trackersBody = shadowRoot.getElementById("guardra-trackers-body");
+      const trackersContent = shadowRoot.getElementById("guardra-trackers-content");
       const trackersIcon = shadowRoot.getElementById("guardra-trackers-icon");
-      if (trackersHeader && trackersBody) {
+      if (trackersHeader && trackersContent) {
         trackersHeader.addEventListener("click", () => {
-          const isHidden = trackersBody.style.display === "none";
-          trackersBody.style.display = isHidden ? "flex" : "none";
-          if (trackersIcon) trackersIcon.textContent = isHidden ? "▼" : "▲";
+          trackersContent.classList.toggle("collapsed");
+          if (trackersIcon) trackersIcon.classList.toggle("collapsed");
         });
       }
 
       const cookiesHeader = shadowRoot.getElementById("guardra-cookies-header");
-      const cookiesBody = shadowRoot.getElementById("guardra-cookies-body");
+      const cookiesContent = shadowRoot.getElementById("guardra-cookies-content");
       const cookiesIcon = shadowRoot.getElementById("guardra-cookies-icon");
-      if (cookiesHeader && cookiesBody) {
+      if (cookiesHeader && cookiesContent) {
         cookiesHeader.addEventListener("click", () => {
-          const isHidden = cookiesBody.style.display === "none";
-          cookiesBody.style.display = isHidden ? "flex" : "none";
-          if (cookiesIcon) cookiesIcon.textContent = isHidden ? "▼" : "▲";
+          cookiesContent.classList.toggle("collapsed");
+          if (cookiesIcon) cookiesIcon.classList.toggle("collapsed");
         });
       }
 
-      const disableBtn = shadowRoot.getElementById("guardra-btn-disable-optional");
-      if (disableBtn) {
-        disableBtn.addEventListener("click", () => {
-          disableBtn.textContent = "Disabling optional cookies...";
-          chrome.runtime.sendMessage({
-            type: "ENFORCE_STRICT_COOKIES",
-            domain: domain,
-            url: window.location.href
-          }, (res) => {
-            automateCookieRejection();
-            disableBtn.textContent = "✅ Only Necessary Cookies Active";
-            disableBtn.style.background = "#27272a";
-            disableBtn.style.color = "#34d399";
-            const fb = shadowRoot.getElementById("guardra-optional-feedback");
-            if (fb) fb.style.display = "block";
-          });
+      const minBtn = shadowRoot.getElementById("guardra-minimize-panel");
+      if (minBtn) {
+        minBtn.addEventListener("click", () => {
+          isExpanded = false;
+          renderFloatingPill(currentRating);
         });
       }
-
-      shadowRoot.getElementById("guardra-minimize-panel").addEventListener("click", () => {
-        isExpanded = false;
-        renderFloatingPill(currentRating);
-      });
     }
   }
 
