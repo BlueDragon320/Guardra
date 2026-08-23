@@ -229,9 +229,9 @@
     const grade = rating?.grade || "C";
     const score = rating?.score !== undefined ? Math.round(rating.score) : (rating?.overall_score !== undefined ? Math.round(rating.overall_score) : 55);
     const color = rating?.color === "green" || rating?.grade_color === "green" || score >= 70 
-      ? "#10b981" 
-      : (rating?.color === "red" || rating?.grade_color === "red" || score < 50 ? "#ef4444" : "#f59e0b");
-    const grievanceEmail = rating?.compliance?.dpdp?.grievance_email || `privacy@${domain}`;
+    const grievanceEmail = rating?.compliance?.dpdp?.grievance_email || rating?.compliance?.gdpr?.dpo_contact || (rating?.contacts?.email && rating.contacts.email[0]) || "Not found";
+    const dpdpStatusText = rating?.compliance?.dpdp?.compliant ? "Grievance Officer Active" : "Grievance Officer Not Found";
+    const dpdpStatusColor = rating?.compliance?.dpdp?.compliant ? "#10b981" : "#ef4444";
 
     const activeCookies = [];
     try {
@@ -528,11 +528,11 @@
             </div>
             <div class="meta-row">
               <span>DPDP Act 2023</span>
-              <span style="color:#10b981;">Grievance Officer Active</span>
+              <span style="color:${dpdpStatusColor}; font-weight:600;">${dpdpStatusText}</span>
             </div>
             <div class="meta-row">
               <span>Grievance Contact</span>
-              <span style="font-family:monospace;">${grievanceEmail}</span>
+              <span style="font-family:monospace; color:${grievanceEmail === 'Not found' ? '#ef4444' : '#38bdf8'};">${grievanceEmail}</span>
             </div>
           </div>
 

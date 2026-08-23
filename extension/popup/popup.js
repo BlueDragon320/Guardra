@@ -551,8 +551,11 @@ function renderPopup(data, tabUrl, tabId) {
     grievanceContact.textContent = `${data.compliance.dpdp.grievance_officer || "Grievance Officer"}: ${data.compliance.dpdp.grievance_email}`;
   } else if (data.compliance?.gdpr?.dpo_contact) {
     grievanceContact.textContent = `DPO: ${data.compliance.gdpr.dpo_contact}`;
+  } else if (data.contacts?.email && data.contacts.email.length > 0) {
+    const pEmail = data.contacts.email.find(e => e.includes("privacy") || e.includes("grievance") || e.includes("dpo")) || data.contacts.email[0];
+    grievanceContact.textContent = `Contact: ${pEmail}`;
   } else {
-    grievanceContact.textContent = `privacy@${data.domain}`;
+    grievanceContact.textContent = "Not found";
   }
 }
 
