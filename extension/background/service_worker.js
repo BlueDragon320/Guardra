@@ -338,37 +338,6 @@ async function getApiBase() {
 }
 
 
-async function adjustRatingForCookies(rating, domain) {
-  if (!rating || !rating.rubric || !rating.rubric.tracking_cookies) return rating;
-  const cleanDom = domain.replace(/^www\./, "");
-  const storageKey = `strict_cookies_${cleanDom}`;
-  const stored = await chrome.storage.local.get([storageKey, "guardra_auto_disable_cookies"]);
-  const isEnforced = (stored[storageKey] && stored[storageKey].enforced) || stored.guardra_auto_disable_cookies;
-
-  if (isEnforced) {
-    rating.rubric.tracking_cookies.score = 100;
-    rating.rubric.tracking_cookies.label = "Tracking Cookies Neutralized";
-    rating.rubric.tracking_cookies.risk = "low";
-    
-    let totalScore = 0;
-    let count = 0;
-    for (const key in rating.rubric) {
-      totalScore += rating.rubric[key].score;
-      count++;
-    }
-    if (count > 0) {
-      rating.score = Math.round(totalScore / count);
-      if (rating.score >= 90) rating.grade = "A+";
-      else if (rating.score >= 80) rating.grade = "A";
-      else if (rating.score >= 70) rating.grade = "B";
-      else if (rating.score >= 60) rating.grade = "C";
-      else if (rating.score >= 50) rating.grade = "D";
-      else rating.grade = "F";
-    }
-  }
-  return rating;
-}
-
 async function fetchSiteRating(domain) {
   const start = Date.now();
   const rating = await fetchSiteRatingRaw(domain);
@@ -376,7 +345,7 @@ async function fetchSiteRating(domain) {
   if (rating) {
     rating.latency = end - start;
   }
-  return await adjustRatingForCookies(rating, domain);
+  return rating;
 }
 
 async function fetchSiteRatingRaw(domain) {
