@@ -691,44 +691,51 @@ chrome.cookies.onChanged.addListener(async (changeInfo) => {
 // Listen for messages from content script or popup
 
 const tabLastReported = new Map();
+const domainLastReported = new Map();
 
 async function reportBrowserActivity(tabId, tabUrl, domain, trackers) {
+  const cleanDom = (domain || "").replace(/^www\./, "").toLowerCase();
+  if (!cleanDom || cleanDom === "localhost" || cleanDom === "127.0.0.1") return;
+
+  const now = Date.now();
   if (tabId) {
     const lastReported = tabLastReported.get(tabId) || 0;
-    if (Date.now() - lastReported < 20000) return;
-    tabLastReported.set(tabId, Date.now());
+    if (now - lastReported < 25000) return;
+    tabLastReported.set(tabId, now);
   }
 
-  const cleanDom = (domain || "").replace(/^www\./, "").toLowerCase();
-  if (!cleanDom) return;
-  
-  let rating = await fetchSiteRating(cleanDom);
+  const lastDomainTime = domainLastReported.get(cleanDom) || 0;
+  if (now - lastDomainTime < 25000) return;
+  domainLastReported.set(cleanDom, now);
+
+  const start = Date.now();
+  let rating = await fetchSiteRatingRaw(cleanDom);
+  const latency = Date.now() - start;
 
   const endpoints = [
-    "http://localhost:8756/api/hub/telemetry",
-    "http://localhost:8000/api/hub/telemetry",
-    "https://guardra-api.botvaibhav.dev/api/hub/telemetry"
+    "https://guardra-api.botvaibhav.dev/api/hub/telemetry",
+    "http://localhost:8000/api/hub/telemetry"
   ];
   
-  const start = Date.now();
-  let latency = rating && rating.latency ? rating.latency : 35;
+  const payload = {
+    domain: cleanDom,
+    url: tabUrl,
+    action_type: "Active Tab Scanned",
+    details: `Detected ${trackers ? trackers.length : 0} trackers on ${cleanDom}`,
+    trackers_detected: trackers || [],
+    auto_actions_taken: [],
+    client_time: start,
+    score: rating ? (rating.score !== undefined ? Math.round(rating.score) : (rating.overall_score !== undefined ? Math.round(rating.overall_score) : 50)) : 50,
+    grade: rating ? (rating.grade || "C") : "C",
+    response_time_ms: Math.round(latency || 28)
+  };
+
   for (const endpoint of endpoints) {
     try {
       const resp = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          domain: cleanDom,
-          url: tabUrl,
-          action_type: "Active Tab Scanned",
-          details: `Detected ${trackers ? trackers.length : 0} trackers on ${cleanDom}`,
-          trackers_detected: trackers || [],
-          auto_actions_taken: [],
-          client_time: start,
-          score: rating ? (rating.score !== undefined ? Math.round(rating.score) : (rating.overall_score !== undefined ? Math.round(rating.overall_score) : 55)) : 55,
-          grade: rating ? rating.grade : "C",
-          response_time_ms: Math.round(latency)
-        })
+        body: JSON.stringify(payload)
       });
       if (resp.ok) {
         break;
