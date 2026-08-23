@@ -879,3 +879,41 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
+
+chrome.storage.onChanged.addListener(async (changes, areaName) => {
+  if (areaName === "local" && changes.guardra_auto_disable_cookies) {
+    const isEnforced = changes.guardra_auto_disable_cookies.newValue;
+    if (isEnforced) {
+      const patterns = [
+        /^(_ga|_gid|_gat|_gcl|__utm)/i,
+        /^(_fb|datr|fr)/i
+      ];
+      
+      try {
+        const tabs = await chrome.tabs.query({});
+        for (const tab of tabs) {
+          if (tab.url && tab.url.startsWith("http")) {
+            const domain = extractDomain(tab.url);
+            if (domain) {
+              const cookies = await getDomainCookies(domain, tab.url);
+              for (const c of cookies) {
+                if (patterns.some(p => p.test(c.name))) {
+                  const protocol = c.secure ? "https:" : "http:";
+                  const cleanDom = c.domain.replace(/^\./, "");
+                  const cookieUrl = `${protocol}//${cleanDom}${c.path}`;
+                  try {
+                    await chrome.cookies.remove({
+                      url: cookieUrl,
+                      name: c.name,
+                      storeId: c.storeId
+                    });
+                  } catch (e) {}
+                }
+              }
+            }
+          }
+        }
+      } catch (e) {}
+    }
+  }
+});

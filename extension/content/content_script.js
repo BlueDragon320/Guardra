@@ -18,6 +18,52 @@
   let autoActionsExecuted = [];
   let detectedTrackers = [];
   let currentRating = null;
+  let isAutoDisableActive = false;
+
+  chrome.storage.local.get(["guardra_auto_disable_cookies"], (res) => {
+    if (res.guardra_auto_disable_cookies) {
+      isAutoDisableActive = true;
+      const code = `
+        window['ga-disable-ALL'] = true;
+        window.ga = function(){};
+        window.gtag = function(){};
+        window.fbq = function(){};
+        const originalSendBeacon = navigator.sendBeacon;
+        navigator.sendBeacon = function(url, data) {
+          if (typeof url === 'string' && (url.includes('google-analytics.com') || url.includes('googletagmanager.com') || url.includes('facebook.com/tr/'))) {
+            return true;
+          }
+          return originalSendBeacon.apply(this, arguments);
+        };
+      `;
+      const script = document.createElement('script');
+      script.textContent = code;
+      if (document.documentElement) {
+        document.documentElement.appendChild(script);
+        script.remove();
+      }
+
+      setInterval(() => {
+        try {
+          const cookies = document.cookie.split(';');
+          for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i];
+            const eqPos = cookie.indexOf('=');
+            const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+            if (/^(_ga|_gid|_gat|_gcl|_fbp|_fbc)/.test(name)) {
+              document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+              const domain = location.hostname.replace(/^www\./i, "");
+              document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=.' + domain;
+            }
+          }
+          const trackerKeyRegex = /^(_ga|_gid|_gat|_gcl|_fbp|_fbc)/;
+          Object.keys(localStorage).forEach(k => {
+            if (trackerKeyRegex.test(k)) localStorage.removeItem(k);
+          });
+        } catch (e) {}
+      }, 1000);
+    }
+  });
 
   // 1. Scan trackers
   function scanTrackers() {
@@ -28,7 +74,11 @@
       const src = script.src;
       TRACKER_SIGNATURES.forEach((sig) => {
         if (sig.regex.test(src) && !detected.some(d => d.name === sig.name)) {
-          detected.push({ name: sig.name, src: src.substring(0, 100) });
+          let isBlocked = false;
+          if (isAutoDisableActive && (sig.name.includes("Google Analytics") || sig.name.includes("Meta") || sig.name.includes("Tag Manager") || sig.name.includes("Facebook Pixel"))) {
+            isBlocked = true;
+          }
+          detected.push({ name: sig.name, src: src.substring(0, 100), isBlocked: isBlocked });
         }
       });
     });

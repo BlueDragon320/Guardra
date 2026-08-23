@@ -575,7 +575,7 @@ function loadCookieGovernance(domain, tabUrl, tabId) {
     return;
   }
 
-  chrome.runtime.sendMessage({ type: "GET_COOKIE_AUDIT", domain, url: tabUrl, tabId }, (res) => {
+  chrome.runtime.sendMessage({ type: "GET_COOKIE_AUDIT", domain, url: tabUrl, tabId }, async (res) => {
     if (chrome.runtime.lastError || !res) {
       if (badge) badge.textContent = "Audited";
       if (essentialEl) essentialEl.textContent = "3";
@@ -583,11 +583,14 @@ function loadCookieGovernance(domain, tabUrl, tabId) {
       return;
     }
 
+    const storedAuto = await chrome.storage.local.get("guardra_auto_disable_cookies");
+    const autoDisable = storedAuto.guardra_auto_disable_cookies || res.isEnforced;
+
     if (essentialEl) essentialEl.textContent = res.essential !== undefined ? res.essential : "1";
-    if (trackingEl) trackingEl.textContent = res.tracking !== undefined ? res.tracking : "0";
+    if (trackingEl) trackingEl.textContent = autoDisable ? "0" : (res.tracking !== undefined ? res.tracking : "0");
     if (totalBadge) totalBadge.textContent = (res.cookies ? res.cookies.length : 0) + (res.trackers ? res.trackers.length : 0);
 
-    if (res.isEnforced || res.tracking === 0) {
+    if (autoDisable || res.tracking === 0) {
       if (badge) {
         badge.className = "cookie-gov-badge enforced";
         badge.textContent = "Only Necessary";
@@ -615,6 +618,7 @@ function loadCookieGovernance(domain, tabUrl, tabId) {
       trackersToRender.forEach(t => {
         const card = document.createElement("div");
         card.className = "cookie-item-card";
+        if (autoDisable) card.classList.add("disabled-card");
         
         const infoDiv = document.createElement("div");
         infoDiv.className = "cookie-item-info";
@@ -651,8 +655,10 @@ function loadCookieGovernance(domain, tabUrl, tabId) {
         
         const btn = document.createElement("button");
         btn.className = "btn-disable-single-cookie";
-        btn.textContent = "Disable";
+        btn.textContent = autoDisable ? "✅ Disabled" : "Disable";
+        if (autoDisable) btn.classList.add("disabled");
         btn.onclick = () => {
+          if (autoDisable) return;
           btn.textContent = "Disabling...";
           btn.disabled = true;
           
@@ -684,6 +690,7 @@ function loadCookieGovernance(domain, tabUrl, tabId) {
       cookiesToRender.forEach(c => {
         const card = document.createElement("div");
         card.className = "cookie-item-card";
+        if (c.isTracking && autoDisable) card.classList.add("disabled-card");
         
         const infoDiv = document.createElement("div");
         infoDiv.className = "cookie-item-info";
@@ -711,8 +718,10 @@ function loadCookieGovernance(domain, tabUrl, tabId) {
           
           const btn = document.createElement("button");
           btn.className = "btn-disable-single-cookie";
-          btn.textContent = "Disable";
+          btn.textContent = autoDisable ? "✅ Disabled" : "Disable";
+          if (autoDisable) btn.classList.add("disabled");
           btn.onclick = () => {
+            if (autoDisable) return;
             btn.textContent = "Disabling...";
             btn.disabled = true;
             chrome.runtime.sendMessage({
