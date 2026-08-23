@@ -171,7 +171,7 @@
     if (!rootHost) {
       rootHost = document.createElement("div");
       rootHost.id = "guardra-inpage-root";
-      rootHost.style.cssText = "all: initial; position: fixed; bottom: 20px; right: 20px; z-index: 2147483647; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;";
+      rootHost.style.cssText = "all: initial; position: fixed; bottom: 20px; right: 20px; z-index: 2147483647; max-height: calc(100vh - 40px); display: flex; flex-direction: column; justify-content: flex-end; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;";
       document.body.appendChild(rootHost);
       shadowRoot = rootHost.attachShadow({ mode: "open" });
     }
@@ -253,7 +253,10 @@
 
       /* Expanded Panel */
       .panel-container {
-        width: 310px;
+        width: 320px;
+        max-height: calc(100vh - 40px);
+        overflow-y: auto;
+        overflow-x: hidden;
         background: #121215;
         border: 1px solid #27272a;
         border-radius: 8px;
@@ -264,6 +267,22 @@
         display: flex;
         flex-direction: column;
         gap: 10px;
+        scrollbar-width: thin;
+        scrollbar-color: #3f3f46 #18181b;
+      }
+      .panel-container::-webkit-scrollbar {
+        width: 5px;
+      }
+      .panel-container::-webkit-scrollbar-track {
+        background: #18181b;
+        border-radius: 4px;
+      }
+      .panel-container::-webkit-scrollbar-thumb {
+        background: #3f3f46;
+        border-radius: 4px;
+      }
+      .panel-container::-webkit-scrollbar-thumb:hover {
+        background: #52525b;
       }
       .panel-header {
         display: flex;
