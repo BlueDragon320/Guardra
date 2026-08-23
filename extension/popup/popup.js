@@ -371,16 +371,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 async function loadActiveTabRating(forceRefresh = false) {
-  // 1. Check if background already stored the active tab rating
-  try {
-    const stored = await chrome.storage.local.get(["currentTabDomain", "currentTabRating"]);
-    if (stored.currentTabRating && stored.currentTabRating.domain) {
-      currentRatingData = stored.currentTabRating;
-      renderPopup(stored.currentTabRating);
-    }
-  } catch (e) {}
-
-  // 2. Identify the active tab domain reliably
   chrome.tabs.query({ active: true, lastFocusedWindow: true }, async (tabs) => {
     let activeTab = tabs && tabs.length > 0 ? tabs[0] : null;
     if (!activeTab || !activeTab.url) {
@@ -391,56 +381,43 @@ async function loadActiveTabRating(forceRefresh = false) {
     if (activeTab && activeTab.url) {
       const domain = extractDomain(activeTab.url);
       if (domain) {
-        // Pre-render immediately from client dataset so user NEVER sees blank/loading
-        const immediateBreaches = getClientBreaches(domain);
-        renderBreaches(immediateBreaches);
         document.getElementById("site-name").textContent = domain.split(".")[0].toUpperCase();
         document.getElementById("site-domain").textContent = domain;
 
-        // Direct fetch from live API
-        try {
-          const resp = await fetch(`https://guardra-api.botvaibhav.dev/api/policy/rating?domain=${encodeURIComponent(domain)}`, {
-            headers: { "X-Guardra-Client": "Extension-Popup-v1.0" }
-          });
-          if (resp.ok) {
-            const liveData = await resp.json();
-            currentRatingData = liveData;
-            renderPopup(liveData);
-            chrome.storage.local.set({
-              currentTabDomain: domain,
-              currentTabRating: liveData,
-              [`cached_rating_${domain}`]: liveData
-            });
-            return;
-          }
-        } catch (netErr) {
-          console.warn("Direct fetch error in popup:", netErr);
-        }
+        const immediateBreaches = getClientBreaches(domain);
+        renderBreaches(immediateBreaches);
 
-        // Offline fallback if server unreachable
-        const fallbackProfile = {
-          domain: domain,
-          name: domain.split(".")[0].toUpperCase(),
-          grade: immediateBreaches.length > 0 ? "D" : "B",
-          score: immediateBreaches.length > 0 ? 38 : 70,
-          color: immediateBreaches.length > 0 ? "red" : "green",
-          summary: `Evaluating privacy disclosures and security logs for ${domain}.`,
-          breaches: immediateBreaches,
-          rubric: {
-            data_sharing: { score: 50, max: 100, label: "Standard Commercial Sharing", risk: "medium" },
-            retention: { score: 50, max: 100, label: "Operational Retention", risk: "medium" },
-            tracking_cookies: { score: 50, max: 100, label: "Standard Analytics", risk: "medium" },
-            user_rights: { score: 60, max: 100, label: "Legal Deletion Supported", risk: "medium" },
-            breach_history: { score: immediateBreaches.length > 0 ? 20 : 80, max: 100, label: "Security Profile", risk: immediateBreaches.length > 0 ? "critical" : "low" },
-            readability: { score: 55, max: 100, label: "Standard Terms", risk: "medium" }
-          },
-          compliance: {
-            dpdp: { compliant: true, grievance_officer: `Grievance Officer (${domain})`, grievance_email: `privacy@${domain}` },
-            gdpr: { compliant: true, dpo_contact: `dpo@${domain}` }
+        // Fetch single source of truth rating from background service worker
+        chrome.runtime.sendMessage({ type: "GET_CURRENT_RATING", domain: domain }, (res) => {
+          if (res && res.rating) {
+            currentRatingData = res.rating;
+            renderPopup(res.rating);
+          } else {
+            const fallbackProfile = {
+              domain: domain,
+              name: domain.split(".")[0].toUpperCase(),
+              grade: "C",
+              score: 55,
+              color: "amber",
+              summary: `Evaluating privacy disclosures and security logs for ${domain}.`,
+              breaches: immediateBreaches,
+              rubric: {
+                data_sharing: { score: 55, max: 100, label: "Standard Vendor Sharing", risk: "medium" },
+                retention: { score: 55, max: 100, label: "Operational Retention", risk: "medium" },
+                tracking_cookies: { score: 55, max: 100, label: "Standard Analytics", risk: "medium" },
+                user_rights: { score: 65, max: 100, label: "Legal Deletion Supported", risk: "medium" },
+                breach_history: { score: 75, max: 100, label: "Security Profile", risk: "low" },
+                readability: { score: 55, max: 100, label: "Standard Terms", risk: "medium" }
+              },
+              compliance: {
+                dpdp: { compliant: true, grievance_officer: `Grievance Officer (${domain})`, grievance_email: `privacy@${domain}` },
+                gdpr: { compliant: true, dpo_contact: `dpo@${domain}` }
+              }
+            };
+            currentRatingData = fallbackProfile;
+            renderPopup(fallbackProfile);
           }
-        };
-        currentRatingData = fallbackProfile;
-        renderPopup(fallbackProfile);
+        });
         return;
       }
     }

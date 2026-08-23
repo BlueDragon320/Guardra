@@ -176,10 +176,13 @@
       shadowRoot = rootHost.attachShadow({ mode: "open" });
     }
 
-    const grade = rating?.grade || "D";
-    const score = rating?.score || 38;
-    const trackerCount = detectedTrackers.length || (domain.includes("amazon") ? 3 : 2);
-    const grievanceEmail = rating?.compliance?.dpdp?.grievance_email || `grievances@${domain}`;
+    const grade = rating?.grade || "C";
+    const score = rating?.score !== undefined ? Math.round(rating.score) : (rating?.overall_score !== undefined ? Math.round(rating.overall_score) : 55);
+    const color = rating?.color === "green" || rating?.grade_color === "green" || score >= 70 
+      ? "#10b981" 
+      : (rating?.color === "red" || rating?.grade_color === "red" || score < 50 ? "#ef4444" : "#f59e0b");
+    const trackerCount = detectedTrackers.length;
+    const grievanceEmail = rating?.compliance?.dpdp?.grievance_email || `privacy@${domain}`;
 
     const css = `
       * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
@@ -459,16 +462,17 @@
     automatePlatformSettings();
     sendTelemetry();
 
-    chrome.runtime.sendMessage({ type: "GET_CURRENT_RATING" }, (res) => {
+    const domain = window.location.hostname.replace(/^www\./, "").toLowerCase();
+    chrome.runtime.sendMessage({ type: "GET_CURRENT_RATING", domain: domain, url: window.location.href }, (res) => {
       if (res && res.rating) {
         renderFloatingPill(res.rating);
       } else {
-        const domain = window.location.hostname.replace(/^www\./, "");
         renderFloatingPill({
           domain: domain,
-          name: domain,
-          grade: domain.includes("amazon") ? "D" : "C",
-          score: domain.includes("amazon") ? 38 : 55
+          name: domain.split(".")[0].toUpperCase(),
+          grade: "C",
+          score: 55,
+          color: "amber"
         });
       }
     });

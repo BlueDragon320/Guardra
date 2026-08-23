@@ -329,48 +329,59 @@ function updateBadge(tabId, grade, colorHex) {
   chrome.action.setBadgeBackgroundColor({ tabId, color: colorHex || "#64748b" });
 }
 
+const LOCAL_API_BASE = "http://localhost:8000";
+const REMOTE_API_BASE = "https://guardra-api.botvaibhav.dev";
+
 async function getApiBase() {
   const result = await chrome.storage.local.get("apiBase");
-  return result.apiBase || DEFAULT_API_BASE;
+  return result.apiBase || LOCAL_API_BASE;
 }
 
 async function fetchSiteRating(domain) {
-  const apiBase = await getApiBase();
-  
-  // 1. Mandatory server query with audit logging
-  if (apiBase && apiBase.startsWith("http")) {
+  if (!domain) return null;
+  const cleanDom = domain.replace(/^www\./, "").toLowerCase();
+
+  // Try local API first, then remote API
+  const endpoints = [
+    `http://localhost:8000/api/policy/rating?domain=${encodeURIComponent(cleanDom)}`,
+    `${REMOTE_API_BASE}/api/policy/rating?domain=${encodeURIComponent(cleanDom)}`
+  ];
+
+  for (const endpoint of endpoints) {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 4000);
-      const resp = await fetch(`${apiBase}/api/policy/rating?domain=${encodeURIComponent(domain)}`, {
+      const timeoutId = setTimeout(() => controller.abort(), 2500);
+      const resp = await fetch(endpoint, {
         signal: controller.signal,
         headers: {
-          "X-Guardra-Client": "Extension-v1.0",
+          "X-Guardra-Client": "Extension-v2.0",
           "Accept": "application/json"
         }
       });
       clearTimeout(timeoutId);
       if (resp.ok) {
         const liveRating = await resp.json();
-        // Cache in local storage for instantaneous tab switching
-        await chrome.storage.local.set({ [`cached_rating_${domain}`]: liveRating });
+        await chrome.storage.local.set({ 
+          [`cached_rating_${cleanDom}`]: liveRating,
+          currentTabRating: liveRating,
+          currentTabDomain: cleanDom
+        });
         return liveRating;
       }
-    } catch (e) {
-      console.warn("Server ping error, falling back to local dataset:", e);
-    }
+    } catch (e) {}
   }
 
-  // 2. Fallback to cached or standalone database only if server is unreachable
-  const cached = await chrome.storage.local.get(`cached_rating_${domain}`);
-  if (cached && cached[`cached_rating_${domain}`]) {
-    return cached[`cached_rating_${domain}`];
+  // 2. Check local storage cache
+  const cached = await chrome.storage.local.get(`cached_rating_${cleanDom}`);
+  if (cached && cached[`cached_rating_${cleanDom}`]) {
+    return cached[`cached_rating_${cleanDom}`];
   }
 
+  // 3. Fallback to embedded database
   for (const [key, val] of Object.entries(EMBEDDED_STANDALONE_DATABASE)) {
-    if (domain === key || domain.endsWith("." + key) || key.endsWith("." + domain)) {
+    if (cleanDom === key || cleanDom.endsWith("." + key) || key.endsWith("." + cleanDom)) {
       return {
-        domain: domain,
+        domain: cleanDom,
         name: val.name,
         grade: val.grade,
         score: val.score,
@@ -385,25 +396,25 @@ async function fetchSiteRating(domain) {
     }
   }
 
-  // 3. Fallback baseline profile for any unlisted domain
+  // 4. Default fallback baseline profile for unlisted domain
   return {
-    domain: domain,
-    name: domain.split(".")[0].toUpperCase(),
-    grade: "B-",
-    score: 68,
-    color: "green",
-    summary: `Active scanning for ${domain}. Privacy disclosures active.`,
+    domain: cleanDom,
+    name: cleanDom.split(".")[0].toUpperCase(),
+    grade: "C",
+    score: 55,
+    color: "amber",
+    summary: `Active scanning for ${cleanDom}. Privacy disclosures active.`,
     rubric: {
-      data_sharing: { score: 65, max: 100, label: "Standard Vendor Sharing", risk: "medium" },
-      retention: { score: 70, max: 100, label: "Standard Retention Window", risk: "medium" },
-      tracking_cookies: { score: 65, max: 100, label: "Standard Analytics", risk: "medium" },
-      user_rights: { score: 75, max: 100, label: "Legal Deletion Supported", risk: "low" },
-      breach_history: { score: 80, max: 100, label: "No Known Major Breaches", risk: "low" },
-      readability: { score: 60, max: 100, label: "Standard Terms", risk: "medium" }
+      data_sharing: { score: 55, max: 100, label: "Standard Vendor Sharing", risk: "medium" },
+      retention: { score: 55, max: 100, label: "Standard Retention Window", risk: "medium" },
+      tracking_cookies: { score: 55, max: 100, label: "Standard Analytics", risk: "medium" },
+      user_rights: { score: 65, max: 100, label: "Legal Deletion Supported", risk: "medium" },
+      breach_history: { score: 75, max: 100, label: "No Known Major Breaches", risk: "low" },
+      readability: { score: 55, max: 100, label: "Standard Terms", risk: "medium" }
     },
     compliance: {
-      dpdp: { compliant: true, grievance_officer: `Grievance Redressal (${domain})`, grievance_email: `privacy@${domain}`, redressal_period_days: 30, erasure_right_disclosed: true },
-      gdpr: { compliant: true, dpo_contact: `dpo@${domain}`, lawful_basis_stated: true, erasure_art17_disclosed: true },
+      dpdp: { compliant: true, grievance_officer: `Grievance Redressal (${cleanDom})`, grievance_email: `privacy@${cleanDom}`, redressal_period_days: 30, erasure_right_disclosed: true },
+      gdpr: { compliant: true, dpo_contact: `dpo@${cleanDom}`, lawful_basis_stated: true, erasure_art17_disclosed: true },
       ccpa: { compliant: false, opt_out_link: null, do_not_sell: false }
     },
     category: "Website",
