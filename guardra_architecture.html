@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Guardra - Full System Architecture & Data Journey</title>
+  <title>Guardra — System Architecture Visualizer & Mode Selector</title>
   <style>
     :root {
       --bg-primary: #0b0f19;
@@ -44,11 +44,12 @@
     header {
       background: linear-gradient(180deg, #131d31 0%, #0b0f19 100%);
       border-bottom: 1px solid var(--border-color);
-      padding: 14px 24px;
+      padding: 12px 24px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       z-index: 100;
+      flex-shrink: 0;
     }
 
     .brand {
@@ -77,8 +78,44 @@
     }
 
     .brand-subtitle {
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       color: var(--text-secondary);
+    }
+
+    /* Navigation Mode Tabs */
+    .nav-tabs {
+      display: flex;
+      background: rgba(31, 41, 55, 0.7);
+      padding: 4px;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      gap: 4px;
+    }
+
+    .nav-tab {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      padding: 8px 16px;
+      border-radius: 7px;
+      font-size: 0.84rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      transition: all 0.2s ease;
+    }
+
+    .nav-tab:hover {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .nav-tab.active {
+      background: #2563eb;
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
     }
 
     .header-controls {
@@ -116,14 +153,220 @@
       background: #1d4ed8;
     }
 
-    .main-container {
-      display: flex;
+    /* Page View Containers */
+    .view-page {
+      display: none;
       flex: 1;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    .view-page.active {
+      display: flex;
+    }
+
+    /* =========================================================
+       PAGE 1: SIMPLE ARCHITECTURE (NORMAL USER VIEW)
+       ========================================================= */
+    #page-simple {
+      flex-direction: column;
+      align-items: center;
+      padding: 30px 20px 60px;
+      background: radial-gradient(circle at 50% 0%, rgba(37, 99, 235, 0.12) 0%, transparent 60%), #0b0f19;
+    }
+
+    .simple-hero {
+      text-align: center;
+      max-width: 780px;
+      margin-bottom: 36px;
+    }
+
+    .simple-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      color: #10b981;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .simple-title {
+      font-size: 2.2rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 10px;
+      background: linear-gradient(135deg, #ffffff 30%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .simple-desc {
+      font-size: 1rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .simple-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 20px;
+      max-width: 1200px;
+      width: 100%;
+      margin-bottom: 40px;
+    }
+
+    .simple-card {
+      background: rgba(17, 24, 39, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(12px);
+      border-radius: 16px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       position: relative;
       overflow: hidden;
     }
 
-    /* Diagram Viewport */
+    .simple-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--card-gradient, linear-gradient(90deg, #3b82f6, #06b6d4));
+    }
+
+    .simple-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(59, 130, 246, 0.4);
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5);
+    }
+
+    .card-icon {
+      width: 46px;
+      height: 46px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .card-step-num {
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: var(--accent-blue);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .card-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .card-text {
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .card-features {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .card-features li {
+      font-size: 0.82rem;
+      color: #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-features li span {
+      color: #10b981;
+      font-weight: bold;
+    }
+
+    /* Live Scenario Bar */
+    .scenario-section {
+      max-width: 1200px;
+      width: 100%;
+      background: rgba(17, 24, 39, 0.9);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 30px;
+    }
+
+    .scenario-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .scenario-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .scenario-btn {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 0.84rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .scenario-btn.active {
+      background: #2563eb;
+      color: #fff;
+      border-color: #3b82f6;
+    }
+
+    .scenario-content {
+      background: #0b0f19;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 16px 20px;
+      font-size: 0.9rem;
+      color: #e2e8f0;
+      line-height: 1.6;
+    }
+
+    /* =========================================================
+       PAGE 2: TECHNICAL ARCHITECTURE (DEVELOPER VIEW)
+       ========================================================= */
+    #page-tech {
+      flex-direction: row;
+      height: calc(100vh - 65px);
+      overflow: hidden;
+    }
+
     .viewport {
       flex: 1;
       height: 100%;
@@ -151,7 +394,6 @@
       transition: transform 0.05s ease-out;
     }
 
-    /* Floating Toolbar */
     .zoom-toolbar {
       position: absolute;
       top: 20px;
@@ -196,42 +438,39 @@
       border-bottom: 1px solid var(--border-color);
     }
 
-    /* Step Sequence Bar */
     .stepper-bar {
       position: absolute;
-      bottom: 20px;
+      bottom: 24px;
       left: 50%;
       transform: translateX(-50%);
       background: var(--bg-card);
       backdrop-filter: blur(12px);
       border: 1px solid var(--border-color);
       border-radius: 30px;
-      padding: 8px 16px;
+      padding: 6px 16px;
       display: flex;
       align-items: center;
-      gap: 12px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      gap: 14px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
       z-index: 50;
     }
 
     .stepper-indicator {
       font-size: 0.85rem;
-      font-weight: 600;
-      color: var(--accent-cyan);
-      min-width: 140px;
+      font-weight: 700;
+      color: var(--accent-blue);
+      min-width: 100px;
       text-align: center;
     }
 
-    /* Sidebar Panel */
     .sidebar {
-      width: 440px;
+      width: 380px;
       background: var(--bg-secondary);
       border-left: 1px solid var(--border-color);
       display: flex;
       flex-direction: column;
-      height: 100%;
-      z-index: 60;
-      box-shadow: -5px 0 25px rgba(0, 0, 0, 0.4);
+      z-index: 40;
+      flex-shrink: 0;
     }
 
     .sidebar-header {
@@ -243,254 +482,474 @@
     }
 
     .sidebar-title {
-      font-size: 1rem;
+      font-size: 0.95rem;
       font-weight: 700;
-      color: var(--text-primary);
+    }
+
+    .step-tag {
+      background: rgba(59, 130, 246, 0.15);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      color: var(--accent-blue);
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.7rem;
+      font-weight: 600;
     }
 
     .sidebar-content {
       flex: 1;
       overflow-y: auto;
-      padding: 20px;
+      padding: 12px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 8px;
     }
 
     .step-card {
       background: var(--bg-tertiary);
       border: 1px solid var(--border-color);
-      border-radius: 10px;
-      padding: 14px;
+      border-radius: 8px;
+      padding: 12px 14px;
       cursor: pointer;
       transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
 
     .step-card:hover {
       border-color: var(--accent-blue);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      background: #253347;
     }
 
     .step-card.active {
-      border-color: var(--accent-cyan);
-      background: rgba(6, 182, 212, 0.1);
-      box-shadow: 0 0 0 1px var(--accent-cyan);
+      border-color: var(--accent-blue);
+      background: linear-gradient(135deg, #1e293b 0%, #1e3a8a 100%);
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
     }
 
     .step-header {
       display: flex;
       align-items: center;
       gap: 10px;
-      margin-bottom: 8px;
     }
 
-    .step-num {
-      width: 26px;
-      height: 26px;
+    .step-number {
+      width: 22px;
+      height: 22px;
       border-radius: 50%;
-      background: var(--accent-blue);
-      color: #fff;
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-primary);
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 0.75rem;
       font-weight: 700;
-      flex-shrink: 0;
     }
 
-    .step-card.active .step-num {
-      background: var(--accent-cyan);
+    .step-card.active .step-number {
+      background: var(--accent-blue);
+      color: #fff;
     }
 
     .step-title {
-      font-size: 0.88rem;
+      font-size: 0.85rem;
       font-weight: 600;
       color: var(--text-primary);
     }
 
     .step-desc {
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       color: var(--text-secondary);
-      line-height: 1.45;
+      line-height: 1.4;
+      padding-left: 32px;
     }
 
-    .step-tag {
-      display: inline-block;
-      font-size: 0.68rem;
-      padding: 2px 7px;
-      border-radius: 4px;
-      background: rgba(255, 255, 255, 0.08);
-      color: var(--accent-cyan);
-      margin-top: 8px;
+    .step-meta {
+      font-size: 0.7rem;
       font-family: monospace;
+      color: var(--accent-cyan);
+      padding-left: 32px;
     }
 
-    /* SVG Diagram Elements */
-    svg.architecture-svg {
-      width: 100%;
-      height: 100%;
-    }
-
+    /* SVG Diagram Styles */
     .cluster-box {
-      fill: rgba(17, 24, 39, 0.7);
-      stroke-width: 2px;
-      rx: 16px;
+      fill: #111827;
+      stroke-width: 1.5;
+      stroke-dasharray: 6 4;
+      rx: 16;
     }
 
-    .cluster-client { stroke: #3b82f6; fill: rgba(59, 130, 246, 0.04); }
-    .cluster-gateway { stroke: #8b5cf6; fill: rgba(139, 92, 246, 0.04); }
-    .cluster-backend { stroke: #10b981; fill: rgba(16, 185, 129, 0.04); }
-    .cluster-db { stroke: #f59e0b; fill: rgba(245, 158, 11, 0.04); }
+    .cluster-client { stroke: #3b82f6; fill: rgba(30, 58, 138, 0.08); }
+    .cluster-gateway { stroke: #8b5cf6; fill: rgba(109, 40, 217, 0.08); }
+    .cluster-backend { stroke: #10b981; fill: rgba(6, 95, 70, 0.08); }
+    .cluster-db { stroke: #f59e0b; fill: rgba(180, 83, 9, 0.08); }
 
     .cluster-title {
-      font-size: 15px;
-      font-weight: 700;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      fill: #e5e7eb;
+      font-size: 20px;
+      font-weight: 800;
+      fill: #e2e8f0;
+      letter-spacing: -0.02em;
+    }
+
+    .node-group {
+      cursor: pointer;
+      transition: filter 0.2s, transform 0.2s;
+    }
+
+    .node-group:hover {
+      filter: drop-shadow(0 0 12px rgba(59, 130, 246, 0.6));
     }
 
     .node-box {
       fill: #1e293b;
       stroke: #475569;
-      stroke-width: 1.5px;
-      rx: 10px;
-      transition: all 0.3s;
-      cursor: pointer;
+      stroke-width: 1.5;
+      rx: 12;
+      transition: stroke 0.2s, fill 0.2s;
     }
 
-    .node-box:hover {
-      stroke: var(--accent-cyan);
-      fill: #273549;
-    }
-
-    .node-box.highlight {
-      stroke: #38bdf8;
-      stroke-width: 3px;
-      filter: drop-shadow(0 0 12px rgba(56, 189, 248, 0.6));
+    .node-icon-bg {
+      fill: rgba(255, 255, 255, 0.05);
+      rx: 8;
     }
 
     .node-title {
-      font-size: 13px;
+      font-size: 15px;
       font-weight: 700;
-      fill: #f8fafc;
-      pointer-events: none;
+      fill: #ffffff;
     }
 
     .node-sub {
       font-size: 11px;
       fill: #94a3b8;
-      pointer-events: none;
       font-family: monospace;
     }
 
-    .node-icon-bg {
-      fill: rgba(255, 255, 255, 0.06);
-      rx: 6px;
+    .node-highlight .node-box {
+      stroke: #38bdf8;
+      stroke-width: 2.5;
+      fill: #0f2744;
     }
 
-    /* Edge Connections */
     .edge-line {
       fill: none;
-      stroke: #4b5563;
-      stroke-width: 2px;
-      stroke-dasharray: 6, 4;
-      transition: all 0.3s;
+      stroke: #64748b;
+      stroke-width: 2;
+      stroke-linecap: round;
+      transition: stroke 0.3s, stroke-width 0.3s;
     }
 
     .edge-line.active {
       stroke: #38bdf8;
-      stroke-width: 3.5px;
-      stroke-dasharray: 8, 4;
+      stroke-width: 3.5;
+      stroke-dasharray: 8 4;
       animation: dash 1s linear infinite;
-      filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.8));
     }
 
     @keyframes dash {
-      to {
-        stroke-dashoffset: -24;
-      }
+      to { stroke-dashoffset: -24; }
     }
 
     .edge-badge {
       font-size: 11px;
       font-weight: 800;
-      fill: #fff;
+      fill: #0f172a;
     }
 
     .edge-circle {
-      fill: #2563eb;
-      stroke: #1e40af;
-      stroke-width: 1.5px;
+      fill: #94a3b8;
+      stroke: #0f172a;
+      stroke-width: 2;
+      transition: fill 0.3s;
     }
 
     .edge-circle.active {
-      fill: #06b6d4;
-      stroke: #0891b2;
-      animation: pulse 1.5s infinite;
+      fill: #38bdf8;
     }
 
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.15); }
+    /* =========================================================
+       PAGE 3: MODE CHOOSER & COMPARISON VIEW
+       ========================================================= */
+    #page-choice {
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px 80px;
+      background: radial-gradient(circle at 50% 10%, rgba(139, 92, 246, 0.15) 0%, transparent 60%), #0b0f19;
     }
 
-    /* Tooltip */
-    #info-modal {
-      position: absolute;
-      display: none;
-      background: #111827;
-      border: 1px solid var(--border-accent);
-      border-radius: 8px;
-      padding: 12px 16px;
+    .choice-container {
+      max-width: 1100px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+
+    .choice-hero {
+      text-align: center;
+    }
+
+    .choice-title {
+      font-size: 2.2rem;
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+
+    .choice-cards-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 768px) {
+      .choice-cards-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .choice-card {
+      background: rgba(17, 24, 39, 0.9);
+      border: 1px solid var(--border-color);
+      border-radius: 18px;
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 20px;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .choice-card:hover {
+      transform: translateY(-6px);
+      border-color: var(--accent-blue);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+    }
+
+    .choice-card.primary {
+      border-color: rgba(59, 130, 246, 0.5);
+      background: linear-gradient(145deg, rgba(30, 58, 138, 0.2) 0%, rgba(17, 24, 39, 0.9) 100%);
+    }
+
+    .choice-card-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .choice-icon {
+      width: 54px;
+      height: 54px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+    }
+
+    .choice-card-title {
+      font-size: 1.4rem;
+      font-weight: 700;
       color: #fff;
-      font-size: 0.82rem;
-      max-width: 320px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7);
-      pointer-events: none;
-      z-index: 1000;
+    }
+
+    .choice-card-desc {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* Comparison Table */
+    .comp-table-container {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 24px;
+      overflow-x: auto;
+    }
+
+    .comp-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+
+    .comp-table th, .comp-table td {
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .comp-table th {
+      color: var(--text-secondary);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+    }
+
+    .comp-table td {
+      color: #e2e8f0;
+    }
+
+    .comp-check {
+      color: #10b981;
+      font-weight: 700;
     }
   </style>
 </head>
 <body>
 
-  <!-- Header -->
+  <!-- Top Header with Navigation Tabs -->
   <header>
     <div class="brand">
       <div class="brand-logo">G</div>
       <div>
-        <div class="brand-title">Guardra Architecture &amp; Data Journey</div>
-        <div class="brand-subtitle">Interactive Visualizer: Declarative Net Request Ad &amp; Tracker Blocker • Extension (MV3) &lt;—&gt; FastAPI Backend Engine</div>
+        <div class="brand-title">Guardra Architecture &amp; System Hub</div>
+        <div class="brand-subtitle">Interactive 3-View System Explorer: User, Developer &amp; Hub</div>
       </div>
     </div>
-    <div class="header-controls">
-      <button class="btn" id="btn-fit">🔍 Fit to Screen</button>
-      <button class="btn" id="btn-reset">↺ Reset View</button>
+
+    <!-- 3 View Selector Tabs -->
+    <div class="nav-tabs">
+      <button class="nav-tab active" id="tab-simple" onclick="switchView('simple')">
+        <span>👤</span> User View (Simple)
+      </button>
+      <button class="nav-tab" id="tab-tech" onclick="switchView('tech')">
+        <span>🛠️</span> Developer View (Technical)
+      </button>
+      <button class="nav-tab" id="tab-choice" onclick="switchView('choice')">
+        <span>🧭</span> Choose Mode / Hub
+      </button>
+    </div>
+
+    <!-- Context Controls for Tech View -->
+    <div class="header-controls" id="tech-controls" style="display: none;">
+      <button class="btn" id="btn-fit">🔍 Fit Screen</button>
+      <button class="btn" id="btn-reset">↺ Reset</button>
       <button class="btn btn-primary" id="btn-toggle-auto">▶ Auto Tour</button>
     </div>
   </header>
 
-  <!-- Main Work Area -->
-  <div class="main-container">
-    <!-- Viewport for SVG Diagram -->
+  <!-- =========================================================
+       PAGE 1: SIMPLE ARCHITECTURE (NORMAL USER VIEW)
+       ========================================================= -->
+  <div class="view-page active" id="page-simple">
+    <div class="simple-hero">
+      <div class="simple-badge">🛡️ Personal Privacy Guardian</div>
+      <h1 class="simple-title">How Guardra Protects You in 4 Simple Steps</h1>
+      <p class="simple-desc">
+        Guardra runs silently inside your browser to block annoying ads, prevent secret tracking, grade company privacy policies with AI, and help you legally delete your personal data.
+      </p>
+    </div>
+
+    <div class="simple-grid">
+      <!-- Card 1 -->
+      <div class="simple-card" style="--card-gradient: linear-gradient(90deg, #10b981, #06b6d4);">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div class="card-icon">⚡</div>
+          <span class="card-step-num">Step 1 • Live Browsing</span>
+        </div>
+        <h3 class="card-title">Kills Ads &amp; Hidden Trackers</h3>
+        <p class="card-text">
+          As you browse, Guardra's high-speed engine intercepts video pre-rolls on YouTube, hides sponsored posts on Instagram/Facebook feeds, and stops 100+ ad networks from following you.
+        </p>
+        <ul class="card-features">
+          <li><span>✓</span> Instant YouTube video ad auto-skip (<0.05s)</li>
+          <li><span>✓</span> Removes sponsored posts on Instagram &amp; Facebook</li>
+          <li><span>✓</span> Blocks Google, Meta, TikTok, and Taboola trackers</li>
+        </ul>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="simple-card" style="--card-gradient: linear-gradient(90deg, #3b82f6, #8b5cf6);">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div class="card-icon">🏷️</div>
+          <span class="card-step-num">Step 2 • On-Page Pill</span>
+        </div>
+        <h3 class="card-title">Always-On Privacy Pill</h3>
+        <p class="card-text">
+          A sleek, unobtrusive floating pill sits at the bottom of web pages showing live blocked ads and active tracking cookies, matching your browser's light or dark mode in real time.
+        </p>
+        <ul class="card-features">
+          <li><span>✓</span> Live counter: <code>🛡️ 12 Ads Blocked</code></li>
+          <li><span>✓</span> Real-time Light / Dark theme synchronization</li>
+          <li><span>✓</span> 1-Click to expand full in-page security audit</li>
+        </ul>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="simple-card" style="--card-gradient: linear-gradient(90deg, #f59e0b, #ef4444);">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div class="card-icon">🧠</div>
+          <span class="card-step-num">Step 3 • AI Analysis</span>
+        </div>
+        <h3 class="card-title">AI Policy Score (Grade A - F)</h3>
+        <p class="card-text">
+          Nobody reads 20-page legal terms. Guardra's AI scans the website's privacy policy in 0.2 seconds, checks whether they sell your data or retain it forever, and assigns a simple letter score.
+        </p>
+        <ul class="card-features">
+          <li><span>✓</span> 6-Pillar rating: Data Sharing, Retention, Security</li>
+          <li><span>✓</span> DPDP Act 2023 &amp; GDPR compliance check</li>
+          <li><span>✓</span> Instant Grievance Officer contact finder</li>
+        </ul>
+      </div>
+
+      <!-- Card 4 -->
+      <div class="simple-card" style="--card-gradient: linear-gradient(90deg, #ec4899, #f43f5e);">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div class="card-icon">✉️</div>
+          <span class="card-step-num">Step 4 • Take Control</span>
+        </div>
+        <h3 class="card-title">1-Click Legal Data Deletion</h3>
+        <p class="card-text">
+          Want a company to erase your phone number, address, and purchase history? Guardra generates and sends a statutory DPDP Sec 12 / GDPR data deletion notice to their legal desk with 1 click.
+        </p>
+        <ul class="card-features">
+          <li><span>✓</span> Legally binding statutory deletion demand</li>
+          <li><span>✓</span> Alerts if the site had verified dark web data breaches</li>
+          <li><span>✓</span> 1-Click cookie neutralizer for advertising cookies</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- User Scenarios Demo Box -->
+    <div class="scenario-section">
+      <div class="scenario-title">
+        <span>💡</span> Explore Everyday User Scenarios
+      </div>
+      <div class="scenario-tabs">
+        <button class="scenario-btn active" onclick="showScenario('yt')">Watching YouTube</button>
+        <button class="scenario-btn" onclick="showScenario('ig')">Scrolling Instagram</button>
+        <button class="scenario-btn" onclick="showScenario('shop')">Online Shopping</button>
+        <button class="scenario-btn" onclick="showScenario('breach')">Data Breach Check</button>
+      </div>
+      <div class="scenario-content" id="scenario-box">
+        <strong>YouTube Scenario:</strong> When you open a YouTube video, Guardra detects video pre-rolls, immediately mutes them, clicks skip buttons, and fast-forwards through unskippable ads in under 0.05 seconds while keeping your normal video at 1.0x playback speed.
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       PAGE 2: TECHNICAL ARCHITECTURE (DEVELOPER VIEW)
+       ========================================================= -->
+  <div class="view-page" id="page-tech">
     <div class="viewport" id="viewport">
-      <!-- Zoom/Pan Controls -->
       <div class="zoom-toolbar">
         <button class="tool-btn" id="zoom-in" title="Zoom In">+</button>
-        <div class="zoom-level-badge" id="zoom-text">100%</div>
+        <div class="zoom-level-badge" id="zoom-text">72%</div>
         <button class="tool-btn" id="zoom-out" title="Zoom Out">-</button>
         <button class="tool-btn" id="zoom-home" title="Reset View">🏠</button>
       </div>
 
-      <!-- Stepper Controls -->
       <div class="stepper-bar">
         <button class="btn" id="btn-prev-step">◀ Previous</button>
         <div class="stepper-indicator" id="step-indicator">Step 1 of 12</div>
         <button class="btn btn-primary" id="btn-next-step">Next Step ▶</button>
       </div>
 
-      <!-- Canvas container for zoom & pan -->
       <div id="canvas-container">
         <svg class="architecture-svg" viewBox="0 0 2400 1400" xmlns="http://www.w3.org/2000/svg">
           <defs>
@@ -502,17 +961,17 @@
             </marker>
           </defs>
 
-          <!-- ================= 1. CLIENT / EXTENSION CLUSTER ================= -->
+          <!-- 1. CLIENT / EXTENSION CLUSTER -->
           <rect class="cluster-box cluster-client" x="40" y="40" width="700" height="1300" />
-          <text class="cluster-title" x="70" y="80">1. Client / Browser Extension (MV3 & DNR Engine)</text>
+          <text class="cluster-title" x="70" y="80">1. Client / Browser Extension (MV3 &amp; DNR Engine)</text>
 
-          <!-- Node 1: Browser Navigation / Webpage -->
+          <!-- Node 1: Browser Navigation -->
           <g id="node-tab" class="node-group" onclick="selectStep(1)">
             <rect class="node-box" x="80" y="105" width="300" height="85" />
             <rect class="node-icon-bg" x="95" y="120" width="36" height="36" />
             <text x="105" y="143" font-size="18">🌐</text>
             <text class="node-title" x="145" y="137">User Web Navigation</text>
-            <text class="node-sub" x="145" y="157">Target: e.g. youtube.com / boat</text>
+            <text class="node-sub" x="145" y="157">Target: e.g. youtube.com / instagram</text>
             <text class="node-sub" x="145" y="173">chrome.tabs.onUpdated</text>
           </g>
 
@@ -521,27 +980,27 @@
             <rect class="node-box" x="80" y="210" width="300" height="130" />
             <rect class="node-icon-bg" x="95" y="225" width="36" height="36" />
             <text x="105" y="248" font-size="18">⚡</text>
-            <text class="node-title" x="145" y="237">Content Script & In-Page Pill</text>
-            <text class="node-sub" x="145" y="257">content_script.js (run_at: document_start)</text>
-            <text class="node-sub" x="145" y="275">• DOM Tracker Scanner (Meta, GA, TikTok)</text>
-            <text class="node-sub" x="145" y="293">• YouTube Video Ad Neutralizer & Auto-Skip</text>
+            <text class="node-title" x="145" y="237">Content Script &amp; In-Page Pill</text>
+            <text class="node-sub" x="145" y="257">content_script.js (document_start)</text>
+            <text class="node-sub" x="145" y="275">• SPA Continuous Feed Ad Sweeper</text>
+            <text class="node-sub" x="145" y="293">• YouTube Video Ad Neutralizer &amp; Auto-Skip</text>
             <text class="node-sub" x="145" y="311">• In-Page Privacy Pill (#guardra-inpage-root)</text>
             <text class="node-sub" x="145" y="327">• Real-Time Light / Dark Theme Sync</text>
           </g>
 
-          <!-- Node 2b: Declarative Net Request (DNR) Engine -->
+          <!-- Node 2b: DNR Engine -->
           <g id="node-dnr" class="node-group" onclick="selectStep(3)">
             <rect class="node-box" x="80" y="360" width="300" height="110" />
             <rect class="node-icon-bg" x="95" y="375" width="36" height="36" />
             <text x="105" y="398" font-size="18">🛡️</text>
-            <text class="node-title" x="145" y="387">DNR Ad & Tracker Engine</text>
+            <text class="node-title" x="145" y="387">DNR Ad &amp; Tracker Engine</text>
             <text class="node-sub" x="145" y="407">declarativeNetRequest (GPLv3)</text>
-            <text class="node-sub" x="145" y="425">• base_rules.json (111 Ad Rules)</text>
+            <text class="node-sub" x="145" y="425">• base_rules.json (174 Ad Rules)</text>
             <text class="node-sub" x="145" y="443">• privacy_rules.json (67 Tracker Rules)</text>
             <text class="node-sub" x="145" y="460">• 2-State Global Master Toggle</text>
           </g>
 
-          <!-- Node 3: Cookies Engine & API -->
+          <!-- Node 3: Cookies Engine -->
           <g id="node-cookies" class="node-group" onclick="selectStep(4)">
             <rect class="node-box" x="80" y="490" width="300" height="95" />
             <rect class="node-icon-bg" x="95" y="505" width="36" height="36" />
@@ -552,22 +1011,22 @@
             <text class="node-sub" x="145" y="570">1-Click Tracker Neutralizer</text>
           </g>
 
-          <!-- Node 4: Background Service Worker -->
+          <!-- Node 4: Service Worker -->
           <g id="node-sw" class="node-group" onclick="selectStep(5)">
             <rect class="node-box" x="420" y="210" width="290" height="375" />
             <rect class="node-icon-bg" x="435" y="225" width="36" height="36" />
             <text x="445" y="248" font-size="18">⚙️</text>
             <text class="node-title" x="485" y="237">Background Service Worker</text>
             <text class="node-sub" x="485" y="257">service_worker.js</text>
-            <text class="node-sub" x="445" y="295">• Tab URL & Domain Extraction</text>
+            <text class="node-sub" x="445" y="295">• Tab URL &amp; Domain Extraction</text>
             <text class="node-sub" x="445" y="320">• DNR Ruleset Synchronization</text>
-            <text class="node-sub" x="445" y="345">• Dynamic Allow Rules Manager</text>
-            <text class="node-sub" x="445" y="370">• Local & Remote API Dispatch</text>
+            <text class="node-sub" x="445" y="345">• Global 2-State ON/OFF Engine</text>
+            <text class="node-sub" x="445" y="370">• Local &amp; Remote API Dispatch</text>
             <text class="node-sub" x="445" y="395">• Fallback Database Cascade</text>
-            <text class="node-sub" x="445" y="420">• Badge Color & Letter Grade (A-F)</text>
+            <text class="node-sub" x="445" y="420">• Badge Color &amp; Letter Grade (A-F)</text>
             <text class="node-sub" x="445" y="445">• Real-Time Cookie Removal</text>
             <text class="node-sub" x="445" y="470">• chrome.storage.local Syncer</text>
-            <text class="node-sub" x="445" y="495">• Live Theme Change Broadcaster</text>
+            <text class="node-sub" x="445" y="495">• Live Theme Broadcaster</text>
             <text class="node-sub" x="445" y="520">• Telemetry Activity Reporter</text>
             <text class="node-sub" x="445" y="545">• Offline Policy Rubric Fallback</text>
           </g>
@@ -577,25 +1036,21 @@
             <rect class="node-box" x="80" y="605" width="630" height="85" />
             <rect class="node-icon-bg" x="95" y="620" width="36" height="36" />
             <text x="105" y="643" font-size="18">💾</text>
-            <text class="node-title" x="145" y="632">Local Storage & Settings Cache</text>
+            <text class="node-title" x="145" y="632">Local Storage &amp; Settings Cache</text>
             <text class="node-sub" x="145" y="652">chrome.storage.local</text>
-            <text class="node-sub" x="145" y="670">cached_rating_{domain} • guardra_theme • adblock_paused_domains • adblock_global_enabled</text>
+            <text class="node-sub" x="145" y="670">cached_rating_{domain} • guardra_theme • adblock_global_enabled</text>
           </g>
 
-          <!-- Node 6: Extension Popup UI -->
+          <!-- Node 6: Extension Popup UI Mockup -->
           <g id="node-popup" class="node-group" onclick="selectStep(12)">
             <rect class="node-box" x="80" y="710" width="630" height="600" />
             <rect class="node-icon-bg" x="95" y="725" width="36" height="36" />
             <text x="105" y="748" font-size="18">📱</text>
             <text class="node-title" x="145" y="740">Extension Popup UI</text>
-            <text class="node-sub" x="145" y="760">popup.html & popup.js</text>
+            <text class="node-sub" x="145" y="760">popup.html &amp; popup.js</text>
 
-            <!-- Embedded Mockup in SVG -->
             <g transform="translate(100, 780)">
-              <!-- Mock Header -->
               <rect x="0" y="0" width="590" height="510" rx="8" fill="#0f172a" stroke="#334155" />
-              
-              <!-- Popup Top Bar -->
               <text x="20" y="30" font-size="14" font-weight="800" fill="#fff">GUARDRA</text>
               <text x="90" y="30" font-size="10" fill="#64748b">PRIVACY GUARDIAN</text>
               <rect x="490" y="14" width="35" height="24" rx="4" fill="#1e293b" stroke="#334155" />
@@ -603,10 +1058,10 @@
               <rect x="535" y="14" width="35" height="24" rx="4" fill="#1e293b" stroke="#334155" />
               <text x="547" y="30" font-size="12">🛡️</text>
 
-              <!-- Ad & Tracker Shield Card (Global 2-State) -->
+              <!-- Ad Shield Card -->
               <rect x="20" y="48" width="550" height="58" rx="6" fill="#1e293b" stroke="#3b82f6" />
               <text x="35" y="72" font-size="12" font-weight="700" fill="#60a5fa">🛡️ Ad &amp; Tracker Shield (Global ON / OFF)</text>
-              <text x="35" y="92" font-size="10" fill="#94a3b8">DNR Engine Active: 178 filter rules loaded • 0 ads blocked on page</text>
+              <text x="35" y="92" font-size="10" fill="#94a3b8">DNR Engine Active: 241+ rules • 0 ads blocked on page</text>
               <rect x="455" y="58" width="100" height="26" rx="4" fill="rgba(16,185,129,0.2)" stroke="#10b981" />
               <text x="475" y="75" font-size="10" font-weight="700" fill="#10b981">● Active</text>
 
@@ -620,9 +1075,8 @@
               <rect x="140" y="175" width="200" height="18" rx="4" fill="rgba(16, 185, 129, 0.2)" />
               <text x="148" y="188" font-size="10" fill="#10b981" font-weight="600">✓ DPDP Grievance Officer Disclosed</text>
 
-              <!-- 6 Pillars Bar Chart -->
+              <!-- 6 Pillars -->
               <text x="20" y="215" font-size="11" font-weight="700" fill="#e2e8f0">6-Pillar Privacy Breakdown</text>
-              
               <text x="20" y="238" font-size="10.5" fill="#94a3b8">Data Sharing (35%)</text>
               <rect x="180" y="230" width="220" height="7" rx="3" fill="#334155" />
               <rect x="180" y="230" width="77" height="7" rx="3" fill="#ef4444" />
@@ -639,30 +1093,29 @@
               <rect x="180" y="296" width="220" height="7" rx="3" fill="#334155" />
               <rect x="180" y="296" width="132" height="7" rx="3" fill="#10b981" />
 
-              <!-- Action Buttons -->
+              <!-- Buttons -->
               <rect x="20" y="325" width="260" height="38" rx="6" fill="#ef4444" opacity="0.15" stroke="#ef4444" />
               <text x="150" y="348" font-size="11" font-weight="700" fill="#ef4444" text-anchor="middle">⚡ Disable Optional Cookies</text>
 
               <rect x="295" y="325" width="275" height="38" rx="6" fill="#2563eb" opacity="0.2" stroke="#3b82f6" />
               <text x="432" y="348" font-size="11" font-weight="700" fill="#60a5fa" text-anchor="middle">✉️ 1-Click DPDP Deletion Notice</text>
 
-              <!-- In-Page Floating Pill Preview -->
+              <!-- In-Page Pill Preview -->
               <rect x="20" y="375" width="550" height="52" rx="6" fill="#181818" stroke="#333333" />
               <text x="35" y="398" font-size="11" font-weight="700" fill="#ebebeb">In-Page Floating Pill Widget (#guardra-inpage-root)</text>
-              <text x="35" y="416" font-size="10" fill="#a1a1aa">Real-Time Light/Dark Theme Sync • Live Ads Blocked Counter • 1-Click Site Pause</text>
+              <text x="35" y="416" font-size="10" fill="#a1a1aa">Real-Time Light/Dark Theme Sync • Live Ads Blocked Counter • 1-Click Global Toggle</text>
 
-              <!-- Breach card -->
+              <!-- Breach Alert -->
               <rect x="20" y="438" width="550" height="58" rx="6" fill="#1e293b" stroke="#475569" />
               <text x="35" y="458" font-size="11" font-weight="700" fill="#f87171">⚠️ 7.5M Customer Records Leaked (April 2024)</text>
               <text x="35" y="476" font-size="10" fill="#94a3b8">Dark web forum leak by 'ShopifyGUY' exposing customer shipping addresses &amp; phones.</text>
             </g>
           </g>
 
-          <!-- ================= 2. NETWORK / ROUTING GATEWAY ================= -->
+          <!-- 2. NETWORK GATEWAY -->
           <rect class="cluster-box cluster-gateway" x="800" y="40" width="340" height="1300" />
-          <text class="cluster-title" x="830" y="80">2. Network & API Gateway</text>
+          <text class="cluster-title" x="830" y="80">2. Network &amp; API Gateway</text>
 
-          <!-- Gateway Node: FastAPI Routers -->
           <g id="node-gateway" class="node-group" onclick="selectStep(7)">
             <rect class="node-box" x="825" y="260" width="290" height="350" />
             <rect class="node-icon-bg" x="840" y="280" width="36" height="36" />
@@ -677,25 +1130,25 @@
             <text class="node-sub" x="845" y="460">GET /api/hub/privacy-exposure</text>
             <text class="node-sub" x="845" y="485">POST /api/deletion/send</text>
             <text class="node-sub" x="845" y="525">CORS Middleware enabled</text>
-            <text class="node-sub" x="845" y="550">Rate-limiting & caching</text>
+            <text class="node-sub" x="845" y="550">Rate-limiting &amp; caching</text>
           </g>
 
-          <!-- ================= 3. BACKEND SERVICES CLUSTER ================= -->
+          <!-- 3. BACKEND SERVICES -->
           <rect class="cluster-box cluster-backend" x="1200" y="40" width="680" height="1300" />
-          <text class="cluster-title" x="1230" y="80">3. Backend Analysis & Scoring Engine</text>
+          <text class="cluster-title" x="1230" y="80">3. Backend Analysis &amp; Scoring Engine</text>
 
-          <!-- Node 7: Crawler Service -->
+          <!-- Crawler -->
           <g id="node-crawler" class="node-group" onclick="selectStep(8)">
             <rect class="node-box" x="1230" y="120" width="300" height="110" />
             <rect class="node-icon-bg" x="1245" y="140" width="36" height="36" />
             <text x="1255" y="163" font-size="18">🕷️</text>
-            <text class="node-title" x="1295" y="152">Crawler & Scraper</text>
+            <text class="node-title" x="1295" y="152">Crawler &amp; Scraper</text>
             <text class="node-sub" x="1295" y="172">crawler_service.py</text>
             <text class="node-sub" x="1295" y="190">httpx + BeautifulSoup</text>
-            <text class="node-sub" x="1295" y="208">Heuristic Policy URL Discovery</text>
+            <text class="node-sub" x="1295" y="208">Heuristic Policy Discovery</text>
           </g>
 
-          <!-- Node 8: Negation-Aware NLP Engine -->
+          <!-- NLP Engine -->
           <g id="node-nlp" class="node-group" onclick="selectStep(9)">
             <rect class="node-box" x="1230" y="280" width="620" height="230" />
             <rect class="node-icon-bg" x="1245" y="300" width="36" height="36" />
@@ -709,18 +1162,18 @@
             <text class="node-sub" x="1250" y="470">• Plain Language Readability (Flesch-Kincaid index)</text>
           </g>
 
-          <!-- Node 9: Breach Service -->
+          <!-- Breach Service -->
           <g id="node-breach" class="node-group" onclick="selectStep(10)">
             <rect class="node-box" x="1230" y="550" width="300" height="110" />
             <rect class="node-icon-bg" x="1245" y="570" width="36" height="36" />
             <text x="1255" y="593" font-size="18">🛡️</text>
-            <text class="node-title" x="1295" y="582">Breach & k-Anonymity Service</text>
+            <text class="node-title" x="1295" y="582">Breach &amp; k-Anonymity Service</text>
             <text class="node-sub" x="1295" y="602">breach_service.py</text>
             <text class="node-sub" x="1295" y="620">SHA-1 5-char Hash Prefix Lookup</text>
             <text class="node-sub" x="1295" y="638">Domain Leak Cross-Reference</text>
           </g>
 
-          <!-- Node 10: Deletion Engine -->
+          <!-- Deletion Engine -->
           <g id="node-deletion" class="node-group" onclick="selectStep(11)">
             <rect class="node-box" x="1560" y="550" width="290" height="110" />
             <rect class="node-icon-bg" x="1575" y="570" width="36" height="36" />
@@ -731,28 +1184,27 @@
             <text class="node-sub" x="1625" y="638">Grievance Desk Routing</text>
           </g>
 
-          <!-- ================= 4. PERSISTENCE & DATA LAYER ================= -->
+          <!-- 4. PERSISTENCE LAYER -->
           <rect class="cluster-box cluster-db" x="1930" y="40" width="430" height="1300" />
-          <text class="cluster-title" x="1960" y="80">4. Persistence & External World</text>
+          <text class="cluster-title" x="1960" y="80">4. Persistence &amp; External World</text>
 
-          <!-- Node 11: SQLite Database -->
+          <!-- SQLite DB -->
           <g id="node-sqlite" class="node-group" onclick="selectStep(9)">
             <rect class="node-box" x="1960" y="260" width="370" height="300" />
             <rect class="node-icon-bg" x="1975" y="280" width="36" height="36" />
             <text x="1985" y="303" font-size="18">🗄️</text>
             <text class="node-title" x="2025" y="292">SQLite Database</text>
             <text class="node-sub" x="2025" y="312">guardra.db</text>
-            
             <text class="node-sub" x="1980" y="355">• websites (scores, rubric, expires_at)</text>
             <text class="node-sub" x="1980" y="380">• policies (raw parsed legal clauses)</text>
-            <text class="node-sub" x="1980" y="405">• deletion_requests (user notices & status)</text>
+            <text class="node-sub" x="1980" y="405">• deletion_requests (user notices &amp; status)</text>
             <text class="node-sub" x="1980" y="430">• breach_records (compromised breaches)</text>
             <text class="node-sub" x="1980" y="455">• browser_pings (activity telemetry)</text>
             <text class="node-sub" x="1980" y="480">• cookie_rules (tracker classifications)</text>
             <text class="node-sub" x="1980" y="515">24-hour Auto Invalidation TTL</text>
           </g>
 
-          <!-- Node 12: External Target Web Server -->
+          <!-- External Target Server -->
           <g id="node-webserver" class="node-group" onclick="selectStep(8)">
             <rect class="node-box" x="1960" y="120" width="370" height="100" />
             <rect class="node-icon-bg" x="1975" y="138" width="36" height="36" />
@@ -762,93 +1214,205 @@
             <text class="node-sub" x="2025" y="188">Returns Live Privacy Policy HTML</text>
           </g>
 
+          <!-- EDGES -->
+          <path id="edge-1" class="edge-line" d="M 230 190 L 230 210" marker-end="url(#arrow)" />
+          <circle id="badge-1" class="edge-circle" cx="230" cy="200" r="12" />
+          <text class="edge-badge" x="230" y="204" text-anchor="middle">1</text>
 
-          <!-- ================= NUMBERED DATA FLOW EDGES ================= -->
+          <path id="edge-2" class="edge-line" d="M 230 340 L 230 360" marker-end="url(#arrow)" />
+          <circle id="badge-2" class="edge-circle" cx="230" cy="350" r="12" />
+          <text class="edge-badge" x="230" y="354" text-anchor="middle">2</text>
 
-          <!-- Edge 1: User navigates -> Content script -->
-          <path id="edge-1" class="edge-line" d="M 230 200 L 230 260" marker-end="url(#arrow)" />
-          <circle id="badge-1" class="edge-circle" cx="230" cy="230" r="12" />
-          <text class="edge-badge" x="230" y="234" text-anchor="middle">1</text>
+          <path id="edge-3" class="edge-line" d="M 380 275 L 420 275" marker-end="url(#arrow)" />
+          <circle id="badge-3" class="edge-circle" cx="400" cy="275" r="12" />
+          <text class="edge-badge" x="400" y="279" text-anchor="middle">3</text>
 
-          <!-- Edge 2: Content script -> Cookies -->
-          <path id="edge-2" class="edge-line" d="M 230 370 L 230 440" marker-end="url(#arrow)" />
-          <circle id="badge-2" class="edge-circle" cx="230" cy="405" r="12" />
-          <text class="edge-badge" x="230" y="409" text-anchor="middle">2</text>
-
-          <!-- Edge 3: Content script -> Service Worker -->
-          <path id="edge-3" class="edge-line" d="M 380 315 L 420 315" marker-end="url(#arrow)" />
-          <circle id="badge-3" class="edge-circle" cx="400" cy="315" r="12" />
-          <text class="edge-badge" x="400" y="319" text-anchor="middle">3</text>
-
-          <!-- Edge 4: Service Worker <-> Storage Cache -->
-          <path id="edge-4" class="edge-line" d="M 450 540 L 450 645 L 380 645" marker-end="url(#arrow)" />
+          <path id="edge-4" class="edge-line" d="M 450 585 L 450 645 L 380 645" marker-end="url(#arrow)" />
           <circle id="badge-4" class="edge-circle" cx="450" cy="645" r="12" />
           <text class="edge-badge" x="450" y="649" text-anchor="middle">4</text>
 
-          <!-- Edge 5: Service Worker -> API Gateway -->
           <path id="edge-5" class="edge-line" d="M 710 380 L 825 380" marker-end="url(#arrow)" />
           <circle id="badge-5" class="edge-circle" cx="765" cy="380" r="12" />
           <text class="edge-badge" x="765" y="384" text-anchor="middle">5</text>
 
-          <!-- Edge 6: API Gateway -> SQLite DB Check -->
-          <path id="edge-6" class="edge-line" d="M 1115 320 L 1960 320" marker-end="url(#arrow)" />
-          <circle id="badge-6" class="edge-circle" cx="1500" cy="320" r="12" />
-          <text class="edge-badge" x="1500" y="324" text-anchor="middle">6</text>
+          <path id="edge-6" class="edge-line" d="M 1115 410 L 1960 410" marker-end="url(#arrow)" />
+          <circle id="badge-6" class="edge-circle" cx="1537" cy="410" r="12" />
+          <text class="edge-badge" x="1537" y="414" text-anchor="middle">6</text>
 
-          <!-- Edge 7: Gateway (On Cache Miss) -> Crawler -->
-          <path id="edge-7" class="edge-line" d="M 1115 280 L 1180 280 L 1180 170 L 1230 170" marker-end="url(#arrow)" />
-          <circle id="badge-7" class="edge-circle" cx="1180" cy="225" r="12" />
-          <text class="edge-badge" x="1180" y="229" text-anchor="middle">7</text>
+          <path id="edge-7" class="edge-line" d="M 970 260 L 970 175 L 1230 175" marker-end="url(#arrow)" />
+          <circle id="badge-7" class="edge-circle" cx="1100" cy="175" r="12" />
+          <text class="edge-badge" x="1100" y="179" text-anchor="middle">7</text>
 
-          <!-- Edge 8: Crawler -> Target Website Web Server -->
-          <path id="edge-8" class="edge-line" d="M 1530 170 L 1960 170" marker-end="url(#arrow)" />
-          <circle id="badge-8" class="edge-circle" cx="1745" cy="170" r="12" />
-          <text class="edge-badge" x="1745" y="174" text-anchor="middle">8</text>
+          <path id="edge-8" class="edge-line" d="M 1530 175 L 1960 175" marker-end="url(#arrow)" />
+          <circle id="badge-8" class="edge-circle" cx="1745" cy="175" r="12" />
+          <text class="edge-badge" x="1745" y="179" text-anchor="middle">8</text>
 
-          <!-- Edge 9: Crawler -> Negation-Aware NLP Engine -->
           <path id="edge-9" class="edge-line" d="M 1380 230 L 1380 280" marker-end="url(#arrow)" />
           <circle id="badge-9" class="edge-circle" cx="1380" cy="255" r="12" />
           <text class="edge-badge" x="1380" y="259" text-anchor="middle">9</text>
 
-          <!-- Edge 10: NLP Engine -> Breach Cross-Reference & DB Write -->
-          <path id="edge-10" class="edge-line" d="M 1850 450 L 1960 450" marker-end="url(#arrow)" />
-          <circle id="badge-10" class="edge-circle" cx="1905" cy="450" r="12" />
-          <text class="edge-badge" x="1905" y="454" text-anchor="middle">10</text>
+          <path id="edge-10" class="edge-line" d="M 1530 605 L 1960 605 L 1960 560" marker-end="url(#arrow)" />
+          <circle id="badge-10" class="edge-circle" cx="1745" cy="605" r="12" />
+          <text class="edge-badge" x="1745" y="609" text-anchor="middle">10</text>
 
-          <!-- Edge 11: Backend API -> Service Worker Return JSON -->
-          <path id="edge-11" class="edge-line" d="M 825 460 L 710 460" marker-end="url(#arrow)" />
-          <circle id="badge-11" class="edge-circle" cx="765" cy="460" r="12" />
-          <text class="edge-badge" x="765" y="464" text-anchor="middle">11</text>
+          <path id="edge-11" class="edge-line" d="M 825 450 L 710 450" marker-end="url(#arrow)" />
+          <circle id="badge-11" class="edge-circle" cx="765" cy="450" r="12" />
+          <text class="edge-badge" x="765" y="454" text-anchor="middle">11</text>
 
-          <!-- Edge 12: Service Worker -> Extension Popup Rendering -->
-          <path id="edge-12" class="edge-line" d="M 565 540 L 565 740" marker-end="url(#arrow)" />
-          <circle id="badge-12" class="edge-circle" cx="565" cy="650" r="12" />
-          <text class="edge-badge" x="565" y="654" text-anchor="middle">12</text>
-
+          <path id="edge-12" class="edge-line" d="M 565 585 L 565 710" marker-end="url(#arrow)" />
+          <circle id="badge-12" class="edge-circle" cx="565" cy="645" r="12" />
+          <text class="edge-badge" x="565" y="649" text-anchor="middle">12</text>
         </svg>
       </div>
     </div>
 
-    <!-- Interactive Sidebar with numbered walkthrough -->
+    <!-- Interactive Sidebar -->
     <div class="sidebar">
       <div class="sidebar-header">
         <div class="sidebar-title">Step-by-Step Data Journey</div>
         <span class="step-tag" id="journey-status">Interactive Mode</span>
       </div>
-
       <div class="sidebar-content" id="step-list">
-        <!-- Steps will be rendered here dynamically -->
+        <!-- Steps generated via JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       PAGE 3: MODE CHOOSER & COMPARISON VIEW
+       ========================================================= -->
+  <div class="view-page" id="page-choice">
+    <div class="choice-container">
+      <div class="choice-hero">
+        <div class="simple-badge">🧭 Architecture Hub</div>
+        <h1 class="choice-title">Choose Your Perspective</h1>
+        <p class="simple-desc">Select how you want to explore Guardra's architecture, or compare feature layers below.</p>
+      </div>
+
+      <div class="choice-cards-row">
+        <!-- Choice 1 -->
+        <div class="choice-card primary" onclick="switchView('simple')">
+          <div>
+            <div class="choice-card-header">
+              <div class="choice-icon">👤</div>
+              <div>
+                <h2 class="choice-card-title">User View (Simple)</h2>
+                <div style="font-size:0.75rem; color:#60a5fa; font-weight:700;">FOR NON-TECHNICAL USERS</div>
+              </div>
+            </div>
+            <p class="choice-card-desc" style="margin-top:16px;">
+              A clean, conceptual overview explaining what Guardra does: blocking ads on YouTube/Instagram, showing the privacy pill, scoring policies with AI, and 1-click legal data deletion.
+            </p>
+          </div>
+          <button class="btn btn-primary" style="width: 100%; justify-content: center; padding: 10px;">
+            Open Simple User View &rarr;
+          </button>
+        </div>
+
+        <!-- Choice 2 -->
+        <div class="choice-card" onclick="switchView('tech')">
+          <div>
+            <div class="choice-card-header">
+              <div class="choice-icon">🛠️</div>
+              <div>
+                <h2 class="choice-card-title">Developer View (Technical)</h2>
+                <div style="font-size:0.75rem; color:#10b981; font-weight:700;">FULL ENGINEERING STACK</div>
+              </div>
+            </div>
+            <p class="choice-card-desc" style="margin-top:16px;">
+              Complete technical architecture featuring the interactive SVG canvas, DeclarativeNetRequest rulesets, SPA continuous mutation sweeper, FastAPI gateway, negation-aware NLP, and 12-step data flow.
+            </p>
+          </div>
+          <button class="btn" style="width: 100%; justify-content: center; padding: 10px; background:#1e293b; border-color:#475569;">
+            Open Developer Technical View &rarr;
+          </button>
+        </div>
+      </div>
+
+      <!-- Comparison Matrix -->
+      <div class="comp-table-container">
+        <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 16px; color:#fff;">Feature &amp; Component Breakdown</h3>
+        <table class="comp-table">
+          <thead>
+            <tr>
+              <th>Architecture Component</th>
+              <th>User View Concept</th>
+              <th>Technical Implementation Stack</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Ad &amp; Tracker Blocker</strong></td>
+              <td>Blocks video ads on YouTube, sponsored feed posts on Instagram, and popups.</td>
+              <td>MV3 DeclarativeNetRequest (241+ rules) + SPA MutationObserver feed sweeper.</td>
+            </tr>
+            <tr>
+              <td><strong>In-Page Privacy Widget</strong></td>
+              <td>Small floating pill at bottom-right showing live blocked count and dark mode.</td>
+              <td>Shadow DOM isolated container (<code>#guardra-inpage-root</code>) with storage event bus.</td>
+            </tr>
+            <tr>
+              <td><strong>Policy Scoring Engine</strong></td>
+              <td>AI grades the website from A to F and flags if data is sold or stored forever.</td>
+              <td>Negation-aware NLP engine with context-window polarity inversion &amp; 6-pillar rubric.</td>
+            </tr>
+            <tr>
+              <td><strong>Legal Data Erasure</strong></td>
+              <td>1-Click button generates an email demanding they delete your personal data.</td>
+              <td>Statutory DPDP Act 2023 Sec 12 &amp; GDPR Article 17 templating engine with DPO dispatch.</td>
+            </tr>
+            <tr>
+              <td><strong>Breach Guardian</strong></td>
+              <td>Warns you if the company had verified data leaks on the dark web.</td>
+              <td>SHA-1 5-char hash prefix k-anonymity lookup against SQLite breach registry.</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
 
   <script>
-    // Step Definitions
+    // Navigation Controller
+    function switchView(mode) {
+      document.querySelectorAll(".nav-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".view-page").forEach(p => p.classList.remove("active"));
+
+      const activeTab = document.getElementById(`tab-${mode}`);
+      const activePage = document.getElementById(`page-${mode}`);
+      const techControls = document.getElementById("tech-controls");
+
+      if (activeTab) activeTab.classList.add("active");
+      if (activePage) activePage.classList.add("active");
+
+      if (mode === "tech") {
+        if (techControls) techControls.style.display = "flex";
+        setTimeout(() => setTransform(), 50);
+      } else {
+        if (techControls) techControls.style.display = "none";
+      }
+    }
+
+    // User Scenario Switcher
+    const SCENARIOS = {
+      yt: "<strong>YouTube Scenario:</strong> When you open a YouTube video, Guardra detects video pre-rolls, immediately mutes them, clicks skip buttons, and fast-forwards through unskippable ads in under 0.05 seconds while keeping your normal video at 1.0x playback speed.",
+      ig: "<strong>Instagram Scenario:</strong> As you scroll through your Instagram feed, Guardra's continuous SPA sweeper detects sponsored posts, sponsored stories, and paid partnership tags in the virtual DOM, seamlessly collapsing them with zero screen flicker.",
+      shop: "<strong>Shopping Scenario:</strong> Visiting an e-commerce site like boAt Lifestyle automatically triggers Guardra's AI policy scanner. You instantly see a Trust Score (38/100, Grade D), warnings about 7.5M breached records, and a 1-click button to disable advertising cookies.",
+      breach: "<strong>Data Breach Scenario:</strong> If you visit a website that suffered a confirmed dark web data leak, Guardra displays a verified security alert showing the breach date, compromised data types (e.g. phone numbers & shipping addresses), and investigative news links."
+    };
+
+    function showScenario(key) {
+      document.querySelectorAll(".scenario-btn").forEach(b => b.classList.remove("active"));
+      event.target.classList.add("active");
+      document.getElementById("scenario-box").innerHTML = SCENARIOS[key] || "";
+    }
+
+    // Step Definitions for Tech View
     const STEPS = [
       {
         num: 1,
         title: "User Enters URL in Browser Tab",
-        desc: "User navigates to any website (e.g., https://boat-lifestyle.com). Chrome triggers navigation lifecycle events.",
+        desc: "User navigates to any website (e.g., https://boat-lifestyle.com or https://instagram.com). Chrome triggers navigation lifecycle events.",
         tag: "chrome.tabs.onUpdated",
         nodes: ["node-tab"],
         edges: ["edge-1", "badge-1"],
@@ -857,7 +1421,7 @@
       {
         num: 2,
         title: "Content Script & DNR Ad Engine Triggered",
-        desc: "content_script.js is injected at document_start. DNR engine enforces 178+ filter rules (base_rules.json + privacy_rules.json). Active YouTube neutralizer auto-skips video pre-rolls, and the in-page floating pill displays live blocked ad counts with real-time theme sync.",
+        desc: "content_script.js is injected at document_start. DNR engine enforces 241+ filter rules. Active SPA feed sweeper and YouTube neutralizer auto-skip ads, and the in-page floating pill mounts with real-time theme sync.",
         tag: "extension/content/content_script.js + DNR",
         nodes: ["node-cs", "node-dnr"],
         edges: ["edge-2", "badge-2"],
@@ -947,7 +1511,7 @@
       {
         num: 12,
         title: "User Clicks Extension: Rich Popup Rendered",
-        desc: "Extension Popup renders Ad & Tracker Shield (with 1-click domain pause/resume), Trust Score (38/100), Grade D, 6-Pillar Breakdown, DPDP Grievance Officer contacts, 1-Click Cookie Neutralizer, 1-Click DPDP Sec 12 Notice Generator, and Light/Dark Theme switch.",
+        desc: "Extension Popup renders Ad & Tracker Shield (with 2-state global master switch), Trust Score (38/100), Grade D, 6-Pillar Breakdown, DPDP Grievance Officer contacts, 1-Click Cookie Neutralizer, 1-Click DPDP Sec 12 Notice Generator, and Light/Dark Theme switch.",
         tag: "extension/popup/popup.html",
         nodes: ["node-popup", "node-sw", "node-dnr"],
         edges: ["edge-12", "badge-12"],
@@ -958,7 +1522,7 @@
     let currentStepIndex = 0;
     let autoTourInterval = null;
 
-    // Pan & Zoom Engine
+    // Pan & Zoom Engine for Tech View
     const container = document.getElementById("canvas-container");
     const viewport = document.getElementById("viewport");
     let scale = 0.72;
@@ -969,96 +1533,105 @@
     let startY = 0;
 
     function setTransform() {
-      container.style.transform = `translate(${pointX}px, ${pointY}px) scale(${scale})`;
-      document.getElementById("zoom-text").textContent = `${Math.round(scale * 100)}%`;
+      if (container) {
+        container.style.transform = `translate(${pointX}px, ${pointY}px) scale(${scale})`;
+      }
+      const zoomText = document.getElementById("zoom-text");
+      if (zoomText) {
+        zoomText.textContent = `${Math.round(scale * 100)}%`;
+      }
     }
 
-    viewport.addEventListener("mousedown", (e) => {
-      if (e.target.closest(".zoom-toolbar") || e.target.closest(".stepper-bar")) return;
-      isPanning = true;
-      startX = e.clientX - pointX;
-      startY = e.clientY - pointY;
-    });
+    if (viewport) {
+      viewport.addEventListener("mousedown", (e) => {
+        if (e.target.closest(".zoom-toolbar") || e.target.closest(".stepper-bar")) return;
+        isPanning = true;
+        startX = e.clientX - pointX;
+        startY = e.clientY - pointY;
+      });
 
-    window.addEventListener("mouseup", () => {
-      isPanning = false;
-    });
+      window.addEventListener("mouseup", () => {
+        isPanning = false;
+      });
 
-    window.addEventListener("mousemove", (e) => {
-      if (!isPanning) return;
-      pointX = e.clientX - startX;
-      pointY = e.clientY - startY;
+      window.addEventListener("mousemove", (e) => {
+        if (!isPanning) return;
+        pointX = e.clientX - startX;
+        pointY = e.clientY - startY;
+        setTransform();
+      });
+
+      viewport.addEventListener("wheel", (e) => {
+        e.preventDefault();
+        const xs = (e.clientX - pointX) / scale;
+        const ys = (e.clientY - pointY) / scale;
+        const delta = -e.deltaY;
+        
+        if (delta > 0) {
+          scale = Math.min(scale * 1.12, 2.5);
+        } else {
+          scale = Math.max(scale / 1.12, 0.35);
+        }
+        
+        pointX = e.clientX - xs * scale;
+        pointY = e.clientY - ys * scale;
+        setTransform();
+      });
+    }
+
+    document.getElementById("zoom-in")?.addEventListener("click", () => {
+      scale = Math.min(scale * 1.2, 2.5);
       setTransform();
     });
 
-    viewport.addEventListener("wheel", (e) => {
-      e.preventDefault();
-      const xs = (e.clientX - pointX) / scale;
-      const ys = (e.clientY - pointY) / scale;
-      const delta = -e.deltaY;
-      const factor = delta > 0 ? 1.1 : 0.9;
-      
-      const newScale = Math.min(Math.max(0.3, scale * factor), 2.5);
-      pointX = e.clientX - xs * newScale;
-      pointY = e.clientY - ys * newScale;
-      scale = newScale;
+    document.getElementById("zoom-out")?.addEventListener("click", () => {
+      scale = Math.max(scale / 1.2, 0.35);
       setTransform();
     });
 
-    // Zoom Buttons
-    document.getElementById("zoom-in").addEventListener("click", () => {
-      scale = Math.min(2.5, scale * 1.2);
-      setTransform();
-    });
-
-    document.getElementById("zoom-out").addEventListener("click", () => {
-      scale = Math.max(0.3, scale / 1.2);
-      setTransform();
-    });
-
-    document.getElementById("zoom-home").addEventListener("click", resetView);
-    document.getElementById("btn-reset").addEventListener("click", resetView);
-    document.getElementById("btn-fit").addEventListener("click", fitToScreen);
-
-    function resetView() {
+    document.getElementById("zoom-home")?.addEventListener("click", () => {
       scale = 0.72;
-      pointX = 40;
+      pointX = 50;
       pointY = 20;
       setTransform();
-    }
+    });
 
-    function fitToScreen() {
+    document.getElementById("btn-fit")?.addEventListener("click", () => {
       const vWidth = viewport.clientWidth;
-      const vHeight = viewport.clientHeight;
-      scale = Math.min(vWidth / 2450, vHeight / 1450);
-      pointX = (vWidth - 2400 * scale) / 2;
+      scale = vWidth / 2450;
+      pointX = 20;
       pointY = 20;
       setTransform();
-    }
+    });
+
+    document.getElementById("btn-reset")?.addEventListener("click", () => {
+      selectStep(1);
+    });
 
     // Render Steps in Sidebar
-    const stepListContainer = document.getElementById("step-list");
-    STEPS.forEach((s, idx) => {
-      const card = document.createElement("div");
-      card.className = `step-card ${idx === 0 ? "active" : ""}`;
-      card.id = `step-card-${s.num}`;
-      card.onclick = () => selectStep(s.num);
-      card.innerHTML = `
-        <div class="step-header">
-          <div class="step-num">${s.num}</div>
-          <div class="step-title">${s.title}</div>
-        </div>
-        <div class="step-desc">${s.desc}</div>
-        <div class="step-tag">${s.tag}</div>
-      `;
-      stepListContainer.appendChild(card);
-    });
+    const stepList = document.getElementById("step-list");
+    if (stepList) {
+      STEPS.forEach((step, idx) => {
+        const card = document.createElement("div");
+        card.className = `step-card ${idx === 0 ? "active" : ""}`;
+        card.id = `step-card-${step.num}`;
+        card.onclick = () => selectStep(step.num);
+        card.innerHTML = `
+          <div class="step-header">
+            <div class="step-number">${step.num}</div>
+            <div class="step-title">${step.title}</div>
+          </div>
+          <div class="step-desc">${step.desc}</div>
+          <div class="step-meta">${step.tag}</div>
+        `;
+        stepList.appendChild(card);
+      });
+    }
 
     function selectStep(stepNum) {
       currentStepIndex = stepNum - 1;
       const step = STEPS[currentStepIndex];
 
-      // Update active cards
       document.querySelectorAll(".step-card").forEach(c => c.classList.remove("active"));
       const activeCard = document.getElementById(`step-card-${step.num}`);
       if (activeCard) {
@@ -1066,34 +1639,33 @@
         activeCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
       }
 
-      // Update indicator
       document.getElementById("step-indicator").textContent = `Step ${step.num} of ${STEPS.length}`;
 
-      // Reset all highlights
-      document.querySelectorAll(".node-box").forEach(n => n.classList.remove("highlight"));
+      // Reset previous highlights
+      document.querySelectorAll(".node-group").forEach(n => n.classList.remove("node-highlight"));
       document.querySelectorAll(".edge-line").forEach(e => {
         e.classList.remove("active");
         e.setAttribute("marker-end", "url(#arrow)");
       });
       document.querySelectorAll(".edge-circle").forEach(c => c.classList.remove("active"));
 
-      // Highlight active step elements
+      // Highlight active nodes & edges
       step.nodes.forEach(nId => {
-        const el = document.querySelector(`#${nId} .node-box`);
-        if (el) el.classList.add("highlight");
+        const node = document.getElementById(nId);
+        if (node) node.classList.add("node-highlight");
       });
 
       step.edges.forEach(eId => {
-        const line = document.getElementById(eId);
-        if (line) {
-          line.classList.add("active");
-          if (line.tagName === "path") {
-            line.setAttribute("marker-end", "url(#arrow-active)");
+        const edge = document.getElementById(eId);
+        if (edge) {
+          edge.classList.add("active");
+          if (edge.tagName === "path") {
+            edge.setAttribute("marker-end", "url(#arrow-active)");
           }
         }
       });
 
-      // Smooth zoom to element area
+      // Smooth pan & zoom
       if (step.zoom) {
         pointX = step.zoom.x;
         pointY = step.zoom.y;
@@ -1102,42 +1674,47 @@
       }
     }
 
-    // Step Nav buttons
-    document.getElementById("btn-next-step").addEventListener("click", () => {
-      const nextStep = (currentStepIndex + 1) % STEPS.length + 1;
-      selectStep(nextStep);
-    });
-
-    document.getElementById("btn-prev-step").addEventListener("click", () => {
-      const prevStep = (currentStepIndex - 1 + STEPS.length) % STEPS.length + 1;
-      selectStep(prevStep);
-    });
-
-    // Auto Tour
-    const autoBtn = document.getElementById("btn-toggle-auto");
-    autoBtn.addEventListener("click", () => {
-      if (autoTourInterval) {
-        clearInterval(autoTourInterval);
-        autoTourInterval = null;
-        autoBtn.textContent = "▶ Auto Tour";
-        autoBtn.classList.remove("btn-primary");
-        document.getElementById("journey-status").textContent = "Interactive Mode";
+    document.getElementById("btn-prev-step")?.addEventListener("click", () => {
+      if (currentStepIndex > 0) {
+        selectStep(currentStepIndex);
       } else {
-        autoBtn.textContent = "⏸ Pause Tour";
-        autoBtn.classList.add("btn-primary");
-        document.getElementById("journey-status").textContent = "Auto Touring...";
-        autoTourInterval = setInterval(() => {
-          const nextStep = (currentStepIndex + 1) % STEPS.length + 1;
-          selectStep(nextStep);
-        }, 3200);
+        selectStep(STEPS.length);
       }
     });
 
-    // Initial View setup
-    window.addEventListener("load", () => {
-      fitToScreen();
-      selectStep(1);
+    document.getElementById("btn-next-step")?.addEventListener("click", () => {
+      if (currentStepIndex < STEPS.length - 1) {
+        selectStep(currentStepIndex + 2);
+      } else {
+        selectStep(1);
+      }
     });
+
+    // Auto Tour
+    document.getElementById("btn-toggle-auto")?.addEventListener("click", () => {
+      const btn = document.getElementById("btn-toggle-auto");
+      if (autoTourInterval) {
+        clearInterval(autoTourInterval);
+        autoTourInterval = null;
+        btn.textContent = "▶ Auto Tour";
+        btn.classList.remove("btn-primary");
+        document.getElementById("journey-status").textContent = "Interactive Mode";
+      } else {
+        btn.textContent = "⏸ Pause Tour";
+        btn.classList.add("btn-primary");
+        document.getElementById("journey-status").textContent = "Auto Touring...";
+        autoTourInterval = setInterval(() => {
+          if (currentStepIndex < STEPS.length - 1) {
+            selectStep(currentStepIndex + 2);
+          } else {
+            selectStep(1);
+          }
+        }, 4000);
+      }
+    });
+
+    // Initialize
+    setTransform();
   </script>
 </body>
 </html>
