@@ -8,8 +8,24 @@
     "storage",
     "tabs",
     "alarms",
-    "cookies"
+    "cookies",
+    "declarativeNetRequest",
+    "declarativeNetRequestFeedback"
   ],
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "ruleset_ads",
+        "enabled": true,
+        "path": "rulesets/base_rules.json"
+      },
+      {
+        "id": "ruleset_privacy",
+        "enabled": true,
+        "path": "rulesets/privacy_rules.json"
+      }
+    ]
+  },
   "host_permissions": [
     "<all_urls>"
   ],

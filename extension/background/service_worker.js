@@ -893,7 +893,229 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
     reportBrowserActivity(tabId, data.url, data.hostname, data.trackers_detected);
   }
+
+  // --- Ad Blocker Message Handlers ---
+  if (message.type === "GET_ADBLOCK_STATUS") {
+    const domain = (message.domain || "").replace(/^www\./, "").toLowerCase();
+    const tabId = message.tabId || (sender.tab ? sender.tab.id : null);
+    
+    Promise.all([
+      isGlobalAdBlockingEnabled(),
+      getPausedDomains(),
+      chrome.storage.local.get(`adblock_domain_stats_${domain}`)
+    ]).then(([globalEnabled, pausedMap, storedStats]) => {
+      const isPaused = !!pausedMap[domain];
+      const tabStats = tabId ? (tabBlockedStats.get(tabId) || { count: 0 }) : { count: 0 };
+      const domainCount = storedStats[`adblock_domain_stats_${domain}`]?.count || 0;
+      const totalBlockCount = Math.max(tabStats.count, domainCount);
+
+      sendResponse({
+        success: true,
+        globalEnabled,
+        sitePaused: isPaused,
+        domain,
+        tabBlockedCount: tabStats.count,
+        totalBlockedCount: totalBlockCount,
+        tabId
+      });
+    }).catch(err => {
+      sendResponse({ success: false, error: err.message });
+    });
+    return true;
+  }
+
+  if (message.type === "TOGGLE_GLOBAL_ADBLOCK") {
+    const enable = message.enabled !== undefined ? message.enabled : true;
+    setGlobalAdBlocking(enable).then(res => {
+      sendResponse(res);
+    }).catch(err => {
+      sendResponse({ success: false, error: err.message });
+    });
+    return true;
+  }
+
+  if (message.type === "TOGGLE_SITE_ADBLOCK") {
+    const domain = (message.domain || "").replace(/^www\./, "").toLowerCase();
+    const paused = message.paused;
+    setSiteAdBlockPause(domain, paused).then(res => {
+      sendResponse(res);
+    }).catch(err => {
+      sendResponse({ success: false, error: err.message });
+    });
+    return true;
+  }
+
+  if (message.type === "REPORT_COSMETIC_BLOCKED") {
+    const domain = (message.domain || "").replace(/^www\./, "").toLowerCase();
+    const tabId = sender.tab ? sender.tab.id : message.tabId;
+    const addedCount = message.count || 1;
+
+    if (tabId) {
+      let stats = tabBlockedStats.get(tabId) || { count: 0, items: [] };
+      stats.count += addedCount;
+      tabBlockedStats.set(tabId, stats);
+    }
+
+    if (domain) {
+      chrome.storage.local.get(`adblock_domain_stats_${domain}`).then(res => {
+        const current = res[`adblock_domain_stats_${domain}`] || { count: 0, lastUpdated: Date.now() };
+        current.count += addedCount;
+        current.lastUpdated = Date.now();
+        chrome.storage.local.set({ [`adblock_domain_stats_${domain}`]: current });
+      }).catch(() => {});
+    }
+
+    sendResponse({ success: true });
+    return true;
+  }
 });
+
+// --- uBlock-Grade Ad Blocking & DNR Governance Engine ---
+const tabBlockedStats = new Map();
+
+function getDomainRuleId(domain) {
+  let hash = 0;
+  for (let i = 0; i < domain.length; i++) {
+    hash = ((hash << 5) - hash) + domain.charCodeAt(i);
+    hash |= 0;
+  }
+  return 10000 + Math.abs(hash % 80000);
+}
+
+async function isGlobalAdBlockingEnabled() {
+  const res = await chrome.storage.local.get("adblock_global_enabled");
+  return res.adblock_global_enabled !== false; // Default true
+}
+
+async function getPausedDomains() {
+  const res = await chrome.storage.local.get("adblock_paused_domains");
+  return res.adblock_paused_domains || {};
+}
+
+async function syncAdBlockEngine() {
+  const globalEnabled = await isGlobalAdBlockingEnabled();
+  try {
+    if (chrome.declarativeNetRequest && chrome.declarativeNetRequest.updateEnabledRulesets) {
+      if (globalEnabled) {
+        await chrome.declarativeNetRequest.updateEnabledRulesets({
+          enableRulesetIds: ["ruleset_ads", "ruleset_privacy"]
+        });
+      } else {
+        await chrome.declarativeNetRequest.updateEnabledRulesets({
+          disableRulesetIds: ["ruleset_ads", "ruleset_privacy"]
+        });
+      }
+    }
+  } catch (e) {
+    console.warn("Error syncing enabled rulesets:", e);
+  }
+
+  // Sync dynamic allow rules for paused domains
+  try {
+    if (chrome.declarativeNetRequest && chrome.declarativeNetRequest.getDynamicRules) {
+      const paused = await getPausedDomains();
+      const pausedEntries = Object.entries(paused).filter(([_, isPaused]) => isPaused);
+      
+      const existingRules = await chrome.declarativeNetRequest.getDynamicRules();
+      const existingIds = existingRules.map(r => r.id);
+      
+      const newRules = pausedEntries.map(([dom]) => ({
+        id: getDomainRuleId(dom),
+        priority: 1000,
+        action: { type: "allowAllRequests" },
+        condition: {
+          initiatorDomains: [dom],
+          resourceTypes: ["main_frame", "sub_frame", "stylesheet", "script", "image", "font", "object", "xmlhttprequest", "ping", "media", "websocket", "other"]
+        }
+      }));
+
+      await chrome.declarativeNetRequest.updateDynamicRules({
+        removeRuleIds: existingIds,
+        addRules: newRules
+      });
+    }
+  } catch (e) {
+    console.warn("Error syncing dynamic DNR rules:", e);
+  }
+}
+
+async function setGlobalAdBlocking(enabled) {
+  await chrome.storage.local.set({ adblock_global_enabled: enabled });
+  await syncAdBlockEngine();
+  try {
+    const tabs = await chrome.tabs.query({});
+    for (const t of tabs) {
+      chrome.tabs.sendMessage(t.id, { type: "ADBLOCK_GLOBAL_CHANGED", enabled }).catch(() => {});
+    }
+  } catch (e) {}
+  return { success: true, enabled };
+}
+
+async function setSiteAdBlockPause(domain, paused) {
+  const cleanDom = (domain || "").replace(/^www\./, "").toLowerCase();
+  if (!cleanDom) return { success: false };
+
+  const pausedMap = await getPausedDomains();
+  if (paused) {
+    pausedMap[cleanDom] = true;
+  } else {
+    delete pausedMap[cleanDom];
+  }
+  await chrome.storage.local.set({ adblock_paused_domains: pausedMap });
+  await syncAdBlockEngine();
+
+  try {
+    const tabs = await chrome.tabs.query({});
+    for (const t of tabs) {
+      if (t.url && extractDomain(t.url) === cleanDom) {
+        chrome.tabs.sendMessage(t.id, { type: "ADBLOCK_SITE_PAUSE_CHANGED", domain: cleanDom, paused }).catch(() => {});
+      }
+    }
+  } catch (e) {}
+
+  return { success: true, domain: cleanDom, paused };
+}
+
+// Listen for matched rules if debug feedback API available
+try {
+  if (chrome.declarativeNetRequest && chrome.declarativeNetRequest.onRuleMatchedDebug) {
+    chrome.declarativeNetRequest.onRuleMatchedDebug.addListener((info) => {
+      const tabId = info.request.tabId;
+      if (tabId && tabId > 0) {
+        let stats = tabBlockedStats.get(tabId) || { count: 0, items: [] };
+        stats.count++;
+        if (stats.items.length < 50) {
+          stats.items.push({ url: info.request.url, ruleId: info.rule.ruleId, time: Date.now() });
+        }
+        tabBlockedStats.set(tabId, stats);
+
+        // Update domain-level stats in storage
+        if (info.request.initiator) {
+          const dom = extractDomain(info.request.initiator);
+          if (dom) {
+            chrome.storage.local.get(`adblock_domain_stats_${dom}`).then(res => {
+              const current = res[`adblock_domain_stats_${dom}`] || { count: 0, lastUpdated: Date.now() };
+              current.count++;
+              current.lastUpdated = Date.now();
+              chrome.storage.local.set({ [`adblock_domain_stats_${dom}`]: current });
+            }).catch(() => {});
+          }
+        }
+      }
+    });
+  }
+} catch (e) {}
+
+// Clean up tab stats on tab remove
+try {
+  chrome.tabs.onRemoved.addListener((tabId) => {
+    tabBlockedStats.delete(tabId);
+  });
+} catch (e) {}
+
+// Initialize on service worker startup
+syncAdBlockEngine();
+
 
 
 chrome.storage.onChanged.addListener(async (changes, areaName) => {

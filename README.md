@@ -19,8 +19,14 @@
    - Deep-links directly to buried ad tracking, voice recording, location history, and AI model training opt-out settings across Google, Meta, Amazon, Microsoft, Apple, and X/Twitter.
 5. **Identity Compartmentalization Architecture**:
    - Guided 4-tier risk architecture (Core Banking, Work, Shopping/Delivery, Disposable) paired with recommended email masking providers (Firefox Relay, SimpleLogin, DuckDuckGo).
-6. **Manifest V3 Browser Extension**:
-   - Minimalist uBlock-inspired popup with dynamic badge grades (Green/Amber/Red), instant 1-click legal deletion notice generator, and content-script tracker detector.
+6. **Manifest V3 Ad & Tracker Blocker (GPLv3)**:
+   - High-speed network blocking engine using Chrome `declarativeNetRequest` (DNR) with compiled filter rulesets (EasyList / Peter Lowe's / uBlock Base inspired).
+   - **Per-Site Pause/Resume**: 1-click whitelist toggle for the active site without disabling protection globally.
+   - **Master Global Toggle**: Master power switch across all sites.
+   - **Cosmetic Element Collapser**: Cleans up blank ad frames and banner placeholders.
+   - **Live Blocked Counter**: Real-time counter of blocked network requests and trackers.
+7. **Midnight Privacy Extension UI**:
+   - Modern popup with dynamic badge grades (Green/Amber/Red), instant 1-click legal deletion notice generator, and strict cookie enforcer.
 
 ---
 
@@ -45,17 +51,20 @@ Guardra/
 │   │       └── privacy_hub.json     # 1-Click platform control deep-links
 │   └── requirements.txt
 │
-├── extension/                # Manifest V3 Browser Extension
-│   ├── manifest.json         # Extension Manifest V3 configuration
+├── extension/                # Manifest V3 Browser Extension (GPLv3)
+│   ├── manifest.json         # Extension Manifest V3 configuration & DNR declaration
+│   ├── rulesets/             # Compiled DeclarativeNetRequest Ad & Privacy Rulesets
+│   │   ├── base_rules.json   # Ad server & banner blocking rules
+│   │   └── privacy_rules.json# Tracker & telemetry blocking rules
 │   ├── background/
-│   │   └── service_worker.js # Real-time badge updater & API synchronization
+│   │   └── service_worker.js # DNR rule manager, site pause/whitelist & telemetry
 │   ├── content/
-│   │   └── content_script.js # Tracker discovery, privacy link & dark pattern checker
+│   │   └── content_script.js # Cosmetic ad hiding, cookie rejector & tracker detector
 │   ├── popup/
-│   │   ├── popup.html        # Minimalist popup interface
-│   │   ├── popup.css         # Dark-themed modern UI styles
-│   │   └── popup.js          # Live site rating & 1-click statutory notice modal
-│   └── options/              # Extension configuration options page
+│   │   ├── popup.html        # Ad shield, site pause toggle, rating & deletion modal
+│   │   ├── popup.css         # Midnight theme styles with adblock shield cards
+│   │   └── popup.js          # Live site rating, DNR pause controls & stats
+│   └── icons/                # Extension toolbar & browser action icons
 │
 ├── frontend/                 # Modern React Web Dashboard (Vite + Tailwind CSS)
 │   ├── src/

@@ -276,6 +276,80 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
+  // --- 3. uBlock-Grade Ad Blocker Controls ---
+  const globalAdblockToggle = document.getElementById("toggle-global-adblock");
+  if (globalAdblockToggle) {
+    globalAdblockToggle.addEventListener("change", () => {
+      const enabled = globalAdblockToggle.checked;
+      chrome.runtime.sendMessage({
+        type: "TOGGLE_GLOBAL_ADBLOCK",
+        enabled: enabled
+      }, (res) => {
+        if (currentRatingData?.domain) {
+          chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
+            const tabId = tabs && tabs[0] ? tabs[0].id : null;
+            updateAdBlockUI(currentRatingData.domain, tabId);
+          });
+        }
+      });
+    });
+  }
+
+  const sitePauseBtn = document.getElementById("btn-toggle-site-adblock");
+  if (sitePauseBtn) {
+    sitePauseBtn.addEventListener("click", () => {
+      const domain = currentRatingData?.domain;
+      if (!domain) return;
+      const cleanDom = domain.replace(/^www\./, "").toLowerCase();
+
+      chrome.runtime.sendMessage({
+        type: "GET_ADBLOCK_STATUS",
+        domain: cleanDom
+      }, (statusResp) => {
+        const currentlyPaused = !!statusResp?.sitePaused;
+        const newPausedState = !currentlyPaused;
+
+        chrome.runtime.sendMessage({
+          type: "TOGGLE_SITE_ADBLOCK",
+          domain: cleanDom,
+          paused: newPausedState
+        }, (res) => {
+          chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
+            const tabId = tabs && tabs[0] ? tabs[0].id : null;
+            updateAdBlockUI(cleanDom, tabId);
+            // Reload tab to reflect network changes
+            if (tabId) {
+              chrome.tabs.reload(tabId);
+            }
+          });
+        });
+      });
+    });
+  }
+
+  const resumeNowBtn = document.getElementById("btn-adblock-resume-now");
+  if (resumeNowBtn) {
+    resumeNowBtn.addEventListener("click", () => {
+      const domain = currentRatingData?.domain;
+      if (!domain) return;
+      const cleanDom = domain.replace(/^www\./, "").toLowerCase();
+
+      chrome.runtime.sendMessage({
+        type: "TOGGLE_SITE_ADBLOCK",
+        domain: cleanDom,
+        paused: false
+      }, () => {
+        chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
+          const tabId = tabs && tabs[0] ? tabs[0].id : null;
+          updateAdBlockUI(cleanDom, tabId);
+          if (tabId) {
+            chrome.tabs.reload(tabId);
+          }
+        });
+      });
+    });
+  }
+
   loadActiveTabRating();
 
   // Button Listeners
@@ -557,6 +631,64 @@ function renderPopup(data, tabUrl, tabId) {
   } else {
     grievanceContact.textContent = "Not found";
   }
+
+  // Update Ad Block UI State
+  updateAdBlockUI(data.domain, tabId);
+}
+
+function updateAdBlockUI(domain, tabId) {
+  if (!domain) return;
+  const cleanDom = domain.replace(/^www\./, "").toLowerCase();
+
+  chrome.runtime.sendMessage({
+    type: "GET_ADBLOCK_STATUS",
+    domain: cleanDom,
+    tabId: tabId
+  }, (resp) => {
+    if (chrome.runtime.lastError || !resp) return;
+
+    const card = document.getElementById("adblock-card");
+    const globalToggle = document.getElementById("toggle-global-adblock");
+    const pauseBtn = document.getElementById("btn-toggle-site-adblock");
+    const pauseBtnText = document.getElementById("adblock-pause-btn-text");
+    const countEl = document.getElementById("adblock-blocked-count");
+    const descEl = document.getElementById("adblock-status-desc");
+    const pausedAlert = document.getElementById("adblock-paused-alert");
+    const pausedDomainText = document.getElementById("adblock-paused-domain-text");
+
+    if (globalToggle) globalToggle.checked = resp.globalEnabled !== false;
+    if (countEl) countEl.textContent = resp.totalBlockedCount || 0;
+    if (pausedDomainText) pausedDomainText.textContent = cleanDom;
+
+    if (resp.globalEnabled === false) {
+      if (card) {
+        card.className = "adblock-card disabled";
+      }
+      if (descEl) descEl.textContent = "Engine Disabled Globally";
+      if (pauseBtn) pauseBtn.style.display = "none";
+      if (pausedAlert) pausedAlert.classList.add("hidden");
+    } else if (resp.sitePaused) {
+      if (card) {
+        card.className = "adblock-card paused";
+      }
+      if (descEl) descEl.textContent = `Protection Paused (${cleanDom})`;
+      if (pauseBtn) {
+        pauseBtn.style.display = "flex";
+        pauseBtnText.textContent = "Resume Protection";
+      }
+      if (pausedAlert) pausedAlert.classList.remove("hidden");
+    } else {
+      if (card) {
+        card.className = "adblock-card";
+      }
+      if (descEl) descEl.textContent = "DNR Rule Engine Active (GPLv3)";
+      if (pauseBtn) {
+        pauseBtn.style.display = "flex";
+        pauseBtnText.textContent = "Pause on This Site";
+      }
+      if (pausedAlert) pausedAlert.classList.add("hidden");
+    }
+  });
 }
 
 function loadCookieGovernance(domain, tabUrl, tabId) {
@@ -864,6 +996,8 @@ function renderUnknownState() {
   document.getElementById("grade-letter").textContent = "-";
   document.getElementById("grade-score").textContent = "--/100";
   renderBreaches([]);
+  const pauseBtn = document.getElementById("btn-toggle-site-adblock");
+  if (pauseBtn) pauseBtn.style.display = "none";
 }
 
 function openDeletionModal() {

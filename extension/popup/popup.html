@@ -36,6 +36,47 @@
       </div>
     </header>
 
+    <!-- uBlock-Grade Network & Ad Shield Control Card -->
+    <div class="adblock-card" id="adblock-card">
+      <div class="adblock-header">
+        <div class="adblock-title-group">
+          <div class="adblock-icon-wrap" id="adblock-icon-wrap">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+          </div>
+          <div>
+            <div class="adblock-title">Ad & Tracker Shield</div>
+            <div class="adblock-sub" id="adblock-status-desc">DNR Rule Engine Active (GPLv3)</div>
+          </div>
+        </div>
+        <div class="adblock-master-toggle">
+          <label class="switch" title="Toggle Global Ad Blocking (All Sites)">
+            <input type="checkbox" id="toggle-global-adblock" checked />
+            <span class="slider round"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="adblock-body">
+        <div class="adblock-stats-row">
+          <div class="adblock-stat-chip">
+            <span class="adblock-stat-num" id="adblock-blocked-count">0</span>
+            <span class="adblock-stat-label">Blocked on Page</span>
+          </div>
+          <button class="adblock-pause-btn" id="btn-toggle-site-adblock" title="Pause / Resume Ad Blocking for this domain">
+            <span class="adblock-pause-dot" id="adblock-pause-dot"></span>
+            <span id="adblock-pause-btn-text">Pause on This Site</span>
+          </button>
+        </div>
+
+        <div class="adblock-paused-alert hidden" id="adblock-paused-alert">
+          <span>⚠️ Ad blocking paused for <b id="adblock-paused-domain-text">this site</b></span>
+          <button class="adblock-resume-link" id="btn-adblock-resume-now">Resume Protection</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Active Site Banner -->
     <div class="site-card">
       <div class="site-info">

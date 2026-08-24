@@ -649,6 +649,7 @@
   
   // 6. Request rating and initialize on page
   function init() {
+    checkAndApplyCosmeticFilter();
     scanTrackers();
     automateCookieRejection();
     automatePlatformSettings();
@@ -737,7 +738,97 @@
       sendResponse({ success: true });
       return true;
     }
+
+    if (msg.type === "ADBLOCK_GLOBAL_CHANGED") {
+      if (msg.enabled === false) {
+        removeCosmeticAdFilter();
+      } else {
+        checkAndApplyCosmeticFilter();
+      }
+      sendResponse({ success: true });
+      return true;
+    }
+
+    if (msg.type === "ADBLOCK_SITE_PAUSE_CHANGED") {
+      if (msg.paused) {
+        removeCosmeticAdFilter();
+      } else {
+        checkAndApplyCosmeticFilter();
+      }
+      sendResponse({ success: true });
+      return true;
+    }
   });
+
+  // --- Cosmetic Ad Blocker Engine ---
+  const COSMETIC_AD_SELECTORS = [
+    "ins.adsbygoogle",
+    "div[id^='google_ads_iframe']",
+    "iframe[id^='google_ads_frame']",
+    "div[id*='gpt-ad']",
+    "div[id*='dfp-ad']",
+    ".ad-container",
+    ".ad-banner",
+    ".ad-wrapper",
+    ".ad-slot",
+    ".ad_slot",
+    ".ad-box",
+    ".sponsored-post",
+    ".sponsored-content",
+    ".native-ad",
+    ".trc_rbox_div",
+    ".outbrain_widget",
+    ".taboola-ad",
+    "div[data-ad-unit]",
+    "div[data-ad-slot]",
+    "div[data-ad-client]"
+  ];
+
+  function applyCosmeticAdFilter() {
+    let style = document.getElementById("guardra-cosmetic-adblock");
+    if (!style) {
+      style = document.createElement("style");
+      style.id = "guardra-cosmetic-adblock";
+      const rule = COSMETIC_AD_SELECTORS.join(", ") + " { display: none !important; visibility: hidden !important; height: 0 !important; min-height: 0 !important; max-height: 0 !important; opacity: 0 !important; pointer-events: none !important; }";
+      style.textContent = rule;
+      (document.head || document.documentElement).appendChild(style);
+    }
+
+    // Count hidden cosmetic elements and report
+    try {
+      const elements = document.querySelectorAll(COSMETIC_AD_SELECTORS.join(", "));
+      if (elements.length > 0) {
+        const domain = location.hostname.replace(/^www\./i, "");
+        chrome.runtime.sendMessage({
+          type: "REPORT_COSMETIC_BLOCKED",
+          count: elements.length,
+          domain: domain
+        }, () => {
+          if (chrome.runtime.lastError) {}
+        });
+      }
+    } catch (e) {}
+  }
+
+  function removeCosmeticAdFilter() {
+    const style = document.getElementById("guardra-cosmetic-adblock");
+    if (style) style.remove();
+  }
+
+  function checkAndApplyCosmeticFilter() {
+    const domain = location.hostname.replace(/^www\./i, "");
+    chrome.runtime.sendMessage({
+      type: "GET_ADBLOCK_STATUS",
+      domain: domain
+    }, (resp) => {
+      if (chrome.runtime.lastError || !resp) return;
+      if (resp.globalEnabled !== false && !resp.sitePaused) {
+        applyCosmeticAdFilter();
+      } else {
+        removeCosmeticAdFilter();
+      }
+    });
+  }
 
   // Run on page load
   if (document.readyState === "loading") {
@@ -748,6 +839,7 @@
 
   // Secondary sweep for lazy scripts
   setTimeout(() => {
+    checkAndApplyCosmeticFilter();
     scanTrackers();
     automateCookieRejection();
     sendTelemetry();
