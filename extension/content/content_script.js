@@ -836,7 +836,6 @@
   // --- YouTube Video Ad Skipper & Neutralizer ---
   let ytAdInterval = null;
   let ytObserver = null;
-  let wasMutedByAdBlocker = false;
 
   function initYouTubeAdSkipper() {
     if (!location.hostname.includes("youtube.com")) return;
@@ -845,22 +844,13 @@
     function handleYouTubeAds() {
       const player = document.getElementById("movie_player") || document.querySelector(".html5-video-player");
       const video = document.querySelector("video");
-      const isAdShowing = player && (player.classList.contains("ad-showing") || player.classList.contains("ad-interrupting") || document.querySelector(".ytp-ad-player-overlay, .ytp-ad-module"));
+      if (!player || !video) return;
 
-      if (isAdShowing && video) {
-        // Fast-forward & mute video ad
-        try {
-          if (!video.muted) {
-            video.muted = true;
-            wasMutedByAdBlocker = true;
-          }
-          video.playbackRate = 16.0;
-          if (isFinite(video.duration) && video.duration > 0) {
-            video.currentTime = video.duration;
-          }
-        } catch (e) {}
+      // YouTube strictly adds "ad-showing" or "ad-interrupting" to the player element ONLY when an ad is playing
+      const isRealAdPlaying = player.classList.contains("ad-showing") || player.classList.contains("ad-interrupting");
 
-        // Instant click skip buttons
+      if (isRealAdPlaying) {
+        // 1. Instantly click skip buttons
         const skipButtons = [
           ".ytp-ad-skip-button",
           ".ytp-ad-skip-button-modern",
@@ -875,39 +865,37 @@
         for (const selector of skipButtons) {
           const btn = document.querySelector(selector);
           if (btn && typeof btn.click === "function") {
-            try {
-              btn.click();
-            } catch (e) {}
+            try { btn.click(); } catch (e) {}
           }
         }
 
-        // Close promo / banner overlays
-        const overlays = document.querySelectorAll(".ytp-ad-overlay-container, #player-ads, ytd-ad-slot-renderer");
-        overlays.forEach(el => {
-          el.style.display = "none";
-        });
-      } else if (video && wasMutedByAdBlocker && !isAdShowing) {
-        // Restore user playback after ad passes
+        // 2. Fast-forward the ad video stream ONLY when isRealAdPlaying is TRUE and duration is ad-length (< 300s)
         try {
-          video.muted = false;
-          if (video.playbackRate > 2.0) {
-            video.playbackRate = 1.0;
+          if (video.duration && isFinite(video.duration) && video.duration < 300) {
+            video.currentTime = video.duration - 0.1;
           }
-          wasMutedByAdBlocker = false;
+          video.playbackRate = 16.0;
         } catch (e) {}
+      } else {
+        // Normal video playback: ensure speed is not stuck on 16x
+        if (video.playbackRate > 2.0) {
+          video.playbackRate = 1.0;
+        }
       }
     }
 
-    ytAdInterval = setInterval(handleYouTubeAds, 80);
+    ytAdInterval = setInterval(handleYouTubeAds, 100);
 
     const targetNode = document.body || document.documentElement;
     if (targetNode) {
-      ytObserver = new MutationObserver(handleYouTubeAds);
+      ytObserver = new MutationObserver(() => {
+        handleYouTubeAds();
+      });
       ytObserver.observe(targetNode, {
         childList: true,
         subtree: true,
         attributes: true,
-        attributeFilter: ["class", "style"]
+        attributeFilter: ["class"]
       });
     }
   }
@@ -922,12 +910,8 @@
       ytObserver = null;
     }
     const video = document.querySelector("video");
-    if (video && wasMutedByAdBlocker) {
-      video.muted = false;
-      if (video.playbackRate > 2.0) {
-        video.playbackRate = 1.0;
-      }
-      wasMutedByAdBlocker = false;
+    if (video && video.playbackRate > 2.0) {
+      video.playbackRate = 1.0;
     }
   }
 
