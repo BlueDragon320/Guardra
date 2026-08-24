@@ -23,8 +23,10 @@ dist/
 dist-ssr/
 *.local
 
-# Browser extension archives
+# Browser extension archives & unpacked cache
 guardra-extension.zip
+extension/_metadata/
+_metadata/
 
 # Operating system & Editor files
 .DS_Store

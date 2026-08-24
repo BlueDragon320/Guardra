@@ -1019,15 +1019,43 @@ async function syncAdBlockEngine() {
       const existingRules = await chrome.declarativeNetRequest.getDynamicRules();
       const existingIds = existingRules.map(r => r.id);
       
-      const newRules = pausedEntries.map(([dom]) => ({
-        id: getDomainRuleId(dom),
-        priority: 1000,
-        action: { type: "allowAllRequests" },
-        condition: {
-          initiatorDomains: [dom],
-          resourceTypes: ["main_frame", "sub_frame", "stylesheet", "script", "image", "font", "object", "xmlhttprequest", "ping", "media", "websocket", "other"]
-        }
-      }));
+      const newRules = [];
+      pausedEntries.forEach(([dom], index) => {
+        const cleanDom = dom.replace(/^www\./, "").toLowerCase();
+        const baseId = 10000 + (index * 10);
+        const domainList = [cleanDom, `www.${cleanDom}`, `m.${cleanDom}`];
+
+        // 1. Allow all subresource requests initiated by the domain
+        newRules.push({
+          id: baseId,
+          priority: 10000,
+          action: { type: "allow" },
+          condition: {
+            initiatorDomains: domainList
+          }
+        });
+
+        // 2. Allow all requests targeting the domain
+        newRules.push({
+          id: baseId + 1,
+          priority: 10000,
+          action: { type: "allow" },
+          condition: {
+            requestDomains: domainList
+          }
+        });
+
+        // 3. Allow all frame hierarchies
+        newRules.push({
+          id: baseId + 2,
+          priority: 10000,
+          action: { type: "allowAllRequests" },
+          condition: {
+            initiatorDomains: domainList,
+            resourceTypes: ["main_frame", "sub_frame"]
+          }
+        });
+      });
 
       await chrome.declarativeNetRequest.updateDynamicRules({
         removeRuleIds: existingIds,
