@@ -781,7 +781,25 @@
     ".taboola-ad",
     "div[data-ad-unit]",
     "div[data-ad-slot]",
-    "div[data-ad-client]"
+    "div[data-ad-client]",
+    // YouTube Specific Ad Containers & Promoted Slots
+    "ytd-ad-slot-renderer",
+    "ytd-in-feed-ad-layout-renderer",
+    "ytd-banner-promo-renderer",
+    "#masthead-ad",
+    "ytd-promoted-sparkles-web-renderer",
+    "ytd-promoted-sparkles-text-search-renderer",
+    "ytd-compact-promoted-video-renderer",
+    "ytd-promoted-video-renderer",
+    ".ytp-ad-overlay-container",
+    ".ytp-ad-message-container",
+    ".ytp-ad-text",
+    "ytd-engagement-panel-section-list-renderer[target-id='engagement-panel-ads']",
+    "ytd-rich-item-renderer:has(ytd-ad-slot-renderer)",
+    "ytd-player-legacy-desktop-watch-ads-renderer",
+    "ytd-action-companion-ad-renderer",
+    "#player-ads",
+    ".ytp-ad-image-overlay"
   ];
 
   function applyCosmeticAdFilter() {
@@ -815,6 +833,104 @@
     if (style) style.remove();
   }
 
+  // --- YouTube Video Ad Skipper & Neutralizer ---
+  let ytAdInterval = null;
+  let ytObserver = null;
+  let wasMutedByAdBlocker = false;
+
+  function initYouTubeAdSkipper() {
+    if (!location.hostname.includes("youtube.com")) return;
+    if (ytAdInterval) return;
+
+    function handleYouTubeAds() {
+      const player = document.getElementById("movie_player") || document.querySelector(".html5-video-player");
+      const video = document.querySelector("video");
+      const isAdShowing = player && (player.classList.contains("ad-showing") || player.classList.contains("ad-interrupting") || document.querySelector(".ytp-ad-player-overlay, .ytp-ad-module"));
+
+      if (isAdShowing && video) {
+        // Fast-forward & mute video ad
+        try {
+          if (!video.muted) {
+            video.muted = true;
+            wasMutedByAdBlocker = true;
+          }
+          video.playbackRate = 16.0;
+          if (isFinite(video.duration) && video.duration > 0) {
+            video.currentTime = video.duration;
+          }
+        } catch (e) {}
+
+        // Instant click skip buttons
+        const skipButtons = [
+          ".ytp-ad-skip-button",
+          ".ytp-ad-skip-button-modern",
+          ".ytp-skip-ad-button",
+          "button.ytp-ad-skip-button-modern",
+          ".ytp-ad-skip-button-slot button",
+          ".ytp-ad-overlay-close-button",
+          ".ytp-ad-survey-answer",
+          "ytd-button-renderer#dismiss-button"
+        ];
+
+        for (const selector of skipButtons) {
+          const btn = document.querySelector(selector);
+          if (btn && typeof btn.click === "function") {
+            try {
+              btn.click();
+            } catch (e) {}
+          }
+        }
+
+        // Close promo / banner overlays
+        const overlays = document.querySelectorAll(".ytp-ad-overlay-container, #player-ads, ytd-ad-slot-renderer");
+        overlays.forEach(el => {
+          el.style.display = "none";
+        });
+      } else if (video && wasMutedByAdBlocker && !isAdShowing) {
+        // Restore user playback after ad passes
+        try {
+          video.muted = false;
+          if (video.playbackRate > 2.0) {
+            video.playbackRate = 1.0;
+          }
+          wasMutedByAdBlocker = false;
+        } catch (e) {}
+      }
+    }
+
+    ytAdInterval = setInterval(handleYouTubeAds, 80);
+
+    const targetNode = document.body || document.documentElement;
+    if (targetNode) {
+      ytObserver = new MutationObserver(handleYouTubeAds);
+      ytObserver.observe(targetNode, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ["class", "style"]
+      });
+    }
+  }
+
+  function stopYouTubeAdSkipper() {
+    if (ytAdInterval) {
+      clearInterval(ytAdInterval);
+      ytAdInterval = null;
+    }
+    if (ytObserver) {
+      ytObserver.disconnect();
+      ytObserver = null;
+    }
+    const video = document.querySelector("video");
+    if (video && wasMutedByAdBlocker) {
+      video.muted = false;
+      if (video.playbackRate > 2.0) {
+        video.playbackRate = 1.0;
+      }
+      wasMutedByAdBlocker = false;
+    }
+  }
+
   function checkAndApplyCosmeticFilter() {
     const domain = location.hostname.replace(/^www\./i, "");
     chrome.runtime.sendMessage({
@@ -824,8 +940,10 @@
       if (chrome.runtime.lastError || !resp) return;
       if (resp.globalEnabled !== false && !resp.sitePaused) {
         applyCosmeticAdFilter();
+        initYouTubeAdSkipper();
       } else {
         removeCosmeticAdFilter();
+        stopYouTubeAdSkipper();
       }
     });
   }
