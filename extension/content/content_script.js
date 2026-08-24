@@ -479,8 +479,6 @@
     let adblockChipHtml = "";
     if (isGlobalOff) {
       adblockChipHtml = `<span class="pill-chip adblock-disabled">🛡️ Ads Off</span>`;
-    } else if (isPaused) {
-      adblockChipHtml = `<span class="pill-chip adblock-paused">⏸️ Ads Paused</span>`;
     } else {
       adblockChipHtml = `<span class="pill-chip adblock-active">🛡️ ${blockedCount} Ads Blocked</span>`;
     }
@@ -533,18 +531,18 @@
 
       // Adblock Section in Expanded Panel
       const adblockPanelHtml = `
-        <div class="section-card" style="border-left: 3px solid ${isPaused ? '#f59e0b' : '#10b981'};">
+        <div class="section-card" style="border-left: 3px solid ${isGlobalOff ? '#64748b' : '#10b981'};">
           <div class="meta-row" style="align-items:center;">
             <span style="font-weight:700; color:${isLight ? '#0f172a' : '#ffffff'};">🛡️ Ad & Tracker Shield</span>
-            <span style="color:${isPaused ? '#f59e0b' : '#10b981'}; font-weight:700; font-family:monospace;">
-              ${isGlobalOff ? 'DISABLED' : (isPaused ? 'PAUSED' : `${blockedCount} BLOCKED`)}
+            <span style="color:${isGlobalOff ? '#64748b' : '#10b981'}; font-weight:700; font-family:monospace;">
+              ${isGlobalOff ? 'DISABLED' : `${blockedCount} BLOCKED`}
             </span>
           </div>
           <div style="font-size:10px; color:${isLight ? '#64748b' : '#888888'};">
-            ${isPaused ? `Ad blocking paused on ${domain}. Ads will load normally.` : `DNR network engine & cosmetic filters actively blocking ads on ${domain}.`}
+            ${isGlobalOff ? 'Ad blocking is turned OFF across all websites.' : 'DNR engine & cosmetic rules actively blocking ads.'}
           </div>
-          <button class="${isPaused ? 'action-btn' : 'secondary-btn'}" id="guardra-panel-toggle-adblock" style="${isPaused ? 'background:#f59e0b; color:#000; margin-top:4px;' : 'margin-top:4px;'}">
-            ${isPaused ? `▶️ Resume Ad Blocking on ${domain}` : `⏸️ Pause on ${domain}`}
+          <button class="${isGlobalOff ? 'action-btn' : 'secondary-btn'}" id="guardra-panel-toggle-adblock" style="${isGlobalOff ? 'background:#10b981; color:#fff; margin-top:4px;' : 'margin-top:4px;'}">
+            ${isGlobalOff ? '▶️ Turn Ad Blocking ON (All Sites)' : '⏸️ Turn Ad Blocking OFF (Entire Browser)'}
           </button>
         </div>
       `;
@@ -607,15 +605,13 @@
         </div>
       `;
 
-      // Panel Adblock Toggle Handler
+      // Panel Adblock Toggle Handler (Global ON / OFF)
       const panelAdblockToggle = shadowRoot.getElementById("guardra-panel-toggle-adblock");
       if (panelAdblockToggle) {
         panelAdblockToggle.addEventListener("click", () => {
-          const cleanDom = domain.toLowerCase();
           chrome.runtime.sendMessage({
-            type: "TOGGLE_SITE_ADBLOCK",
-            domain: cleanDom,
-            paused: !isPaused
+            type: "TOGGLE_GLOBAL_ADBLOCK",
+            enabled: isGlobalOff
           }, () => {
             location.reload();
           });
@@ -822,17 +818,6 @@
       sendResponse({ success: true });
       return true;
     }
-
-    if (msg.type === "ADBLOCK_SITE_PAUSE_CHANGED") {
-      if (msg.paused) {
-        removeCosmeticAdFilter();
-      } else {
-        checkAndApplyCosmeticFilter();
-      }
-      if (currentRating) renderFloatingPill(currentRating);
-      sendResponse({ success: true });
-      return true;
-    }
   });
 
   // --- Cosmetic Ad Blocker Engine ---
@@ -991,13 +976,11 @@
   }
 
   function checkAndApplyCosmeticFilter() {
-    const domain = location.hostname.replace(/^www\./i, "");
     chrome.runtime.sendMessage({
-      type: "GET_ADBLOCK_STATUS",
-      domain: domain
+      type: "GET_ADBLOCK_STATUS"
     }, (resp) => {
       if (chrome.runtime.lastError || !resp) return;
-      if (resp.globalEnabled !== false && !resp.sitePaused) {
+      if (resp.globalEnabled !== false) {
         applyCosmeticAdFilter();
         initYouTubeAdSkipper();
       } else {

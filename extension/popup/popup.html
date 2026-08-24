@@ -37,6 +37,7 @@
     </header>
 
     <!-- uBlock-Grade Network & Ad Shield Control Card -->
+    <!-- Ad & Tracker Shield (Global ON / OFF) -->
     <div class="adblock-card" id="adblock-card">
       <div class="adblock-header">
         <div class="adblock-title-group">
@@ -47,7 +48,7 @@
           </div>
           <div>
             <div class="adblock-title">Ad & Tracker Shield</div>
-            <div class="adblock-sub" id="adblock-status-desc">DNR Rule Engine Active (GPLv3)</div>
+            <div class="adblock-sub" id="adblock-status-desc">DNR Engine Active (All Sites)</div>
           </div>
         </div>
         <div class="adblock-master-toggle">
@@ -64,16 +65,9 @@
             <span class="adblock-stat-num" id="adblock-blocked-count">0</span>
             <span class="adblock-stat-label">Blocked on Page</span>
           </div>
-          <button class="adblock-pause-btn" id="btn-toggle-site-adblock" title="Pause / Resume Ad Blocking for this domain">
-            <span class="adblock-pause-dot" id="adblock-pause-dot"></span>
-            <span id="adblock-pause-btn-text">Pause on This Site</span>
-          </button>
-        </div>
-
-        <div class="adblock-paused-alert hidden" id="adblock-paused-alert">
-          <div class="adblock-paused-alert-content">
-            <span id="adblock-paused-alert-text">⚠️ Protection paused on <b id="adblock-paused-domain-text">this site</b></span>
-            <button class="adblock-resume-btn" id="btn-adblock-resume-now">▶️ Resume Ad Blocking</button>
+          <div class="adblock-mode-badge" id="adblock-mode-badge">
+            <span class="adblock-mode-dot" id="adblock-mode-dot"></span>
+            <span id="adblock-mode-text">Active</span>
           </div>
         </div>
       </div>

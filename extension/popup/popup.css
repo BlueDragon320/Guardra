@@ -248,82 +248,36 @@ body {
   font-weight: 500;
 }
 
-.adblock-pause-btn {
-  background: rgba(16, 185, 129, 0.08);
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  color: #10B981;
-  font-size: 11.5px;
-  font-weight: 600;
-  padding: 6px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  display: flex;
+.adblock-mode-badge {
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  transition: all 0.2s ease;
-  white-space: nowrap;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #10B981;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 8px;
 }
 
-.adblock-pause-btn:hover {
-  background: rgba(16, 185, 129, 0.16);
-  border-color: #10B981;
-  transform: translateY(-1px);
-}
-
-.adblock-pause-dot {
-  width: 6px;
-  height: 6px;
+.adblock-mode-dot {
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: #10B981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
 }
 
-.adblock-card.paused .adblock-pause-dot {
-  background: #f59e0b;
+.adblock-card.disabled .adblock-mode-badge {
+  background: rgba(100, 116, 139, 0.1);
+  border-color: rgba(100, 116, 139, 0.3);
+  color: #94a3b8;
 }
 
-.adblock-card.paused .adblock-pause-btn {
-  border-color: rgba(245, 158, 11, 0.4);
-  color: #f59e0b;
-  background: rgba(245, 158, 11, 0.12);
-}
-
-.adblock-card.paused .adblock-pause-btn:hover {
-  background: rgba(245, 158, 11, 0.2);
-  border-color: #f59e0b;
-}
-
-.adblock-paused-alert {
-  background: rgba(245, 158, 11, 0.08);
-  border: 1px solid rgba(245, 158, 11, 0.25);
-  border-radius: 8px;
-  padding: 8px 10px;
-  font-size: 11px;
-  color: #fbbf24;
-}
-
-.adblock-paused-alert-content {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  width: 100%;
-}
-
-.adblock-resume-btn {
-  background: #f59e0b;
-  color: #000000;
-  border: none;
-  font-size: 10.5px;
-  font-weight: 700;
-  padding: 4px 8px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  white-space: nowrap;
-}
-
-.adblock-resume-btn:hover {
-  background: #fbbf24;
+.adblock-card.disabled .adblock-mode-dot {
+  background: #64748b;
+  box-shadow: none;
 }
 
 /* Site Card */

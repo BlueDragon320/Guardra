@@ -285,7 +285,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  // --- 3. uBlock-Grade Ad Blocker Controls ---
+  // --- 3. Ad & Tracker Shield Master Toggle (Entire Browser) ---
   const globalAdblockToggle = document.getElementById("toggle-global-adblock");
   if (globalAdblockToggle) {
     globalAdblockToggle.addEventListener("change", () => {
@@ -294,72 +294,15 @@ document.addEventListener("DOMContentLoaded", async () => {
         type: "TOGGLE_GLOBAL_ADBLOCK",
         enabled: enabled
       }, (res) => {
-        if (currentRatingData?.domain) {
-          chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
-            const tabId = tabs && tabs[0] ? tabs[0].id : null;
-            updateAdBlockUI(currentRatingData.domain, tabId);
-          });
-        }
-      });
-    });
-  }
-
-  function toggleSitePauseAction(cleanDom, explicitPaused = null) {
-    chrome.runtime.sendMessage({
-      type: "GET_ADBLOCK_STATUS",
-      domain: cleanDom
-    }, (statusResp) => {
-      const currentlyPaused = !!statusResp?.sitePaused;
-      const newPausedState = explicitPaused !== null ? explicitPaused : !currentlyPaused;
-
-      chrome.runtime.sendMessage({
-        type: "TOGGLE_SITE_ADBLOCK",
-        domain: cleanDom,
-        paused: newPausedState
-      }, (res) => {
         chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
-          const tabId = tabs && tabs[0] ? tabs[0].id : null;
-          updateAdBlockUI(cleanDom, tabId);
-          // Reload tab to reflect network changes
-          if (tabId) {
-            chrome.tabs.reload(tabId);
+          const tab = tabs && tabs[0] ? tabs[0] : null;
+          const cleanDom = currentRatingData?.domain || (tab?.url ? extractDomain(tab.url) : "");
+          updateAdBlockUI(cleanDom, tab?.id);
+          if (tab?.id) {
+            chrome.tabs.reload(tab.id);
           }
         });
       });
-    });
-  }
-
-  const sitePauseBtn = document.getElementById("btn-toggle-site-adblock");
-  if (sitePauseBtn) {
-    sitePauseBtn.addEventListener("click", () => {
-      let domain = currentRatingData?.domain;
-      if (domain) {
-        toggleSitePauseAction(domain.replace(/^www\./, "").toLowerCase());
-      } else {
-        chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
-          if (tabs && tabs[0] && tabs[0].url) {
-            const d = extractDomain(tabs[0].url);
-            if (d) toggleSitePauseAction(d);
-          }
-        });
-      }
-    });
-  }
-
-  const resumeNowBtn = document.getElementById("btn-adblock-resume-now");
-  if (resumeNowBtn) {
-    resumeNowBtn.addEventListener("click", () => {
-      let domain = currentRatingData?.domain;
-      if (domain) {
-        toggleSitePauseAction(domain.replace(/^www\./, "").toLowerCase(), false);
-      } else {
-        chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
-          if (tabs && tabs[0] && tabs[0].url) {
-            const d = extractDomain(tabs[0].url);
-            if (d) toggleSitePauseAction(d, false);
-          }
-        });
-      }
     });
   }
 
@@ -650,57 +593,33 @@ function renderPopup(data, tabUrl, tabId) {
 }
 
 function updateAdBlockUI(domain, tabId) {
-  if (!domain) return;
-  const cleanDom = domain.replace(/^www\./, "").toLowerCase();
-  const shortName = cleanDom.split(".")[0].toUpperCase();
-
   chrome.runtime.sendMessage({
     type: "GET_ADBLOCK_STATUS",
-    domain: cleanDom,
+    domain: domain,
     tabId: tabId
   }, (resp) => {
     if (chrome.runtime.lastError || !resp) return;
 
     const card = document.getElementById("adblock-card");
     const globalToggle = document.getElementById("toggle-global-adblock");
-    const pauseBtn = document.getElementById("btn-toggle-site-adblock");
-    const pauseBtnText = document.getElementById("adblock-pause-btn-text");
     const countEl = document.getElementById("adblock-blocked-count");
     const descEl = document.getElementById("adblock-status-desc");
-    const pausedAlert = document.getElementById("adblock-paused-alert");
-    const pausedDomainText = document.getElementById("adblock-paused-domain-text");
+    const modeBadge = document.getElementById("adblock-mode-badge");
+    const modeText = document.getElementById("adblock-mode-text");
 
-    if (globalToggle) globalToggle.checked = resp.globalEnabled !== false;
-    if (countEl) countEl.textContent = resp.totalBlockedCount || 0;
-    if (pausedDomainText) pausedDomainText.textContent = cleanDom;
+    const isEnabled = resp.globalEnabled !== false;
 
-    if (resp.globalEnabled === false) {
-      if (card) {
-        card.className = "adblock-card disabled";
-      }
-      if (descEl) descEl.textContent = "Engine Disabled Globally";
-      if (pauseBtn) pauseBtn.style.display = "none";
-      if (pausedAlert) pausedAlert.classList.add("hidden");
-    } else if (resp.sitePaused) {
-      if (card) {
-        card.className = "adblock-card paused";
-      }
-      if (descEl) descEl.textContent = `Protection Paused on ${cleanDom}`;
-      if (pauseBtn) {
-        pauseBtn.style.display = "flex";
-        pauseBtnText.textContent = `▶️ Resume on ${shortName}`;
-      }
-      if (pausedAlert) pausedAlert.classList.remove("hidden");
+    if (globalToggle) globalToggle.checked = isEnabled;
+    if (countEl) countEl.textContent = isEnabled ? (resp.totalBlockedCount || 0) : 0;
+
+    if (!isEnabled) {
+      if (card) card.className = "adblock-card disabled";
+      if (descEl) descEl.textContent = "Disabled (Entire Browser)";
+      if (modeText) modeText.textContent = "Shield Off";
     } else {
-      if (card) {
-        card.className = "adblock-card";
-      }
-      if (descEl) descEl.textContent = "DNR Rule Engine Active";
-      if (pauseBtn) {
-        pauseBtn.style.display = "flex";
-        pauseBtnText.textContent = `⏸️ Pause on ${shortName}`;
-      }
-      if (pausedAlert) pausedAlert.classList.add("hidden");
+      if (card) card.className = "adblock-card";
+      if (descEl) descEl.textContent = "DNR Engine Active (All Sites)";
+      if (modeText) modeText.textContent = "Active";
     }
   });
 }

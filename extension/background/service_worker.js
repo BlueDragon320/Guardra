@@ -901,10 +901,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     
     Promise.all([
       isGlobalAdBlockingEnabled(),
-      getPausedDomains(),
       chrome.storage.local.get(`adblock_domain_stats_${domain}`)
-    ]).then(([globalEnabled, pausedMap, storedStats]) => {
-      const isPaused = !!pausedMap[domain];
+    ]).then(([globalEnabled, storedStats]) => {
       const tabStats = tabId ? (tabBlockedStats.get(tabId) || { count: 0 }) : { count: 0 };
       const domainCount = storedStats[`adblock_domain_stats_${domain}`]?.count || 0;
       const totalBlockCount = Math.max(tabStats.count, domainCount);
@@ -912,10 +910,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({
         success: true,
         globalEnabled,
-        sitePaused: isPaused,
         domain,
         tabBlockedCount: tabStats.count,
-        totalBlockedCount: totalBlockCount,
+        totalBlockedCount: globalEnabled ? totalBlockCount : 0,
         tabId
       });
     }).catch(err => {
@@ -927,17 +924,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "TOGGLE_GLOBAL_ADBLOCK") {
     const enable = message.enabled !== undefined ? message.enabled : true;
     setGlobalAdBlocking(enable).then(res => {
-      sendResponse(res);
-    }).catch(err => {
-      sendResponse({ success: false, error: err.message });
-    });
-    return true;
-  }
-
-  if (message.type === "TOGGLE_SITE_ADBLOCK") {
-    const domain = (message.domain || "").replace(/^www\./, "").toLowerCase();
-    const paused = message.paused;
-    setSiteAdBlockPause(domain, paused).then(res => {
       sendResponse(res);
     }).catch(err => {
       sendResponse({ success: false, error: err.message });
@@ -970,26 +956,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
-// --- uBlock-Grade Ad Blocking & DNR Governance Engine ---
+// --- Ad Blocking & DNR Governance Engine (Global 2-State) ---
 const tabBlockedStats = new Map();
-
-function getDomainRuleId(domain) {
-  let hash = 0;
-  for (let i = 0; i < domain.length; i++) {
-    hash = ((hash << 5) - hash) + domain.charCodeAt(i);
-    hash |= 0;
-  }
-  return 10000 + Math.abs(hash % 80000);
-}
 
 async function isGlobalAdBlockingEnabled() {
   const res = await chrome.storage.local.get("adblock_global_enabled");
   return res.adblock_global_enabled !== false; // Default true
-}
-
-async function getPausedDomains() {
-  const res = await chrome.storage.local.get("adblock_paused_domains");
-  return res.adblock_paused_domains || {};
 }
 
 async function syncAdBlockEngine() {
@@ -1006,64 +978,18 @@ async function syncAdBlockEngine() {
         });
       }
     }
-  } catch (e) {
-    console.warn("Error syncing enabled rulesets:", e);
-  }
-
-  // Sync dynamic allow rules for paused domains
-  try {
+    // Clean dynamic rules
     if (chrome.declarativeNetRequest && chrome.declarativeNetRequest.getDynamicRules) {
-      const paused = await getPausedDomains();
-      const pausedEntries = Object.entries(paused).filter(([_, isPaused]) => isPaused);
-      
       const existingRules = await chrome.declarativeNetRequest.getDynamicRules();
       const existingIds = existingRules.map(r => r.id);
-      
-      const newRules = [];
-      pausedEntries.forEach(([dom], index) => {
-        const cleanDom = dom.replace(/^www\./, "").toLowerCase();
-        const baseId = 10000 + (index * 10);
-        const domainList = [cleanDom, `www.${cleanDom}`, `m.${cleanDom}`];
-
-        // 1. Allow all subresource requests initiated by the domain
-        newRules.push({
-          id: baseId,
-          priority: 10000,
-          action: { type: "allow" },
-          condition: {
-            initiatorDomains: domainList
-          }
+      if (existingIds.length > 0) {
+        await chrome.declarativeNetRequest.updateDynamicRules({
+          removeRuleIds: existingIds
         });
-
-        // 2. Allow all requests targeting the domain
-        newRules.push({
-          id: baseId + 1,
-          priority: 10000,
-          action: { type: "allow" },
-          condition: {
-            requestDomains: domainList
-          }
-        });
-
-        // 3. Allow all frame hierarchies
-        newRules.push({
-          id: baseId + 2,
-          priority: 10000,
-          action: { type: "allowAllRequests" },
-          condition: {
-            initiatorDomains: domainList,
-            resourceTypes: ["main_frame", "sub_frame"]
-          }
-        });
-      });
-
-      await chrome.declarativeNetRequest.updateDynamicRules({
-        removeRuleIds: existingIds,
-        addRules: newRules
-      });
+      }
     }
   } catch (e) {
-    console.warn("Error syncing dynamic DNR rules:", e);
+    console.warn("Error syncing enabled rulesets:", e);
   }
 }
 
@@ -1073,35 +999,12 @@ async function setGlobalAdBlocking(enabled) {
   try {
     const tabs = await chrome.tabs.query({});
     for (const t of tabs) {
-      chrome.tabs.sendMessage(t.id, { type: "ADBLOCK_GLOBAL_CHANGED", enabled }).catch(() => {});
-    }
-  } catch (e) {}
-  return { success: true, enabled };
-}
-
-async function setSiteAdBlockPause(domain, paused) {
-  const cleanDom = (domain || "").replace(/^www\./, "").toLowerCase();
-  if (!cleanDom) return { success: false };
-
-  const pausedMap = await getPausedDomains();
-  if (paused) {
-    pausedMap[cleanDom] = true;
-  } else {
-    delete pausedMap[cleanDom];
-  }
-  await chrome.storage.local.set({ adblock_paused_domains: pausedMap });
-  await syncAdBlockEngine();
-
-  try {
-    const tabs = await chrome.tabs.query({});
-    for (const t of tabs) {
-      if (t.url && extractDomain(t.url) === cleanDom) {
-        chrome.tabs.sendMessage(t.id, { type: "ADBLOCK_SITE_PAUSE_CHANGED", domain: cleanDom, paused }).catch(() => {});
+      if (t.id) {
+        chrome.tabs.sendMessage(t.id, { type: "ADBLOCK_GLOBAL_CHANGED", enabled }).catch(() => {});
       }
     }
   } catch (e) {}
-
-  return { success: true, domain: cleanDom, paused };
+  return { success: true, enabled };
 }
 
 // Listen for matched rules if debug feedback API available
