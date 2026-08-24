@@ -558,6 +558,25 @@ async function auditDomainCookies(domain, tabUrl, tabId) {
   const stored = await chrome.storage.local.get(storageKey);
   const isEnforced = !!stored[storageKey]?.enforced;
 
+  // Merge recorded disabled cookies so they remain visible with a disabled tag
+  try {
+    const disabledRes = await chrome.storage.local.get(`disabled_cookies_${cleanDom}`);
+    const disabledList = disabledRes[`disabled_cookies_${cleanDom}`] || [];
+    const currentCookieNames = new Set(detailedCookies.map(c => c.name));
+    disabledList.forEach(dc => {
+      if (!currentCookieNames.has(dc.name)) {
+        detailedCookies.push({
+          name: dc.name,
+          domain: dc.domain || cleanDom,
+          isTracking: true,
+          category: `${dc.category || 'Analytics/Advertising'} (Disabled)`,
+          isBlocked: true,
+          disabled: true
+        });
+      }
+    });
+  } catch (e) {}
+
   let trackers = [];
   if (tabId) {
     const sessionRes = await chrome.storage.local.get(`tab_session_${tabId}`);
@@ -573,7 +592,7 @@ async function auditDomainCookies(domain, tabUrl, tabId) {
 
   return {
     domain: cleanDom,
-    total: cookies.length,
+    total: detailedCookies.length,
     essential,
     tracking,
     isEnforced,
@@ -582,6 +601,21 @@ async function auditDomainCookies(domain, tabUrl, tabId) {
     cookies: detailedCookies,
     trackers: trackers || []
   };
+}
+
+async function recordDisabledCookie(domain, cookieName, category = "Analytics/Advertising") {
+  if (!domain || !cookieName) return;
+  const cleanDom = domain.replace(/^www\./, "").toLowerCase();
+  const key = `disabled_cookies_${cleanDom}`;
+  try {
+    const res = await chrome.storage.local.get(key);
+    const list = res[key] || [];
+    if (!list.some(item => item.name === cookieName)) {
+      list.push({ name: cookieName, category: category, time: Date.now() });
+      if (list.length > 50) list.shift();
+      await chrome.storage.local.set({ [key]: list });
+    }
+  } catch (e) {}
 }
 
 async function enforceStrictCookies(domain, tabUrl) {
@@ -606,6 +640,7 @@ async function enforceStrictCookies(domain, tabUrl) {
         });
         removed++;
         removedNames.push(c.name);
+        recordDisabledCookie(cleanDom, c.name, "Analytics/Advertising");
       } catch (err) {
         if (tabUrl) {
           try {
@@ -616,6 +651,7 @@ async function enforceStrictCookies(domain, tabUrl) {
             });
             removed++;
             removedNames.push(c.name);
+            recordDisabledCookie(cleanDom, c.name, "Analytics/Advertising");
           } catch (e2) {}
         }
       }
@@ -759,7 +795,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     Promise.all(removePromises).then((results) => {
       const removed = results.some(r => !!r);
-      if (cleanDom) notifyCookieAuditUpdated(cleanDom);
+      if (cleanDom) {
+        recordDisabledCookie(cleanDom, name, "Tracking Cookie");
+        notifyCookieAuditUpdated(cleanDom);
+      }
       sendResponse({ success: removed, name: name });
     }).catch(err => {
       sendResponse({ success: false, error: err.message });

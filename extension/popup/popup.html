@@ -126,8 +126,17 @@
       </div>
     </div>
 
-    <!-- Action Buttons -->
-    <div class="actions-section">
+    <!-- Quick Direct Action Buttons: Separate Trackers & Cookies -->
+    <div class="actions-section" style="gap: 7px;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 7px;">
+        <button class="secondary-btn" id="btn-popup-disable-trackers" style="padding: 8px 6px; font-weight: 700; font-size: 10.5px; display: flex; align-items: center; justify-content: center; gap: 4px;" title="Disable all detected trackers">
+          <span>⚡ Disable Trackers</span>
+        </button>
+        <button class="secondary-btn" id="btn-popup-disable-cookies" style="padding: 8px 6px; font-weight: 700; font-size: 10.5px; display: flex; align-items: center; justify-content: center; gap: 4px;" title="Purge advertising & analytics cookies">
+          <span>🍪 Disable Cookies</span>
+        </button>
+      </div>
+
       <button class="primary-btn" id="btn-trigger-deletion">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
@@ -201,14 +210,26 @@
       </div>
     </div>
 
-    <!-- Auto-Disable Non-Essential Cookies Settings -->
+    <!-- Block All Trackers (Default: Enabled) -->
     <div class="inpage-toggle-card" style="margin-bottom: 8px;">
       <div class="inpage-toggle-info">
-        <span class="inpage-toggle-title">🛡️ Disable Non-Essential Cookies & All Trackers</span>
-        <span class="inpage-toggle-sub">Blocks non-essential cookies and all tracking scripts across websites</span>
+        <span class="inpage-toggle-title">🛡️ Block All Trackers</span>
+        <span class="inpage-toggle-sub">Blocks all tracking scripts, telemetry, and pixels</span>
       </div>
       <label class="switch">
-        <input type="checkbox" id="toggle-auto-disable-cookies" checked />
+        <input type="checkbox" id="toggle-block-trackers" checked />
+        <span class="slider round"></span>
+      </label>
+    </div>
+
+    <!-- Auto-Block Non-Essential Cookies (Default: Disabled / Optional) -->
+    <div class="inpage-toggle-card" style="margin-bottom: 8px;">
+      <div class="inpage-toggle-info">
+        <span class="inpage-toggle-title">🍪 Auto-Block Non-Essential Cookies</span>
+        <span class="inpage-toggle-sub">Automatically purge optional analytics & ad cookies</span>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="toggle-auto-disable-cookies" />
         <span class="slider round"></span>
       </label>
     </div>

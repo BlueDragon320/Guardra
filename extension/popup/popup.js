@@ -269,11 +269,24 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  // Auto-Disable Cookies Toggle
+  // Block Trackers Toggle (Default: Enabled)
+  const blockTrackersToggle = document.getElementById("toggle-block-trackers");
+  if (blockTrackersToggle) {
+    const storedTrackers = await chrome.storage.local.get("guardra_block_trackers");
+    blockTrackersToggle.checked = storedTrackers.guardra_block_trackers !== false; // Default true
+
+    blockTrackersToggle.addEventListener("change", async () => {
+      const enabled = blockTrackersToggle.checked;
+      await chrome.storage.local.set({ guardra_block_trackers: enabled });
+      loadActiveTabRating();
+    });
+  }
+
+  // Auto-Block Non-Essential Cookies Toggle (Default: Disabled / Optional)
   const autoCookieToggle = document.getElementById("toggle-auto-disable-cookies");
   if (autoCookieToggle) {
     const storedAuto = await chrome.storage.local.get("guardra_auto_disable_cookies");
-    autoCookieToggle.checked = storedAuto.guardra_auto_disable_cookies === true;
+    autoCookieToggle.checked = storedAuto.guardra_auto_disable_cookies === true; // Default false
 
     autoCookieToggle.addEventListener("change", async () => {
       const enabled = autoCookieToggle.checked;
@@ -328,6 +341,51 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
     }
   });
+
+  // Quick Action: 1) Non-Essential Cookies Disable Button
+  const btnPopupDisableCookies = document.getElementById("btn-popup-disable-cookies");
+  if (btnPopupDisableCookies) {
+    btnPopupDisableCookies.addEventListener("click", () => {
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        const tab = tabs && tabs[0] ? tabs[0] : null;
+        const domain = currentRatingData?.domain || (tab?.url ? extractDomain(tab.url) : "");
+        const tUrl = tab?.url || "";
+        if (domain) {
+          btnPopupDisableCookies.textContent = "Disabling...";
+          chrome.runtime.sendMessage({
+            type: "ENFORCE_STRICT_COOKIES",
+            domain: domain,
+            url: tUrl
+          }, () => {
+            btnPopupDisableCookies.textContent = "✅ Cookies Disabled";
+            btnPopupDisableCookies.style.borderColor = "#10b981";
+            btnPopupDisableCookies.style.color = "#10b981";
+            loadActiveTabRating();
+          });
+        }
+      });
+    });
+  }
+
+  // Quick Action: 2) All Trackers Disable Button
+  const btnPopupDisableTrackers = document.getElementById("btn-popup-disable-trackers");
+  if (btnPopupDisableTrackers) {
+    btnPopupDisableTrackers.addEventListener("click", async () => {
+      btnPopupDisableTrackers.textContent = "Disabling...";
+      await chrome.storage.local.set({ guardra_block_trackers: true });
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        const tab = tabs && tabs[0] ? tabs[0] : null;
+        const domain = currentRatingData?.domain || (tab?.url ? extractDomain(tab.url) : "");
+        if (domain && tab?.id) {
+          chrome.tabs.sendMessage(tab.id, { type: "BLOCK_ALL_TRACKERS", domain }, () => {});
+        }
+        btnPopupDisableTrackers.textContent = "✅ Trackers Disabled";
+        btnPopupDisableTrackers.style.borderColor = "#10b981";
+        btnPopupDisableTrackers.style.color = "#10b981";
+        loadActiveTabRating();
+      });
+    });
+  }
 
   // Button Listeners
   document.getElementById("btn-refresh").addEventListener("click", () => {

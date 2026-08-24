@@ -9,12 +9,14 @@
 
   const TRACKER_SIGNATURES = [
     { name: "Google Analytics / Tag Manager", regex: /(google-analytics\.com|googletagmanager\.com|gtag\/js)/i },
-    { name: "Meta / Facebook Pixel", regex: /(connect\.facebook\.net\/en_US\/fbevents\.js|fbevents)/i },
+    { name: "Meta / Facebook Pixel", regex: /(connect\.facebook\.net|fbevents\.js|facebook\.com\/tr)/i },
     { name: "TikTok Pixel", regex: /(analytics\.tiktok\.com|ttq)/i },
+    { name: "Microsoft Clarity", regex: /(clarity\.ms|clarity\/js)/i },
     { name: "Hotjar Session Recording", regex: /(static\.hotjar\.com|hotjar)/i },
     { name: "Criteo Ad Retargeting", regex: /(criteo\.net|criteo\.com)/i },
     { name: "Mixpanel Analytics", regex: /(mixpanel\.com|cdn\.mxpnl\.com)/i },
     { name: "Amplitude Telemetry", regex: /(amplitude\.com|cdn\.amplitude\.com)/i },
+    { name: "Segment / Analytics.js", regex: /(cdn\.segment\.com|analytics\.js)/i },
     { name: "Amazon Ad System", regex: /(amazon-adsystem\.com|media-amazon\.com\/images\/G\/01\/ad-sdk)/i },
     { name: "Taboola / Outbrain Ad Feeds", regex: /(taboola\.com|outbrain\.com)/i }
   ];
@@ -22,11 +24,15 @@
   let autoActionsExecuted = [];
   let detectedTrackers = [];
   let currentRating = null;
-  let isAutoDisableActive = false;
+  let isTrackerBlockingActive = true; // Default: ON
+  let isAutoCookieDisableActive = false; // Default: OFF
 
-  chrome.storage.local.get(["guardra_auto_disable_cookies"], (res) => {
-    if (res.guardra_auto_disable_cookies) {
-      isAutoDisableActive = true;
+  chrome.storage.local.get(["guardra_block_trackers", "guardra_auto_disable_cookies"], (res) => {
+    isTrackerBlockingActive = res.guardra_block_trackers !== false; // Default ON
+    isAutoCookieDisableActive = res.guardra_auto_disable_cookies === true; // Default OFF
+
+    // 1. If Tracker Blocking is active (DEFAULT: ON), stub all tracker APIs & beacons
+    if (isTrackerBlockingActive) {
       const code = `
         window['ga-disable-ALL'] = true;
         window.ga = function(){};
@@ -62,7 +68,10 @@
         document.documentElement.appendChild(script);
         script.remove();
       }
+    }
 
+    // 2. Only if Cookie Auto-Disable is explicitly enabled (DEFAULT: OFF), clear non-essential cookies
+    if (isAutoCookieDisableActive) {
       setInterval(() => {
         try {
           const trackerCookieRegex = /^(_ga|_gid|_gat|_gcl|_fbp|_fbc|_tt_|_hj|_clck|_clsk|mp_|ajs_|criteo|taboola|outbrain|__utm)/i;
@@ -88,23 +97,120 @@
     }
   });
 
-  // 1. Scan trackers
+  // 1. Scan trackers across DOM, inline scripts, performance resources, window objects, and cookies
   function scanTrackers() {
-    const scripts = Array.from(document.querySelectorAll("script[src]"));
     const detected = [];
-    
+
+    const addTracker = (name, src = "", isBlocked = isTrackerBlockingActive) => {
+      const existing = detected.find(d => d.name === name);
+      if (!existing) {
+        detected.push({ name, src: src ? src.substring(0, 100) : "", isBlocked: isBlocked || isTrackerBlockingActive });
+      } else if (isBlocked || isTrackerBlockingActive) {
+        existing.isBlocked = true;
+      }
+    };
+
+    // 1. Scan external script elements
+    const scripts = Array.from(document.querySelectorAll("script[src]"));
     scripts.forEach((script) => {
       const src = script.src;
       TRACKER_SIGNATURES.forEach((sig) => {
-        if (sig.regex.test(src) && !detected.some(d => d.name === sig.name)) {
-          let isBlocked = false;
-          if (isAutoDisableActive && (sig.name.includes("Google Analytics") || sig.name.includes("Meta") || sig.name.includes("Tag Manager") || sig.name.includes("Facebook Pixel"))) {
-            isBlocked = true;
-          }
-          detected.push({ name: sig.name, src: src.substring(0, 100), isBlocked: isBlocked });
+        if (sig.regex.test(src)) {
+          addTracker(sig.name, src);
         }
       });
     });
+
+    // 2. Scan inline scripts for tracker signatures
+    const inlineScripts = Array.from(document.querySelectorAll("script:not([src])"));
+    inlineScripts.forEach((script) => {
+      const content = script.textContent || "";
+      if (content.length > 0 && content.length < 60000) {
+        if (/(gtag\(|google-analytics\.com|googletagmanager|GTM-[A-Z0-9]+|UA-[0-9]+)/i.test(content)) {
+          addTracker("Google Analytics / Tag Manager");
+        }
+        if (/(fbq\(|connect\.facebook\.net|fbevents)/i.test(content)) {
+          addTracker("Meta / Facebook Pixel");
+        }
+        if (/(ttq\.load|ttq\.track|analytics\.tiktok\.com)/i.test(content)) {
+          addTracker("TikTok Pixel");
+        }
+        if (/(clarity\("set"|clarity\.ms)/i.test(content)) {
+          addTracker("Microsoft Clarity");
+        }
+        if (/(hj\('identify'|static\.hotjar\.com)/i.test(content)) {
+          addTracker("Hotjar Session Recording");
+        }
+        if (/(criteo_q|criteo\.com)/i.test(content)) {
+          addTracker("Criteo Ad Retargeting");
+        }
+        if (/(mixpanel\.init|mixpanel\.track)/i.test(content)) {
+          addTracker("Mixpanel Analytics");
+        }
+        if (/(amplitude\.init|amplitude\.getInstance)/i.test(content)) {
+          addTracker("Amplitude Telemetry");
+        }
+      }
+    });
+
+    // 3. Scan Performance Resource Timing (catches network requests completed or blocked by DNR)
+    try {
+      if (window.performance && performance.getEntriesByType) {
+        const resources = performance.getEntriesByType("resource");
+        resources.forEach((r) => {
+          const name = r.name || "";
+          TRACKER_SIGNATURES.forEach((sig) => {
+            if (sig.regex.test(name)) {
+              addTracker(sig.name, name);
+            }
+          });
+        });
+      }
+    } catch (e) {}
+
+    // 4. Scan Global In-Page Tracker Objects
+    if (window.ga || window.gtag || window.dataLayer || window['ga-disable-ALL']) {
+      addTracker("Google Analytics / Tag Manager");
+    }
+    if (window.fbq) {
+      addTracker("Meta / Facebook Pixel");
+    }
+    if (window.ttq) {
+      addTracker("TikTok Pixel");
+    }
+    if (window.clarity) {
+      addTracker("Microsoft Clarity");
+    }
+    if (window.hj || window._hjSettings) {
+      addTracker("Hotjar Session Recording");
+    }
+    if (window.mixpanel) {
+      addTracker("Mixpanel Analytics");
+    }
+    if (window.amplitude) {
+      addTracker("Amplitude Telemetry");
+    }
+
+    // 5. Scan Cookies for tracker tokens
+    try {
+      if (document.cookie) {
+        if (/(_ga|_gid|_gat|__utm|_gcl)/i.test(document.cookie)) {
+          addTracker("Google Analytics / Tag Manager");
+        }
+        if (/(_fbp|_fbc|fr=|datr=)/i.test(document.cookie)) {
+          addTracker("Meta / Facebook Pixel");
+        }
+        if (/(_tt_|tt_enable)/i.test(document.cookie)) {
+          addTracker("TikTok Pixel");
+        }
+        if (/(_clck|_clsk)/i.test(document.cookie)) {
+          addTracker("Microsoft Clarity");
+        }
+        if (/(_hj)/i.test(document.cookie)) {
+          addTracker("Hotjar Session Recording");
+        }
+      }
+    } catch (e) {}
 
     detectedTrackers = detected;
     return detected;
@@ -285,8 +391,8 @@
     let activeCookies = [];
     let detailedCookiesList = [];
     if (cookieAudit && cookieAudit.cookies && cookieAudit.cookies.length > 0) {
-      activeCookies = cookieAudit.cookies.map(c => c.name);
-      detailedCookiesList = cookieAudit.cookies;
+      activeCookies = cookieAudit.cookies.filter(c => !c.disabled && !c.isBlocked).map(c => c.name);
+      detailedCookiesList = [...cookieAudit.cookies];
     }
     if (activeCookies.length === 0) {
       try {
@@ -296,30 +402,76 @@
             if (name && !activeCookies.includes(name)) {
               activeCookies.push(name);
               const isEss = isEssentialCookie({ name });
-              detailedCookiesList.push({
-                name: name,
-                isTracking: !isEss,
-                category: isEss ? "Essential Cookie" : "Analytics/Advertising"
-              });
+              if (!detailedCookiesList.some(dc => dc.name === name)) {
+                detailedCookiesList.push({
+                  name: name,
+                  isTracking: !isEss,
+                  category: isEss ? "Essential Cookie" : "Analytics/Advertising",
+                  isBlocked: autoDisableCookies && !isEss
+                });
+              }
             }
           });
         }
       } catch (e) {}
-    } else if (detailedCookiesList.length === 0) {
-      activeCookies.forEach(name => {
-        const isEss = isEssentialCookie({ name });
-        detailedCookiesList.push({
-          name: name,
-          isTracking: !isEss,
-          category: isEss ? "Essential Cookie" : "Analytics/Advertising"
-        });
+    }
+
+    // Merge any cached disabled cookies so they remain visible with a disabled tag
+    if (window.__guardra_disabled_cookies) {
+      window.__guardra_disabled_cookies.forEach(dc => {
+        if (!detailedCookiesList.some(c => c.name === dc.name)) {
+          detailedCookiesList.push({
+            name: dc.name,
+            isTracking: true,
+            category: dc.category || "Analytics (Disabled)",
+            isBlocked: true,
+            disabled: true
+          });
+        }
       });
     }
 
-    let trackerList = detectedTrackers;
-    if (cookieAudit && cookieAudit.trackers && cookieAudit.trackers.length > 0) {
-      trackerList = cookieAudit.trackers;
+    // Merge detected trackers, cookie audit trackers, and rating trackers
+    const combinedTrackerMap = new Map();
+    (detectedTrackers || []).forEach(t => {
+      const name = typeof t === "string" ? t : (t.name || "Tracker");
+      combinedTrackerMap.set(name, {
+        name: name,
+        src: t.src || "",
+        isBlocked: isTrackerBlockingActive || t.isBlocked
+      });
+    });
+
+    if (cookieAudit && cookieAudit.trackers) {
+      cookieAudit.trackers.forEach(t => {
+        const name = typeof t === "string" ? t : (t.name || "Tracker");
+        const existing = combinedTrackerMap.get(name);
+        if (!existing) {
+          combinedTrackerMap.set(name, {
+            name: name,
+            src: typeof t === "object" ? (t.src || "") : "",
+            isBlocked: isTrackerBlockingActive || (typeof t === "object" && t.isBlocked)
+          });
+        } else if (isTrackerBlockingActive || (typeof t === "object" && t.isBlocked)) {
+          existing.isBlocked = true;
+        }
+      });
     }
+
+    if (rating && rating.trackers) {
+      rating.trackers.forEach(t => {
+        const name = typeof t === "string" ? t : (t.name || "Tracker");
+        if (!combinedTrackerMap.has(name)) {
+          combinedTrackerMap.set(name, {
+            name: name,
+            src: "",
+            isBlocked: isTrackerBlockingActive
+          });
+        }
+      });
+    }
+
+    const trackerList = Array.from(combinedTrackerMap.values());
 
     const blockedCount = adblockStatus.tabBlockedCount !== undefined ? adblockStatus.tabBlockedCount : (adblockStatus.totalBlockedCount || 0);
     const lifetimeCount = adblockStatus.lifetimeBlockedCount || 0;
@@ -586,6 +738,32 @@
         border-color: ${isLight ? '#e2e8f0' : '#2a2a2a'};
         cursor: default;
       }
+      .btn-section-action {
+        background: ${isLight ? '#f1f5f9' : '#1e1e1e'};
+        color: ${isLight ? '#0f172a' : '#ebebeb'};
+        border: 1px solid ${isLight ? '#cbd5e1' : '#333333'};
+        border-radius: 6px;
+        padding: 3px 7px;
+        font-size: 9.5px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        white-space: nowrap;
+      }
+      .btn-section-action:hover:not(.disabled) {
+        background: #FF6B50;
+        color: #ffffff;
+        border-color: #FF6B50;
+      }
+      .btn-section-action.disabled {
+        background: ${isLight ? '#f8fafc' : '#161616'};
+        color: #10b981;
+        border-color: rgba(16, 185, 129, 0.3);
+        cursor: default;
+      }
       .tracker-chip {
         display: inline-flex;
         align-items: center;
@@ -717,13 +895,16 @@
 
           <div class="section-card" style="padding: 10px;">
             <div class="expandable-header" id="guardra-trackers-header">
-              <span>⚡ Trackers (${trackerList.length})</span>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span>⚡ Trackers (${trackerList.length})</span>
+                ${trackerList.length > 0 ? `<button class="btn-section-action" id="guardra-disable-all-trackers-btn" title="Disable all trackers on this page">⚡ Disable All Trackers</button>` : ''}
+              </div>
               <span class="toggle-icon" id="guardra-trackers-icon">▼</span>
             </div>
             <div class="expandable-content" id="guardra-trackers-content">
               ${trackerList.length > 0 ? trackerList.map((t, idx) => {
                 const tName = typeof t === "string" ? t : (t.name || "Tracker");
-                const isBlocked = autoDisableCookies || t.isBlocked;
+                const isBlocked = isTrackerBlockingActive || t.isBlocked;
                 const lower = tName.toLowerCase();
                 let badgeCategory = "Telemetry Script";
                 if (lower.includes("google") || lower.includes("analytics")) badgeCategory = "Analytics Tracker";
@@ -749,14 +930,17 @@
 
           <div class="section-card" style="padding: 10px;">
             <div class="expandable-header" id="guardra-cookies-header">
-              <span>🍪 Cookies (${detailedCookiesList.length})</span>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span>🍪 Cookies (${detailedCookiesList.length})</span>
+                <button class="btn-section-action" id="guardra-disable-non-essential-cookies-btn" title="Purge advertising & analytics cookies">🍪 Disable Non-Essential Cookies</button>
+              </div>
               <span class="toggle-icon" id="guardra-cookies-icon">▼</span>
             </div>
             <div class="expandable-content" id="guardra-cookies-content">
               ${detailedCookiesList.length > 0 ? detailedCookiesList.map((c, idx) => {
                 const cName = c.name || c;
                 const isTracking = c.isTracking !== undefined ? c.isTracking : !isEssentialCookie({ name: cName });
-                const isBlocked = autoDisableCookies && isTracking;
+                const isBlocked = (autoDisableCookies && isTracking) || c.isBlocked || c.disabled;
                 const category = c.category || (isTracking ? "Analytics/Tracking" : "Essential Cookie");
 
                 return `
@@ -801,6 +985,56 @@
           if (cookiesIcon) {
             cookiesIcon.textContent = isClosed ? "▼" : "▲";
           }
+        });
+      }
+
+      const disableAllTrackersBtn = shadowRoot.getElementById("guardra-disable-all-trackers-btn");
+      if (disableAllTrackersBtn) {
+        disableAllTrackersBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          disableAllTrackersBtn.textContent = "Disabling...";
+          chrome.storage.local.set({ guardra_block_trackers: true });
+          trackerList.forEach((t, idx) => {
+            const tName = typeof t === "string" ? t : (t.name || "Tracker");
+            chrome.runtime.sendMessage({
+              type: "BLOCK_TRACKER_SCRIPT",
+              trackerName: tName,
+              domain: domain,
+              url: window.location.href
+            });
+            const row = shadowRoot.getElementById(`guardra-tracker-row-${idx}`);
+            if (row) row.classList.add("disabled");
+          });
+          shadowRoot.querySelectorAll(".btn-disable-tracker").forEach(b => {
+            b.textContent = "✅ Disabled";
+            b.classList.add("disabled");
+          });
+          disableAllTrackersBtn.textContent = "✅ Trackers Disabled";
+          disableAllTrackersBtn.classList.add("disabled");
+        });
+      }
+
+      const disableNonEssentialCookiesBtn = shadowRoot.getElementById("guardra-disable-non-essential-cookies-btn");
+      if (disableNonEssentialCookiesBtn) {
+        disableNonEssentialCookiesBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          disableNonEssentialCookiesBtn.textContent = "Disabling...";
+          chrome.runtime.sendMessage({
+            type: "ENFORCE_STRICT_COOKIES",
+            domain: domain,
+            url: window.location.href
+          }, () => {
+            disableNonEssentialCookiesBtn.textContent = "✅ Non-Essential Disabled";
+            disableNonEssentialCookiesBtn.classList.add("disabled");
+            shadowRoot.querySelectorAll(".btn-disable-cookie").forEach(b => {
+              b.textContent = "✅ Disabled";
+              b.classList.add("disabled");
+            });
+            shadowRoot.querySelectorAll(".item-badge.tracking").forEach(badge => {
+              const row = badge.closest(".item-row");
+              if (row) row.classList.add("disabled");
+            });
+          });
         });
       }
 
@@ -851,6 +1085,11 @@
             const row = shadowRoot.getElementById(`guardra-cookie-row-${idx}`);
             if (row) row.classList.add("disabled");
             
+            window.__guardra_disabled_cookies = window.__guardra_disabled_cookies || [];
+            if (!window.__guardra_disabled_cookies.some(d => d.name === cName)) {
+              window.__guardra_disabled_cookies.push({ name: cName, category: "Analytics/Tracking (Disabled)" });
+            }
+
             try {
               document.cookie = cName + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
               document.cookie = cName + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=.' + domain;
@@ -1018,6 +1257,19 @@
 
       automateCookieRejection();
       updateFloatingPill("Strict Cookies Enforced");
+      sendResponse({ success: true });
+      return true;
+    }
+
+    if (msg.type === "BLOCK_ALL_TRACKERS") {
+      isTrackerBlockingActive = true;
+      (detectedTrackers || []).forEach(t => {
+        t.isBlocked = true;
+      });
+      if (currentRating && !isDismissed) {
+        renderFloatingPill(currentRating);
+      }
+      updateFloatingPill("Trackers Disabled");
       sendResponse({ success: true });
       return true;
     }

@@ -39,8 +39,10 @@ body {
   background-color: var(--bg-primary);
   color: var(--text-main);
   width: 360px;
-  min-height: 450px;
+  max-height: 595px;
+  overflow-y: auto;
   overflow-x: hidden;
+  scrollbar-width: thin;
 }
 
 .container {
