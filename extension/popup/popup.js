@@ -273,7 +273,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const autoCookieToggle = document.getElementById("toggle-auto-disable-cookies");
   if (autoCookieToggle) {
     const storedAuto = await chrome.storage.local.get("guardra_auto_disable_cookies");
-    autoCookieToggle.checked = storedAuto.guardra_auto_disable_cookies !== false;
+    autoCookieToggle.checked = storedAuto.guardra_auto_disable_cookies === true;
 
     autoCookieToggle.addEventListener("change", async () => {
       const enabled = autoCookieToggle.checked;
@@ -281,6 +281,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       if (enabled && currentRatingData?.domain) {
         document.getElementById("btn-enforce-strict-cookies")?.click();
+      } else if (!enabled && currentRatingData?.domain) {
+        const cleanDom = currentRatingData.domain.replace(/^www\./, "");
+        const storageKey = `strict_cookies_${cleanDom}`;
+        await chrome.storage.local.remove(storageKey);
+        loadActiveTabRating();
       }
     });
   }
@@ -307,6 +312,22 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   loadActiveTabRating();
+
+  // Listen for real-time count updates
+  chrome.runtime.onMessage.addListener((msg) => {
+    if (msg.type === "ADBLOCK_COUNT_UPDATED" || msg.type === "COOKIE_AUDIT_UPDATED") {
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        const tab = tabs && tabs[0] ? tabs[0] : null;
+        const domain = currentRatingData?.domain || (tab?.url ? extractDomain(tab.url) : null);
+        const tId = tab?.id || activeTabId;
+        const tUrl = tab?.url || activeTabUrl;
+        if (domain) {
+          updateAdBlockUI(domain, tId);
+          loadCookieGovernance(domain, tUrl, tId);
+        }
+      });
+    }
+  });
 
   // Button Listeners
   document.getElementById("btn-refresh").addEventListener("click", () => {
@@ -364,56 +385,62 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.getElementById("btn-copy-notice").addEventListener("click", copyNoticeText);
   document.getElementById("btn-send-email").addEventListener("click", sendNoticeEmail);
 
-  // 1-Click Strict Cookies Enforcer Listener
-  document.getElementById("btn-enforce-strict-cookies").addEventListener("click", async () => {
-    const domain = currentRatingData?.domain;
-    if (!domain) return;
+  // 1-Click Strict Cookies Enforcer Listener (if element exists)
+  const strictBtnEl = document.getElementById("btn-enforce-strict-cookies");
+  if (strictBtnEl) {
+    strictBtnEl.addEventListener("click", async () => {
+      const domain = currentRatingData?.domain;
+      if (!domain) return;
 
-    const strictBtn = document.getElementById("btn-enforce-strict-cookies");
-    const strictBtnText = document.getElementById("strict-btn-text");
-    const statusMsg = document.getElementById("cookie-status-msg");
-    const statusText = document.getElementById("cookie-status-text");
-    const badge = document.getElementById("cookie-gov-badge");
-    const trackingEl = document.getElementById("cookie-tracking-count");
-    const essentialEl = document.getElementById("cookie-essential-count");
+      const strictBtn = document.getElementById("btn-enforce-strict-cookies");
+      const strictBtnText = document.getElementById("strict-btn-text");
+      const statusMsg = document.getElementById("cookie-status-msg");
+      const statusText = document.getElementById("cookie-status-text");
+      const badge = document.getElementById("cookie-gov-badge");
+      const trackingEl = document.getElementById("cookie-tracking-count");
+      const essentialEl = document.getElementById("cookie-essential-count");
 
-    strictBtn.style.opacity = "0.7";
-    strictBtnText.textContent = "Disabling optional cookies...";
+      if (strictBtn) strictBtn.style.opacity = "0.7";
+      if (strictBtnText) strictBtnText.textContent = "Disabling non-essential cookies & trackers...";
 
-    const tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
-    const tabUrl = tabs && tabs[0] ? tabs[0].url : `https://${domain}`;
+      const tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+      const tabUrl = tabs && tabs[0] ? tabs[0].url : `https://${domain}`;
 
-    chrome.runtime.sendMessage({ type: "ENFORCE_STRICT_COOKIES", domain, url: tabUrl }, (res) => {
-      strictBtn.style.opacity = "1";
-      if (res && res.success) {
-        if (badge) {
-          badge.className = "cookie-gov-badge enforced";
-          badge.textContent = "Only Necessary";
+      chrome.runtime.sendMessage({ type: "ENFORCE_STRICT_COOKIES", domain, url: tabUrl }, (res) => {
+        if (strictBtn) strictBtn.style.opacity = "1";
+        if (res && res.success) {
+          if (badge) {
+            badge.className = "cookie-gov-badge enforced";
+            badge.textContent = "Only Necessary";
+          }
+          if (strictBtn) {
+            strictBtn.className = "strict-cookies-btn enforced";
+            if (strictBtnText) strictBtnText.textContent = "🛡️ Non-Essential Cookies & All Trackers Disabled";
+          }
+          if (trackingEl) trackingEl.textContent = "0";
+          if (essentialEl && res.kept !== undefined) essentialEl.textContent = res.kept;
+
+          if (statusMsg && statusText) {
+            statusText.textContent = `✅ Disabled ${res.removed} non-essential cookies! Only necessary preserved.`;
+            statusMsg.classList.remove("hidden");
+          }
+        } else {
+          if (strictBtnText) strictBtnText.textContent = "🛡️ Disable Non-Essential Cookies & All Trackers";
         }
-        if (strictBtn) {
-          strictBtn.className = "strict-cookies-btn enforced";
-          strictBtnText.textContent = "Optional Cookies Disabled (Only Necessary)";
-        }
-        if (trackingEl) trackingEl.textContent = "0";
-        if (essentialEl && res.kept !== undefined) essentialEl.textContent = res.kept;
+      });
+    });
+  }
 
-        if (statusMsg && statusText) {
-          statusText.textContent = `✅ Disabled ${res.removed} optional cookies! Only necessary preserved for logins & shopping.`;
-          statusMsg.classList.remove("hidden");
-        }
-      } else {
-        strictBtnText.textContent = "Optional Cookies Disabler (Only Necessary)";
+  const cookieReloadBtn = document.getElementById("btn-cookie-reload");
+  if (cookieReloadBtn) {
+    cookieReloadBtn.addEventListener("click", async () => {
+      const tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+      if (tabs && tabs[0] && tabs[0].id) {
+        chrome.tabs.reload(tabs[0].id);
+        window.close();
       }
     });
-  });
-
-  document.getElementById("btn-cookie-reload").addEventListener("click", async () => {
-    const tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
-    if (tabs && tabs[0] && tabs[0].id) {
-      chrome.tabs.reload(tabs[0].id);
-      window.close();
-    }
-  });
+  }
 
   // Toggle active cookies & trackers itemized list
   const cookieToggleHeader = document.getElementById("cookie-items-toggle");
@@ -489,7 +516,12 @@ async function loadActiveTabRating(forceRefresh = false) {
   });
 }
 
+let activeTabId = null;
+let activeTabUrl = null;
+
 function renderPopup(data, tabUrl, tabId) {
+  activeTabId = tabId;
+  activeTabUrl = tabUrl;
   document.getElementById("site-name").textContent = data.name || data.domain;
   document.getElementById("site-domain").textContent = data.domain;
 
@@ -603,6 +635,7 @@ function updateAdBlockUI(domain, tabId) {
     const card = document.getElementById("adblock-card");
     const globalToggle = document.getElementById("toggle-global-adblock");
     const countEl = document.getElementById("adblock-blocked-count");
+    const lifetimeEl = document.getElementById("adblock-lifetime-count");
     const descEl = document.getElementById("adblock-status-desc");
     const modeBadge = document.getElementById("adblock-mode-badge");
     const modeText = document.getElementById("adblock-mode-text");
@@ -610,7 +643,8 @@ function updateAdBlockUI(domain, tabId) {
     const isEnabled = resp.globalEnabled !== false;
 
     if (globalToggle) globalToggle.checked = isEnabled;
-    if (countEl) countEl.textContent = isEnabled ? (resp.totalBlockedCount || 0) : 0;
+    if (countEl) countEl.textContent = isEnabled ? (resp.tabBlockedCount !== undefined ? resp.tabBlockedCount : 0) : 0;
+    if (lifetimeEl) lifetimeEl.textContent = resp.lifetimeBlockedCount || 0;
 
     if (!isEnabled) {
       if (card) card.className = "adblock-card disabled";
@@ -654,8 +688,8 @@ function loadCookieGovernance(domain, tabUrl, tabId) {
     const storedAuto = await chrome.storage.local.get("guardra_auto_disable_cookies");
     const autoDisable = storedAuto.guardra_auto_disable_cookies || res.isEnforced;
 
-    if (essentialEl) essentialEl.textContent = res.essential !== undefined ? res.essential : "1";
-    if (trackingEl) trackingEl.textContent = autoDisable ? "0" : (res.tracking !== undefined ? res.tracking : "0");
+    if (essentialEl) essentialEl.textContent = res.essential !== undefined ? res.essential : "0";
+    if (trackingEl) trackingEl.textContent = res.tracking !== undefined ? res.tracking : "0";
     if (totalBadge) totalBadge.textContent = (res.cookies ? res.cookies.length : 0) + (res.trackers ? res.trackers.length : 0);
 
     if (autoDisable || res.tracking === 0) {
@@ -665,7 +699,7 @@ function loadCookieGovernance(domain, tabUrl, tabId) {
       }
       if (strictBtn) {
         strictBtn.className = "strict-cookies-btn enforced";
-        strictBtnText.textContent = "Optional Cookies Disabled (Only Necessary)";
+        strictBtnText.textContent = "Disable Non-Essential Cookies & All Trackers";
       }
     } else {
       if (badge) {
@@ -674,7 +708,7 @@ function loadCookieGovernance(domain, tabUrl, tabId) {
       }
       if (strictBtn) {
         strictBtn.className = "strict-cookies-btn";
-        strictBtnText.textContent = `🛡️ Optional Cookies Disabler (${res.tracking} Optional Found)`;
+        strictBtnText.textContent = "Disable Non-Essential Cookies & All Trackers";
       }
     }
 

@@ -63,7 +63,11 @@
         <div class="adblock-stats-row">
           <div class="adblock-stat-chip">
             <span class="adblock-stat-num" id="adblock-blocked-count">0</span>
-            <span class="adblock-stat-label">Blocked on Page</span>
+            <span class="adblock-stat-label">Current Tab</span>
+          </div>
+          <div class="adblock-stat-chip">
+            <span class="adblock-stat-num" id="adblock-lifetime-count">0</span>
+            <span class="adblock-stat-label">Lifetime Total</span>
           </div>
           <div class="adblock-mode-badge" id="adblock-mode-badge">
             <span class="adblock-mode-dot" id="adblock-mode-dot"></span>
@@ -164,79 +168,6 @@
       </div>
     </div>
 
-    <!-- 1-Click Optional Cookies Disabler Section -->
-    <div class="cookie-gov-section" id="cookie-gov-section">
-      <div class="cookie-gov-header">
-        <div class="cookie-gov-title-group">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5"/>
-            <path d="M8.5 8.5v.01"/>
-            <path d="M7.5 15.5v.01"/>
-            <path d="M16 16v.01"/>
-          </svg>
-          <span class="cookie-gov-title">Optional Cookies Disabler</span>
-        </div>
-        <span class="cookie-gov-badge" id="cookie-gov-badge">Auditing...</span>
-      </div>
-
-      <div class="cookie-counts-row">
-        <div class="cookie-count-box">
-          <span class="cookie-num text-success" id="cookie-essential-count">-</span>
-          <span class="cookie-label">Necessary (Kept)</span>
-        </div>
-        <div class="cookie-count-divider"></div>
-        <div class="cookie-count-box">
-          <span class="cookie-num text-danger" id="cookie-tracking-count">-</span>
-          <span class="cookie-label">Optional Trackers</span>
-        </div>
-      </div>
-
-      <button class="strict-cookies-btn" id="btn-enforce-strict-cookies" title="Disable optional marketing cookies while keeping shopping cart and login active">
-        <div class="strict-btn-content">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-            <path d="m9 12 2 2 4-4"/>
-          </svg>
-          <span id="strict-btn-text">🛡️ Optional Cookies Disabler (Only Necessary)</span>
-        </div>
-      </button>
-
-      <div class="cookie-status-msg hidden" id="cookie-status-msg">
-        <span id="cookie-status-text">✅ Optional cookies disabled! Only necessary preserved.</span>
-        <button class="cookie-reload-btn" id="btn-cookie-reload">Reload Tab ↻</button>
-      </div>
-
-      <!-- Itemized Active Trackers & Cookies List with 3-4 Word Descriptions & Individual Disable Buttons -->
-      <div class="cookie-items-wrapper">
-        <div class="cookie-items-header" id="cookie-items-toggle">
-          <div class="cookie-items-header-title">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 12a9 9 0 0 1-9 9m9-9a9 9 0 0 0-9-9m9 9H3m9 9a9 9 0 0 1-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9"/>
-            </svg>
-            <span>Active Trackers & Cookies</span>
-            <span class="cookie-items-badge" id="cookie-items-total-badge">0</span>
-          </div>
-          <span class="cookie-items-toggle-icon" id="cookie-items-toggle-icon">▼</span>
-        </div>
-
-        <div class="cookie-items-container" id="cookie-items-container">
-          <div class="cookie-items-list" id="cookie-items-list">
-            <!-- Dynamically populated -->
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- SCROLLABLE DATA BREACH HISTORY SECTION AT BOTTOM -->
-    <div class="breach-section" id="breach-section">
-      <div class="breach-header">
-        <h3 class="section-title">🚨 Data Breach History</h3>
-        <span class="breach-status-tag" id="breach-status-tag">Scanning...</span>
-      </div>
-      <div class="breach-list" id="breach-list">
-        <div class="breach-loading">Cross-referencing domain breach directory...</div>
-      </div>
-    </div>
 
     <!-- Modal for 1-Click Notice Quick Dispatch -->
     <div class="modal hidden" id="deletion-modal">
@@ -273,8 +204,8 @@
     <!-- Auto-Disable Non-Essential Cookies Settings -->
     <div class="inpage-toggle-card" style="margin-bottom: 8px;">
       <div class="inpage-toggle-info">
-        <span class="inpage-toggle-title">🛡️ Auto-Disable Non-Essential Cookies (All Sites)</span>
-        <span class="inpage-toggle-sub">Permanently blocks tracking & ad cookies across all websites</span>
+        <span class="inpage-toggle-title">🛡️ Disable Non-Essential Cookies & All Trackers</span>
+        <span class="inpage-toggle-sub">Blocks non-essential cookies and all tracking scripts across websites</span>
       </div>
       <label class="switch">
         <input type="checkbox" id="toggle-auto-disable-cookies" checked />

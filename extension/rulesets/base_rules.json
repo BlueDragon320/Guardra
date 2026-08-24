@@ -4174,5 +4174,65 @@
         "other"
       ]
     }
+  },
+  {
+    "id": 1175,
+    "priority": 1,
+    "action": {
+      "type": "redirect",
+      "redirect": { "extensionPath": "/resources/empty.json" }
+    },
+    "condition": {
+      "urlFilter": "||youtube.com/pagead/*",
+      "resourceTypes": ["sub_frame", "script", "xmlhttprequest", "ping", "image", "other"]
+    }
+  },
+  {
+    "id": 1176,
+    "priority": 1,
+    "action": {
+      "type": "redirect",
+      "redirect": { "extensionPath": "/resources/empty.json" }
+    },
+    "condition": {
+      "urlFilter": "||youtube.com/ptracking*",
+      "resourceTypes": ["xmlhttprequest", "ping", "script", "other"]
+    }
+  },
+  {
+    "id": 1177,
+    "priority": 1,
+    "action": {
+      "type": "redirect",
+      "redirect": { "extensionPath": "/resources/empty.json" }
+    },
+    "condition": {
+      "urlFilter": "||youtube.com/api/stats/ads*",
+      "resourceTypes": ["xmlhttprequest", "ping", "image", "other"]
+    }
+  },
+  {
+    "id": 1178,
+    "priority": 1,
+    "action": {
+      "type": "redirect",
+      "redirect": { "extensionPath": "/resources/empty.json" }
+    },
+    "condition": {
+      "urlFilter": "||youtube.com/get_midroll_info*",
+      "resourceTypes": ["xmlhttprequest", "other"]
+    }
+  },
+  {
+    "id": 1179,
+    "priority": 1,
+    "action": {
+      "type": "redirect",
+      "redirect": { "extensionPath": "/resources/empty.json" }
+    },
+    "condition": {
+      "urlFilter": "||youtube.com/youtubei/v1/att/get*",
+      "resourceTypes": ["xmlhttprequest", "other"]
+    }
   }
 ]

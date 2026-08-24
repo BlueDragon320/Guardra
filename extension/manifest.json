@@ -41,9 +41,26 @@
   },
   "content_scripts": [
     {
+      "matches": ["*://*.youtube.com/*"],
+      "css": ["content/youtube_cosmetics.css"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["*://*.youtube.com/*"],
+      "js": ["content/yt_defuser.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
       "matches": ["<all_urls>"],
       "js": ["content/content_script.js"],
       "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["resources/empty.json", "resources/noop.js"],
+      "matches": ["*://*.youtube.com/*"]
     }
   ],
   "action": {

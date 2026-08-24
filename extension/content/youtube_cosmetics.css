@@ -1,0 +1,49 @@
+/* Guardra - Declarative YouTube Cosmetic Ad Filtering (uBlock Origin Engine) */
+
+/* 1. In-Feed & Homepage Ads */
+ytd-ad-slot-renderer,
+ytd-in-feed-ad-layout-renderer,
+ytd-banner-promo-renderer,
+ytd-rich-item-renderer:has(> ytd-ad-slot-renderer),
+ytd-rich-section-renderer:has(ytd-statement-banner-renderer),
+#masthead-ad,
+ytd-brand-video-singleton-renderer,
+ytd-primetime-promo-renderer,
+ytd-merch-shelf-renderer {
+    display: none !important;
+}
+
+/* 2. Watch Page & Sidebar Companion Ads */
+ytd-companion-slot-renderer,
+ytd-action-companion-ad-renderer,
+ytd-promoted-sparkles-web-renderer,
+ytd-promoted-sparkles-text-search-renderer,
+ytd-compact-promoted-video-renderer,
+ytd-promoted-video-renderer,
+ytd-search-pyv-renderer,
+ytd-engagement-panel-section-list-renderer[target-id="engagement-panel-ads"],
+#player-ads {
+    display: none !important;
+}
+
+/* 3. In-Player Ad Overlays & Containers */
+.ytp-ad-module,
+.ytp-ad-overlay-container,
+.ytp-ad-overlay-slot,
+.ytp-ad-message-container,
+.ytp-ad-preview-container,
+.ytp-ad-skip-button-container,
+.ytp-ad-hover-text-container,
+.ytp-ad-player-overlay,
+.ytp-ad-player-overlay-layout,
+.ytp-ad-image-overlay,
+.video-ads {
+    display: none !important;
+}
+
+/* 4. Anti-Adblock Enforcement Modals & Backdrops */
+ytd-enforcement-message-view-model,
+tp-yt-paper-dialog:has(#feedback.ytd-enforcement-message-view-model),
+tp-yt-iron-overlay-backdrop {
+    display: none !important;
+}

@@ -437,11 +437,13 @@ async function fetchSiteRatingRaw(domain) {
 
 // --- Cookie Classification & Governance Engine ---
 const STRICT_ESSENTIAL_COOKIE_PATTERNS = [
-  /^(sess|session|sid|token|auth|jwt|bearer|login|user_session|secure_session)/i,
-  /^(phpsessid|jsessionid|aspsessionid|connect\.sid|ss-id|ci_session)/i,
-  /^(csrf|_csrf|xsrf|_xsrf|csrf_token|antiforgery|__cf_bm|cf_clearance|__cfruid)/i,
-  /^(cart|basket|order|checkout|currency|locale|lang|country)/i,
-  /^(cookie_consent|optanon|cookieconsent|cc_cookie|gdpr|eu_consent|notice_preferences)/i
+  /^(__Secure-|__Host-)/i,
+  /^(__Secure-|__Host-)?(sess|session|sid|token|auth|jwt|bearer|login|user_session|secure_session)/i,
+  /^(__Secure-|__Host-)?(phpsessid|jsessionid|aspsessionid|connect\.sid|ss-id|ci_session)/i,
+  /^(__Secure-|__Host-)?(csrf|_csrf|xsrf|_xsrf|csrf_token|antiforgery|__cf_bm|cf_clearance|__cfruid)/i,
+  /^(__Secure-|__Host-)?(cart|basket|order|checkout|currency|locale|lang|country)/i,
+  /^(__Secure-|__Host-)?(cookie_consent|optanon|cookieconsent|cc_cookie|gdpr|eu_consent|notice_preferences)/i,
+  /^(__Secure-|__Host-)?(apisid|sapisid|hsid|ssid|psid|login_info|visitor_info1_live|ysc|pref|device_info|gps)/i
 ];
 
 const KNOWN_TRACKER_COOKIE_PATTERNS = [
@@ -454,9 +456,19 @@ const KNOWN_TRACKER_COOKIE_PATTERNS = [
 
 function isEssentialCookie(cookie) {
   const name = (cookie.name || "").trim();
-  for (const pat of KNOWN_TRACKER_COOKIE_PATTERNS) {
-    if (pat.test(name)) return false;
+  const domain = (cookie.domain || "").toLowerCase();
+
+  const isGoogleAuthDomain = domain.includes("google.com") || domain.includes("youtube.com") || domain.includes("youtube-nocookie.com");
+
+  if (!isGoogleAuthDomain) {
+    for (const pat of KNOWN_TRACKER_COOKIE_PATTERNS) {
+      if (pat.test(name)) return false;
+    }
+  } else {
+    const googleAuthPatterns = /^(__Secure-|__Host-)?(SID|HSID|SSID|APISID|SAPISID|LOGIN_INFO|VISITOR_INFO1_LIVE|YSC|PREF|GPS|DEVICE_INFO|NID)/i;
+    if (googleAuthPatterns.test(name)) return true;
   }
+
   for (const pat of STRICT_ESSENTIAL_COOKIE_PATTERNS) {
     if (pat.test(name)) return true;
   }
@@ -468,12 +480,22 @@ function isEssentialCookie(cookie) {
 
 async function getDomainCookies(domain, tabUrl) {
   if (!domain) return [];
-  const cleanDomain = domain.replace(/^www\./, "");
+  const cleanDomain = domain.replace(/^www\./, "").toLowerCase();
   
   let allCookies = [];
   try {
     const domainCookies = await chrome.cookies.getAll({ domain: cleanDomain });
     allCookies.push(...domainCookies);
+  } catch (e) {}
+
+  try {
+    const defaultUrlCookies = await chrome.cookies.getAll({ url: `https://${cleanDomain}/` });
+    allCookies.push(...defaultUrlCookies);
+  } catch (e) {}
+
+  try {
+    const wwwUrlCookies = await chrome.cookies.getAll({ url: `https://www.${cleanDomain}/` });
+    allCookies.push(...wwwUrlCookies);
   } catch (e) {}
 
   if (tabUrl && tabUrl.startsWith("http")) {
@@ -551,7 +573,7 @@ async function auditDomainCookies(domain, tabUrl, tabId) {
 
   return {
     domain: cleanDom,
-    total: cookies.length + (trackers ? trackers.length : 0),
+    total: cookies.length,
     essential,
     tracking,
     isEnforced,
@@ -642,6 +664,8 @@ chrome.cookies.onChanged.addListener(async (changeInfo) => {
   const storageKey = `strict_cookies_${cleanDom}`;
   const stored = await chrome.storage.local.get([storageKey, "guardra_auto_disable_cookies"]);
   
+  if (stored.guardra_auto_disable_cookies === false) return;
+
   const isEnforced = (stored[storageKey] && stored[storageKey].enforced) || stored.guardra_auto_disable_cookies;
 
   if (isEnforced) {
@@ -715,30 +739,32 @@ async function reportBrowserActivity(tabId, tabUrl, domain, trackers) {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "REMOVE_SINGLE_COOKIE") {
-    const { domain, name, storeId, path, secure, url } = message;
-    let cookieUrl = url;
-    if (!cookieUrl && domain) {
-      const cleanDom = domain.replace(/^\./, "");
-      const protocol = secure ? "https:" : "http:";
-      cookieUrl = `${protocol}//${cleanDom}${path || "/"}`;
-    }
+    const c = message.cookie || message;
+    const { domain, name, storeId, path, url } = c;
+    const cleanDom = (domain || "").replace(/^\./, "").replace(/^www\./, "");
     
-    if (cookieUrl && name) {
-      const removeDetails = {
-        url: cookieUrl,
-        name: name
-      };
-      if (storeId !== undefined) removeDetails.storeId = storeId;
-
-      chrome.cookies.remove(removeDetails).then((removedCookie) => {
-        sendResponse({ success: !!removedCookie, name: name });
-      }).catch(err => {
-        sendResponse({ success: false, error: err.message });
-      });
-      return true;
-    } else {
-      return false;
+    const urlsToTry = [];
+    if (url) urlsToTry.push(url);
+    if (cleanDom) {
+      urlsToTry.push(`https://${cleanDom}${path || "/"}`);
+      urlsToTry.push(`https://www.${cleanDom}${path || "/"}`);
+      urlsToTry.push(`http://${cleanDom}${path || "/"}`);
     }
+
+    const removePromises = urlsToTry.map(u => {
+      const details = { url: u, name: name };
+      if (storeId !== undefined) details.storeId = storeId;
+      return chrome.cookies.remove(details).catch(() => null);
+    });
+
+    Promise.all(removePromises).then((results) => {
+      const removed = results.some(r => !!r);
+      if (cleanDom) notifyCookieAuditUpdated(cleanDom);
+      sendResponse({ success: removed, name: name });
+    }).catch(err => {
+      sendResponse({ success: false, error: err.message });
+    });
+    return true;
   }
 
   if (message.type === "BLOCK_TRACKER_SCRIPT") {
@@ -889,6 +915,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const session = res[`tab_session_${tabId}`] || {};
         session.trackers_detected = data.trackers_detected;
         chrome.storage.local.set({ [`tab_session_${tabId}`]: session });
+        if (data.hostname) {
+          notifyCookieAuditUpdated(data.hostname);
+        }
       });
     }
     reportBrowserActivity(tabId, data.url, data.hostname, data.trackers_detected);
@@ -901,18 +930,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     
     Promise.all([
       isGlobalAdBlockingEnabled(),
-      chrome.storage.local.get(`adblock_domain_stats_${domain}`)
-    ]).then(([globalEnabled, storedStats]) => {
+      getLifetimeBlockedCount()
+    ]).then(([globalEnabled, lifetimeCount]) => {
       const tabStats = tabId ? (tabBlockedStats.get(tabId) || { count: 0 }) : { count: 0 };
-      const domainCount = storedStats[`adblock_domain_stats_${domain}`]?.count || 0;
-      const totalBlockCount = Math.max(tabStats.count, domainCount);
+      const currentTabCount = globalEnabled ? tabStats.count : 0;
 
       sendResponse({
         success: true,
         globalEnabled,
         domain,
-        tabBlockedCount: tabStats.count,
-        totalBlockedCount: globalEnabled ? totalBlockCount : 0,
+        tabBlockedCount: currentTabCount,
+        lifetimeBlockedCount: lifetimeCount,
         tabId
       });
     }).catch(err => {
@@ -936,25 +964,75 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     const tabId = sender.tab ? sender.tab.id : message.tabId;
     const addedCount = message.count || 1;
 
+    let tabCount = 0;
     if (tabId) {
       let stats = tabBlockedStats.get(tabId) || { count: 0, items: [] };
       stats.count += addedCount;
       tabBlockedStats.set(tabId, stats);
+      tabCount = stats.count;
     }
 
-    if (domain) {
-      chrome.storage.local.get(`adblock_domain_stats_${domain}`).then(res => {
-        const current = res[`adblock_domain_stats_${domain}`] || { count: 0, lastUpdated: Date.now() };
-        current.count += addedCount;
-        current.lastUpdated = Date.now();
-        chrome.storage.local.set({ [`adblock_domain_stats_${domain}`]: current });
-      }).catch(() => {});
-    }
+    addLifetimeBlockedCount(addedCount).then(newLifetime => {
+      notifyAdblockCountUpdated(domain, tabId, tabCount, newLifetime);
+    });
 
-    sendResponse({ success: true });
+    sendResponse({ success: true, tabCount });
     return true;
   }
 });
+
+async function getLifetimeBlockedCount() {
+  const res = await chrome.storage.local.get("adblock_lifetime_count");
+  return res.adblock_lifetime_count || 0;
+}
+
+async function addLifetimeBlockedCount(count = 1) {
+  const current = await getLifetimeBlockedCount();
+  const updated = current + count;
+  await chrome.storage.local.set({ adblock_lifetime_count: updated });
+  return updated;
+}
+
+function notifyAdblockCountUpdated(domain, tabId, tabBlockedCount, lifetimeCount) {
+  try {
+    if (tabId) {
+      chrome.tabs.sendMessage(tabId, {
+        type: "ADBLOCK_COUNT_UPDATED",
+        domain,
+        tabId,
+        tabBlockedCount,
+        count: tabBlockedCount,
+        lifetimeCount
+      }).catch(() => {});
+    }
+    chrome.runtime.sendMessage({
+      type: "ADBLOCK_COUNT_UPDATED",
+      domain,
+      tabId,
+      tabBlockedCount,
+      count: tabBlockedCount,
+      lifetimeCount
+    }).catch(() => {});
+  } catch (e) {}
+}
+
+function notifyCookieAuditUpdated(domain) {
+  if (!domain) return;
+  const cleanDom = domain.replace(/^\./, "").replace(/^www\./, "").toLowerCase();
+  try {
+    chrome.tabs.query({}).then(tabs => {
+      tabs.forEach(t => {
+        if (t.id && t.url) {
+          const tabDom = extractDomain(t.url);
+          if (tabDom === cleanDom) {
+            chrome.tabs.sendMessage(t.id, { type: "COOKIE_AUDIT_UPDATED", domain: cleanDom }).catch(() => {});
+          }
+        }
+      });
+    }).catch(() => {});
+    chrome.runtime.sendMessage({ type: "COOKIE_AUDIT_UPDATED", domain: cleanDom }).catch(() => {});
+  } catch (e) {}
+}
 
 // --- Ad Blocking & DNR Governance Engine (Global 2-State) ---
 const tabBlockedStats = new Map();
@@ -1020,18 +1098,13 @@ try {
         }
         tabBlockedStats.set(tabId, stats);
 
-        // Update domain-level stats in storage
-        if (info.request.initiator) {
-          const dom = extractDomain(info.request.initiator);
-          if (dom) {
-            chrome.storage.local.get(`adblock_domain_stats_${dom}`).then(res => {
-              const current = res[`adblock_domain_stats_${dom}`] || { count: 0, lastUpdated: Date.now() };
-              current.count++;
-              current.lastUpdated = Date.now();
-              chrome.storage.local.set({ [`adblock_domain_stats_${dom}`]: current });
-            }).catch(() => {});
+        addLifetimeBlockedCount(1).then(newLifetime => {
+          let dom = null;
+          if (info.request.initiator) {
+            dom = extractDomain(info.request.initiator);
           }
-        }
+          notifyAdblockCountUpdated(dom, tabId, stats.count, newLifetime);
+        });
       }
     });
   }
@@ -1053,11 +1126,6 @@ chrome.storage.onChanged.addListener(async (changes, areaName) => {
   if (areaName === "local" && changes.guardra_auto_disable_cookies) {
     const isEnforced = changes.guardra_auto_disable_cookies.newValue;
     if (isEnforced) {
-      const patterns = [
-        /^(_ga|_gid|_gat|_gcl|__utm)/i,
-        /^(_fb|datr|fr)/i
-      ];
-      
       try {
         const tabs = await chrome.tabs.query({});
         for (const tab of tabs) {
@@ -1066,7 +1134,7 @@ chrome.storage.onChanged.addListener(async (changes, areaName) => {
             if (domain) {
               const cookies = await getDomainCookies(domain, tab.url);
               for (const c of cookies) {
-                if (patterns.some(p => p.test(c.name))) {
+                if (!isEssentialCookie(c)) {
                   const protocol = c.secure ? "https:" : "http:";
                   const cleanDom = c.domain.replace(/^\./, "");
                   const cookieUrl = `${protocol}//${cleanDom}${c.path}`;
@@ -1079,6 +1147,7 @@ chrome.storage.onChanged.addListener(async (changes, areaName) => {
                   } catch (e) {}
                 }
               }
+              notifyCookieAuditUpdated(domain);
             }
           }
         }
