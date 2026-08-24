@@ -460,8 +460,8 @@
     <div class="brand">
       <div class="brand-logo">G</div>
       <div>
-        <div class="brand-title">Guardra Architecture & Data Journey</div>
-        <div class="brand-subtitle">Interactive Zoomable Visualizer: Extension &lt;—&gt; FastAPI Backend Engine</div>
+        <div class="brand-title">Guardra Architecture &amp; Data Journey</div>
+        <div class="brand-subtitle">Interactive Visualizer: Declarative Net Request Ad &amp; Tracker Blocker • Extension (MV3) &lt;—&gt; FastAPI Backend Engine</div>
       </div>
     </div>
     <div class="header-controls">
@@ -504,118 +504,157 @@
 
           <!-- ================= 1. CLIENT / EXTENSION CLUSTER ================= -->
           <rect class="cluster-box cluster-client" x="40" y="40" width="700" height="1300" />
-          <text class="cluster-title" x="70" y="80">1. Client / Browser Extension (MV3)</text>
+          <text class="cluster-title" x="70" y="80">1. Client / Browser Extension (MV3 & DNR Engine)</text>
 
           <!-- Node 1: Browser Navigation / Webpage -->
           <g id="node-tab" class="node-group" onclick="selectStep(1)">
-            <rect class="node-box" x="80" y="110" width="300" height="90" />
-            <rect class="node-icon-bg" x="95" y="125" width="36" height="36" />
-            <text x="105" y="148" font-size="18">🌐</text>
-            <text class="node-title" x="145" y="142">User Web Navigation</text>
-            <text class="node-sub" x="145" y="162">Target: e.g. boat-lifestyle.com</text>
-            <text class="node-sub" x="145" y="180">chrome.tabs.onUpdated</text>
+            <rect class="node-box" x="80" y="105" width="300" height="85" />
+            <rect class="node-icon-bg" x="95" y="120" width="36" height="36" />
+            <text x="105" y="143" font-size="18">🌐</text>
+            <text class="node-title" x="145" y="137">User Web Navigation</text>
+            <text class="node-sub" x="145" y="157">Target: e.g. youtube.com / boat</text>
+            <text class="node-sub" x="145" y="173">chrome.tabs.onUpdated</text>
           </g>
 
-          <!-- Node 2: Content Script -->
+          <!-- Node 2: Content Script & In-Page Pill -->
           <g id="node-cs" class="node-group" onclick="selectStep(2)">
-            <rect class="node-box" x="80" y="260" width="300" height="110" />
-            <rect class="node-icon-bg" x="95" y="280" width="36" height="36" />
-            <text x="105" y="303" font-size="18">⚡</text>
-            <text class="node-title" x="145" y="292">Content Script Injection</text>
-            <text class="node-sub" x="145" y="312">content_script.js</text>
-            <text class="node-sub" x="145" y="330">DOM Scanner (Meta, GA, TikTok)</text>
-            <text class="node-sub" x="145" y="348">Auto "Reject Optional" Clicks</text>
+            <rect class="node-box" x="80" y="210" width="300" height="130" />
+            <rect class="node-icon-bg" x="95" y="225" width="36" height="36" />
+            <text x="105" y="248" font-size="18">⚡</text>
+            <text class="node-title" x="145" y="237">Content Script & In-Page Pill</text>
+            <text class="node-sub" x="145" y="257">content_script.js (run_at: document_start)</text>
+            <text class="node-sub" x="145" y="275">• DOM Tracker Scanner (Meta, GA, TikTok)</text>
+            <text class="node-sub" x="145" y="293">• YouTube Video Ad Neutralizer & Auto-Skip</text>
+            <text class="node-sub" x="145" y="311">• In-Page Privacy Pill (#guardra-inpage-root)</text>
+            <text class="node-sub" x="145" y="327">• Real-Time Light / Dark Theme Sync</text>
+          </g>
+
+          <!-- Node 2b: Declarative Net Request (DNR) Engine -->
+          <g id="node-dnr" class="node-group" onclick="selectStep(3)">
+            <rect class="node-box" x="80" y="360" width="300" height="110" />
+            <rect class="node-icon-bg" x="95" y="375" width="36" height="36" />
+            <text x="105" y="398" font-size="18">🛡️</text>
+            <text class="node-title" x="145" y="387">DNR Ad & Tracker Engine</text>
+            <text class="node-sub" x="145" y="407">declarativeNetRequest (GPLv3)</text>
+            <text class="node-sub" x="145" y="425">• base_rules.json (111 Ad Rules)</text>
+            <text class="node-sub" x="145" y="443">• privacy_rules.json (67 Tracker Rules)</text>
+            <text class="node-sub" x="145" y="460">• Dynamic Whitelist (Priority 10000)</text>
           </g>
 
           <!-- Node 3: Cookies Engine & API -->
           <g id="node-cookies" class="node-group" onclick="selectStep(4)">
-            <rect class="node-box" x="80" y="440" width="300" height="100" />
-            <rect class="node-icon-bg" x="95" y="460" width="36" height="36" />
-            <text x="105" y="483" font-size="18">🍪</text>
-            <text class="node-title" x="145" y="470">Cookie Governance Engine</text>
-            <text class="node-sub" x="145" y="490">chrome.cookies API</text>
-            <text class="node-sub" x="145" y="510">Strict Essential vs Advertising</text>
-            <text class="node-sub" x="145" y="526">1-Click Neutralizer</text>
+            <rect class="node-box" x="80" y="490" width="300" height="95" />
+            <rect class="node-icon-bg" x="95" y="505" width="36" height="36" />
+            <text x="105" y="528" font-size="18">🍪</text>
+            <text class="node-title" x="145" y="515">Cookie Governance Engine</text>
+            <text class="node-sub" x="145" y="535">chrome.cookies API</text>
+            <text class="node-sub" x="145" y="553">Strict Essential vs Advertising</text>
+            <text class="node-sub" x="145" y="570">1-Click Tracker Neutralizer</text>
           </g>
 
           <!-- Node 4: Background Service Worker -->
           <g id="node-sw" class="node-group" onclick="selectStep(5)">
-            <rect class="node-box" x="420" y="260" width="290" height="280" />
-            <rect class="node-icon-bg" x="435" y="280" width="36" height="36" />
-            <text x="445" y="303" font-size="18">⚙️</text>
-            <text class="node-title" x="485" y="292">Background Service Worker</text>
-            <text class="node-sub" x="485" y="312">service_worker.js</text>
-            <text class="node-sub" x="445" y="350">• Tab URL & Domain Extraction</text>
-            <text class="node-sub" x="445" y="375">• Local & Remote API Dispatch</text>
-            <text class="node-sub" x="445" y="400">• Fallback Database Cascade</text>
-            <text class="node-sub" x="445" y="425">• Badge Color & Letter Grade (A-F)</text>
-            <text class="node-sub" x="445" y="450">• Real-Time Cookie Removal</text>
-            <text class="node-sub" x="445" y="475">• chrome.storage.local Syncer</text>
-            <text class="node-sub" x="445" y="500">• Telemetry Activity Reporter</text>
+            <rect class="node-box" x="420" y="210" width="290" height="375" />
+            <rect class="node-icon-bg" x="435" y="225" width="36" height="36" />
+            <text x="445" y="248" font-size="18">⚙️</text>
+            <text class="node-title" x="485" y="237">Background Service Worker</text>
+            <text class="node-sub" x="485" y="257">service_worker.js</text>
+            <text class="node-sub" x="445" y="295">• Tab URL & Domain Extraction</text>
+            <text class="node-sub" x="445" y="320">• DNR Ruleset Synchronization</text>
+            <text class="node-sub" x="445" y="345">• Dynamic Allow Rules Manager</text>
+            <text class="node-sub" x="445" y="370">• Local & Remote API Dispatch</text>
+            <text class="node-sub" x="445" y="395">• Fallback Database Cascade</text>
+            <text class="node-sub" x="445" y="420">• Badge Color & Letter Grade (A-F)</text>
+            <text class="node-sub" x="445" y="445">• Real-Time Cookie Removal</text>
+            <text class="node-sub" x="445" y="470">• chrome.storage.local Syncer</text>
+            <text class="node-sub" x="445" y="495">• Live Theme Change Broadcaster</text>
+            <text class="node-sub" x="445" y="520">• Telemetry Activity Reporter</text>
+            <text class="node-sub" x="445" y="545">• Offline Policy Rubric Fallback</text>
           </g>
 
           <!-- Node 5: Storage Cache -->
           <g id="node-storage" class="node-group" onclick="selectStep(6)">
-            <rect class="node-box" x="80" y="600" width="300" height="90" />
-            <rect class="node-icon-bg" x="95" y="618" width="36" height="36" />
-            <text x="105" y="641" font-size="18">💾</text>
-            <text class="node-title" x="145" y="630">Local Client Cache</text>
-            <text class="node-sub" x="145" y="650">chrome.storage.local</text>
-            <text class="node-sub" x="145" y="668">cached_rating_{domain}</text>
+            <rect class="node-box" x="80" y="605" width="630" height="85" />
+            <rect class="node-icon-bg" x="95" y="620" width="36" height="36" />
+            <text x="105" y="643" font-size="18">💾</text>
+            <text class="node-title" x="145" y="632">Local Storage & Settings Cache</text>
+            <text class="node-sub" x="145" y="652">chrome.storage.local</text>
+            <text class="node-sub" x="145" y="670">cached_rating_{domain} • guardra_theme • adblock_paused_domains • adblock_global_enabled</text>
           </g>
 
           <!-- Node 6: Extension Popup UI -->
           <g id="node-popup" class="node-group" onclick="selectStep(12)">
-            <rect class="node-box" x="80" y="740" width="630" height="570" />
-            <rect class="node-icon-bg" x="95" y="760" width="36" height="36" />
-            <text x="105" y="783" font-size="18">📱</text>
-            <text class="node-title" x="145" y="775">Extension Popup UI</text>
-            <text class="node-sub" x="145" y="795">popup.html & popup.js</text>
+            <rect class="node-box" x="80" y="710" width="630" height="600" />
+            <rect class="node-icon-bg" x="95" y="725" width="36" height="36" />
+            <text x="105" y="748" font-size="18">📱</text>
+            <text class="node-title" x="145" y="740">Extension Popup UI</text>
+            <text class="node-sub" x="145" y="760">popup.html & popup.js</text>
 
             <!-- Embedded Mockup in SVG -->
-            <g transform="translate(100, 820)">
+            <g transform="translate(100, 780)">
               <!-- Mock Header -->
-              <rect x="0" y="0" width="590" height="460" rx="8" fill="#0f172a" stroke="#334155" />
-              <rect x="20" y="20" width="100" height="70" rx="8" fill="#ef4444" opacity="0.2" stroke="#ef4444" />
-              <text x="50" y="55" font-size="28" font-weight="900" fill="#ef4444" text-anchor="middle">D</text>
-              <text x="50" y="76" font-size="11" font-weight="700" fill="#ef4444" text-anchor="middle">38/100</text>
+              <rect x="0" y="0" width="590" height="510" rx="8" fill="#0f172a" stroke="#334155" />
+              
+              <!-- Popup Top Bar -->
+              <text x="20" y="30" font-size="14" font-weight="800" fill="#fff">GUARDRA</text>
+              <text x="90" y="30" font-size="10" fill="#64748b">PRIVACY GUARDIAN</text>
+              <rect x="490" y="14" width="35" height="24" rx="4" fill="#1e293b" stroke="#334155" />
+              <text x="502" y="30" font-size="12">🌙</text>
+              <rect x="535" y="14" width="35" height="24" rx="4" fill="#1e293b" stroke="#334155" />
+              <text x="547" y="30" font-size="12">🛡️</text>
 
-              <text x="140" y="45" font-size="18" font-weight="700" fill="#fff">Boat Lifestyle</text>
-              <text x="140" y="65" font-size="12" fill="#94a3b8">boat-lifestyle.com • 7.5M records breached</text>
-              <rect x="140" y="75" width="180" height="18" rx="4" fill="rgba(16, 185, 129, 0.2)" />
-              <text x="150" y="88" font-size="10" fill="#10b981" font-weight="600">✓ DPDP Grievance Officer Disclosed</text>
+              <!-- Ad & Tracker Shield Card (NEW) -->
+              <rect x="20" y="48" width="550" height="62" rx="6" fill="#1e293b" stroke="#3b82f6" />
+              <text x="35" y="72" font-size="12" font-weight="700" fill="#60a5fa">🛡️ Ad &amp; Tracker Shield (DNR Engine)</text>
+              <text x="35" y="92" font-size="10" fill="#94a3b8">Active: 178 filter rules loaded • 0 ads on this page</text>
+              <rect x="420" y="58" width="135" height="28" rx="4" fill="rgba(16,185,129,0.2)" stroke="#10b981" />
+              <text x="430" y="76" font-size="10" font-weight="700" fill="#10b981">⏸️ Pause for Site</text>
+
+              <!-- Score Card -->
+              <rect x="20" y="120" width="100" height="70" rx="8" fill="#ef4444" opacity="0.2" stroke="#ef4444" />
+              <text x="70" y="155" font-size="28" font-weight="900" fill="#ef4444" text-anchor="middle">D</text>
+              <text x="70" y="176" font-size="11" font-weight="700" fill="#ef4444" text-anchor="middle">38/100</text>
+
+              <text x="140" y="145" font-size="17" font-weight="700" fill="#fff">Boat Lifestyle</text>
+              <text x="140" y="165" font-size="11" fill="#94a3b8">boat-lifestyle.com • 7.5M records breached</text>
+              <rect x="140" y="175" width="200" height="18" rx="4" fill="rgba(16, 185, 129, 0.2)" />
+              <text x="148" y="188" font-size="10" fill="#10b981" font-weight="600">✓ DPDP Grievance Officer Disclosed</text>
 
               <!-- 6 Pillars Bar Chart -->
-              <text x="20" y="125" font-size="12" font-weight="700" fill="#e2e8f0">6-Pillar Privacy Breakdown</text>
+              <text x="20" y="215" font-size="11" font-weight="700" fill="#e2e8f0">6-Pillar Privacy Breakdown</text>
               
-              <text x="20" y="150" font-size="11" fill="#94a3b8">Data Sharing (35%)</text>
-              <rect x="180" y="142" width="220" height="8" rx="4" fill="#334155" />
-              <rect x="180" y="142" width="77" height="8" rx="4" fill="#ef4444" />
+              <text x="20" y="238" font-size="10.5" fill="#94a3b8">Data Sharing (35%)</text>
+              <rect x="180" y="230" width="220" height="7" rx="3" fill="#334155" />
+              <rect x="180" y="230" width="77" height="7" rx="3" fill="#ef4444" />
               
-              <text x="20" y="175" font-size="11" fill="#94a3b8">Retention Limits (40%)</text>
-              <rect x="180" y="167" width="220" height="8" rx="4" fill="#334155" />
-              <rect x="180" y="167" width="88" height="8" rx="4" fill="#f59e0b" />
+              <text x="20" y="260" font-size="10.5" fill="#94a3b8">Retention Limits (40%)</text>
+              <rect x="180" y="252" width="220" height="7" rx="3" fill="#334155" />
+              <rect x="180" y="252" width="88" height="7" rx="3" fill="#f59e0b" />
 
-              <text x="20" y="200" font-size="11" fill="#94a3b8">Tracking Cookies (30%)</text>
-              <rect x="180" y="192" width="220" height="8" rx="4" fill="#334155" />
-              <rect x="180" y="192" width="66" height="8" rx="4" fill="#ef4444" />
+              <text x="20" y="282" font-size="10.5" fill="#94a3b8">Tracking Cookies (30%)</text>
+              <rect x="180" y="274" width="220" height="7" rx="3" fill="#334155" />
+              <rect x="180" y="274" width="66" height="7" rx="3" fill="#ef4444" />
 
-              <text x="20" y="225" font-size="11" fill="#94a3b8">User Rights & Erasure (60%)</text>
-              <rect x="180" y="217" width="220" height="8" rx="4" fill="#334155" />
-              <rect x="180" y="217" width="132" height="8" rx="4" fill="#10b981" />
+              <text x="20" y="304" font-size="10.5" fill="#94a3b8">User Rights &amp; Erasure (60%)</text>
+              <rect x="180" y="296" width="220" height="7" rx="3" fill="#334155" />
+              <rect x="180" y="296" width="132" height="7" rx="3" fill="#10b981" />
 
               <!-- Action Buttons -->
-              <rect x="20" y="260" width="260" height="42" rx="6" fill="#ef4444" opacity="0.15" stroke="#ef4444" />
-              <text x="150" y="286" font-size="12" font-weight="700" fill="#ef4444" text-anchor="middle">⚡ Disable Optional Cookies</text>
+              <rect x="20" y="325" width="260" height="38" rx="6" fill="#ef4444" opacity="0.15" stroke="#ef4444" />
+              <text x="150" y="348" font-size="11" font-weight="700" fill="#ef4444" text-anchor="middle">⚡ Disable Optional Cookies</text>
 
-              <rect x="300" y="260" width="270" height="42" rx="6" fill="#2563eb" opacity="0.2" stroke="#3b82f6" />
-              <text x="435" y="286" font-size="12" font-weight="700" fill="#60a5fa" text-anchor="middle">✉️ 1-Click DPDP Deletion Notice</text>
+              <rect x="295" y="325" width="275" height="38" rx="6" fill="#2563eb" opacity="0.2" stroke="#3b82f6" />
+              <text x="432" y="348" font-size="11" font-weight="700" fill="#60a5fa" text-anchor="middle">✉️ 1-Click DPDP Deletion Notice</text>
+
+              <!-- In-Page Floating Pill Preview -->
+              <rect x="20" y="375" width="550" height="52" rx="6" fill="#181818" stroke="#333333" />
+              <text x="35" y="398" font-size="11" font-weight="700" fill="#ebebeb">In-Page Floating Pill Widget (#guardra-inpage-root)</text>
+              <text x="35" y="416" font-size="10" fill="#a1a1aa">Real-Time Light/Dark Theme Sync • Live Ads Blocked Counter • 1-Click Site Pause</text>
 
               <!-- Breach card -->
-              <rect x="20" y="320" width="550" height="80" rx="6" fill="#1e293b" stroke="#475569" />
-              <text x="35" y="345" font-size="12" font-weight="700" fill="#f87171">⚠️ 7.5M Customer Records Leaked (April 2024)</text>
-              <text x="35" y="365" font-size="11" fill="#94a3b8">Dark web forum leak by 'ShopifyGUY' exposing shipping addresses & phone numbers.</text>
-              <text x="35" y="385" font-size="10" fill="#38bdf8">🔗 View Verified Security Article & News</text>
+              <rect x="20" y="438" width="550" height="58" rx="6" fill="#1e293b" stroke="#475569" />
+              <text x="35" y="458" font-size="11" font-weight="700" fill="#f87171">⚠️ 7.5M Customer Records Leaked (April 2024)</text>
+              <text x="35" y="476" font-size="10" fill="#94a3b8">Dark web forum leak by 'ShopifyGUY' exposing customer shipping addresses &amp; phones.</text>
             </g>
           </g>
 
@@ -817,10 +856,10 @@
       },
       {
         num: 2,
-        title: "Content Script Injected on DOM Ready",
-        desc: "content_script.js inspects <script src> tags for 9+ known tracker signatures (Meta Pixel, Google Analytics, Hotjar, TikTok, Criteo).",
-        tag: "extension/content/content_script.js",
-        nodes: ["node-cs"],
+        title: "Content Script & DNR Ad Engine Triggered",
+        desc: "content_script.js is injected at document_start. DNR engine enforces 178+ filter rules (base_rules.json + privacy_rules.json). Active YouTube neutralizer auto-skips video pre-rolls, and the in-page floating pill displays live blocked ad counts with real-time theme sync.",
+        tag: "extension/content/content_script.js + DNR",
+        nodes: ["node-cs", "node-dnr"],
         edges: ["edge-2", "badge-2"],
         zoom: { x: -50, y: -150, scale: 1.2 }
       },
@@ -908,9 +947,9 @@
       {
         num: 12,
         title: "User Clicks Extension: Rich Popup Rendered",
-        desc: "Extension Popup renders Trust Score (38/100), Grade D, 6-Pillar Breakdown, DPDP Grievance Officer contacts, 1-Click Cookie Neutralizer, and 1-Click DPDP Sec 12 Deletion Notice Generator.",
+        desc: "Extension Popup renders Ad & Tracker Shield (with 1-click domain pause/resume), Trust Score (38/100), Grade D, 6-Pillar Breakdown, DPDP Grievance Officer contacts, 1-Click Cookie Neutralizer, 1-Click DPDP Sec 12 Notice Generator, and Light/Dark Theme switch.",
         tag: "extension/popup/popup.html",
-        nodes: ["node-popup", "node-sw"],
+        nodes: ["node-popup", "node-sw", "node-dnr"],
         edges: ["edge-12", "badge-12"],
         zoom: { x: -50, y: -450, scale: 0.9 }
       }
