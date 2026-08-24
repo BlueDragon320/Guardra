@@ -820,8 +820,9 @@
     }
   });
 
-  // --- Cosmetic Ad Blocker Engine ---
+  // --- Comprehensive Cosmetic & SPA Sponsored Post Blocker Engine ---
   const COSMETIC_AD_SELECTORS = [
+    // Standard Ad Networks & Banners
     "ins.adsbygoogle",
     "div[id^='google_ads_iframe']",
     "iframe[id^='google_ads_frame']",
@@ -839,10 +840,44 @@
     ".trc_rbox_div",
     ".outbrain_widget",
     ".taboola-ad",
+    ".taboola-container",
     "div[data-ad-unit]",
     "div[data-ad-slot]",
     "div[data-ad-client]",
-    // YouTube Specific Ad Containers & Promoted Slots
+    "div[data-google-query-id]",
+    "div[id^='taboola-']",
+    "div[id^='outbrain-']",
+    "div[id^='criteo-']",
+
+    // Instagram Web Sponsored Posts & Stories
+    "article:has(a[href*='/about/this_ad/'])",
+    "article:has(a[href*='/ads/'])",
+    "article:has(a[href*='about_this_ad'])",
+    "article:has(svg[aria-label*='Sponsored'])",
+    "div[data-ad-preview]",
+    "div[data-ad-rendering]",
+    "div:has(> a[href*='/about/this_ad/'])",
+
+    // Facebook Sponsored Feed Units
+    "div[data-pagelet*='FeedUnit']:has(a[href*='/ads/about'])",
+    "div[data-pagelet*='sponsor']",
+    "div[data-pagelet*='AdBreak']",
+
+    // Reddit Promoted Posts
+    "div[data-promoted='true']",
+    "shreddit-post[is-promoted='true']",
+    ".promotedlink",
+
+    // Twitter / X Promoted Tweets
+    "article[data-testid='tweet']:has(svg[aria-label*='Promoted'])",
+
+    // Google Search Sponsored Ads
+    "div[data-text-ad]",
+    "div#tads",
+    "div#tadsb",
+    "div#bottomads",
+
+    // YouTube Video & Feed Ads
     "ytd-ad-slot-renderer",
     "ytd-in-feed-ad-layout-renderer",
     "ytd-banner-promo-renderer",
@@ -862,6 +897,102 @@
     ".ytp-ad-image-overlay"
   ];
 
+  let spaAdSweeperInterval = null;
+  let spaAdObserver = null;
+
+  function runSpaAdSweep() {
+    const host = location.hostname.toLowerCase();
+
+    // 1. Instagram Web Sponsored Posts & Stories Sweeper
+    if (host.includes("instagram.com")) {
+      const candidates = document.querySelectorAll("article, div[role='dialog'] section, div[data-testid]");
+      candidates.forEach(art => {
+        if (art.getAttribute("data-guardra-blocked") === "true") return;
+
+        const hasAdLink = art.querySelector("a[href*='/about/this_ad/'], a[href*='/ads/'], a[href*='about_this_ad']");
+        const hasAdSvg = art.querySelector("svg[aria-label='Sponsored'], svg[aria-label='Patrocinado'], svg[aria-label='Gesponsert']");
+
+        let isSponsoredText = false;
+        if (!hasAdLink && !hasAdSvg) {
+          const spans = art.querySelectorAll("span, a");
+          for (const s of spans) {
+            const txt = (s.textContent || "").trim();
+            if (txt === "Sponsored" || txt === "Paid partnership" || txt === "Patrocinado" || txt === "Gesponsert" || txt === "Sponsorisé") {
+              if (s.children.length === 0 && txt.length < 25) {
+                isSponsoredText = true;
+                break;
+              }
+            }
+          }
+        }
+
+        if (hasAdLink || hasAdSvg || isSponsoredText) {
+          art.setAttribute("data-guardra-blocked", "true");
+          art.style.cssText = "display: none !important; visibility: hidden !important; height: 0 !important; max-height: 0 !important; overflow: hidden !important; pointer-events: none !important;";
+          reportBlockedAd();
+        }
+      });
+    }
+
+    // 2. Facebook Web Sponsored Posts
+    if (host.includes("facebook.com")) {
+      const units = document.querySelectorAll("div[data-pagelet*='FeedUnit'], div[role='article']");
+      units.forEach(unit => {
+        if (unit.getAttribute("data-guardra-blocked") === "true") return;
+        const hasAdLink = unit.querySelector("a[href*='/ads/about/']");
+        if (hasAdLink) {
+          unit.setAttribute("data-guardra-blocked", "true");
+          unit.style.cssText = "display: none !important; height: 0 !important; overflow: hidden !important;";
+          reportBlockedAd();
+        }
+      });
+    }
+
+    // 3. Reddit Promoted Posts
+    if (host.includes("reddit.com")) {
+      const redditAds = document.querySelectorAll("shreddit-post[is-promoted='true'], div[data-promoted='true'], .promotedlink");
+      redditAds.forEach(post => {
+        if (post.getAttribute("data-guardra-blocked") === "true") return;
+        post.setAttribute("data-guardra-blocked", "true");
+        post.style.cssText = "display: none !important; height: 0 !important; overflow: hidden !important;";
+        reportBlockedAd();
+      });
+    }
+
+    // 4. Twitter / X Promoted Tweets
+    if (host.includes("x.com") || host.includes("twitter.com")) {
+      const tweets = document.querySelectorAll("article[data-testid='tweet']");
+      tweets.forEach(tweet => {
+        if (tweet.getAttribute("data-guardra-blocked") === "true") return;
+        const spans = tweet.querySelectorAll("span");
+        let isPromoted = false;
+        for (const s of spans) {
+          const txt = (s.textContent || "").trim();
+          if (txt === "Promoted" || txt === "Ad") {
+            isPromoted = true;
+            break;
+          }
+        }
+        if (isPromoted) {
+          tweet.setAttribute("data-guardra-blocked", "true");
+          tweet.style.cssText = "display: none !important; height: 0 !important; overflow: hidden !important;";
+          reportBlockedAd();
+        }
+      });
+    }
+  }
+
+  function reportBlockedAd() {
+    const domain = location.hostname.replace(/^www\./i, "");
+    chrome.runtime.sendMessage({
+      type: "REPORT_COSMETIC_BLOCKED",
+      count: 1,
+      domain: domain
+    }, () => {
+      if (chrome.runtime.lastError) {}
+    });
+  }
+
   function applyCosmeticAdFilter() {
     let style = document.getElementById("guardra-cosmetic-adblock");
     if (!style) {
@@ -872,25 +1003,44 @@
       (document.head || document.documentElement).appendChild(style);
     }
 
-    // Count hidden cosmetic elements and report
-    try {
-      const elements = document.querySelectorAll(COSMETIC_AD_SELECTORS.join(", "));
-      if (elements.length > 0) {
-        const domain = location.hostname.replace(/^www\./i, "");
-        chrome.runtime.sendMessage({
-          type: "REPORT_COSMETIC_BLOCKED",
-          count: elements.length,
-          domain: domain
-        }, () => {
-          if (chrome.runtime.lastError) {}
-        });
+    // Start continuous SPA sweeper
+    if (!spaAdSweeperInterval) {
+      runSpaAdSweep();
+      spaAdSweeperInterval = setInterval(runSpaAdSweep, 250);
+      window.addEventListener("scroll", runSpaAdSweep, { passive: true });
+
+      const target = document.body || document.documentElement;
+      if (target) {
+        spaAdObserver = new MutationObserver(runSpaAdSweep);
+        spaAdObserver.observe(target, { childList: true, subtree: true });
       }
-    } catch (e) {}
+    }
   }
 
   function removeCosmeticAdFilter() {
     const style = document.getElementById("guardra-cosmetic-adblock");
     if (style) style.remove();
+
+    if (spaAdSweeperInterval) {
+      clearInterval(spaAdSweeperInterval);
+      spaAdSweeperInterval = null;
+    }
+    if (spaAdObserver) {
+      spaAdObserver.disconnect();
+      spaAdObserver = null;
+    }
+    window.removeEventListener("scroll", runSpaAdSweep);
+
+    // Unhide previously blocked elements
+    document.querySelectorAll("[data-guardra-blocked='true']").forEach(el => {
+      el.removeAttribute("data-guardra-blocked");
+      el.style.display = "";
+      el.style.visibility = "";
+      el.style.height = "";
+      el.style.maxHeight = "";
+      el.style.overflow = "";
+      el.style.pointerEvents = "";
+    });
   }
 
   // --- YouTube Video Ad Skipper & Neutralizer ---
@@ -906,11 +1056,9 @@
       const video = document.querySelector("video");
       if (!player || !video) return;
 
-      // YouTube strictly adds "ad-showing" or "ad-interrupting" to the player element ONLY when an ad is playing
       const isRealAdPlaying = player.classList.contains("ad-showing") || player.classList.contains("ad-interrupting");
 
       if (isRealAdPlaying) {
-        // 1. Instantly click skip buttons
         const skipButtons = [
           ".ytp-ad-skip-button",
           ".ytp-ad-skip-button-modern",
@@ -929,7 +1077,6 @@
           }
         }
 
-        // 2. Fast-forward the ad video stream ONLY when isRealAdPlaying is TRUE and duration is ad-length (< 300s)
         try {
           if (video.duration && isFinite(video.duration) && video.duration < 300) {
             video.currentTime = video.duration - 0.1;
@@ -937,7 +1084,6 @@
           video.playbackRate = 16.0;
         } catch (e) {}
       } else {
-        // Normal video playback: ensure speed is not stuck on 16x
         if (video.playbackRate > 2.0) {
           video.playbackRate = 1.0;
         }
