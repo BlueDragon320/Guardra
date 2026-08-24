@@ -202,17 +202,27 @@
 
   function renderFloatingPill(rating) {
     if (isDismissed) return;
-    chrome.storage.local.get(["guardra_inpage_enabled", "guardra_auto_disable_cookies"], (res) => {
+    chrome.storage.local.get(["guardra_inpage_enabled", "guardra_auto_disable_cookies", "guardra_theme"], (res) => {
       if (res.guardra_inpage_enabled === false) {
         const rootHost = document.getElementById("guardra-inpage-root");
         if (rootHost) rootHost.remove();
         return;
       }
-      _doRenderFloatingPill(rating, res.guardra_auto_disable_cookies);
+      const domain = window.location.hostname.replace(/^www\./, "").toLowerCase();
+      const theme = res.guardra_theme || "dark";
+      const autoDisable = res.guardra_auto_disable_cookies;
+
+      chrome.runtime.sendMessage({
+        type: "GET_ADBLOCK_STATUS",
+        domain: domain
+      }, (adblockResp) => {
+        const adblockStatus = (!chrome.runtime.lastError && adblockResp) ? adblockResp : { globalEnabled: true, sitePaused: false, totalBlockedCount: 0 };
+        _doRenderFloatingPill(rating, autoDisable, theme, adblockStatus);
+      });
     });
   }
 
-  function _doRenderFloatingPill(rating, autoDisableCookies = false) {
+  function _doRenderFloatingPill(rating, autoDisableCookies = false, theme = "dark", adblockStatus = { globalEnabled: true, sitePaused: false, totalBlockedCount: 0 }) {
     if (isDismissed) return;
     currentRating = rating;
     const domain = window.location.hostname.replace(/^www\./, "");
@@ -228,7 +238,6 @@
 
     const grade = rating?.grade || "C";
     const score = rating?.score !== undefined ? Math.round(rating.score) : (rating?.overall_score !== undefined ? Math.round(rating.overall_score) : 55);
-    const color = rating?.color === "green" || rating?.grade_color === "green" || score >= 70 
     const grievanceEmail = rating?.compliance?.dpdp?.grievance_email || rating?.compliance?.gdpr?.dpo_contact || (rating?.contacts?.email && rating.contacts.email[0]) || "Not found";
     const dpdpStatusText = rating?.compliance?.dpdp?.compliant ? "Grievance Officer Active" : "Grievance Officer Not Found";
     const dpdpStatusColor = rating?.compliance?.dpdp?.compliant ? "#10b981" : "#ef4444";
@@ -246,33 +255,39 @@
       });
     } catch (e) {}
 
+    const blockedCount = adblockStatus.totalBlockedCount || 0;
+    const isPaused = !!adblockStatus.sitePaused;
+    const isGlobalOff = adblockStatus.globalEnabled === false;
+    const isLight = theme === "light";
+
     const css = `
       * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
       ::selection { background: #FF6B50; color: #fff; }
+      
       .pill-container {
         display: flex;
         align-items: center;
-        gap: 8px;
-        background: rgba(17, 17, 17, 0.92);
+        gap: 7px;
+        background: ${isLight ? 'rgba(255, 255, 255, 0.94)' : 'rgba(17, 17, 17, 0.94)'};
         backdrop-filter: blur(14px);
-        color: #ebebeb;
-        border: 1px solid rgba(255, 255, 255, 0.12);
+        color: ${isLight ? '#0f172a' : '#ebebeb'};
+        border: 1px solid ${isLight ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.12)'};
         border-radius: 14px;
-        padding: 6px 14px;
+        padding: 6px 12px;
         font-size: 11px;
-        box-shadow: 0 12px 36px rgba(0,0,0,0.75);
+        box-shadow: ${isLight ? '0 10px 30px rgba(0,0,0,0.12)' : '0 12px 36px rgba(0,0,0,0.75)'};
         cursor: pointer;
         transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
         user-select: none;
       }
       .pill-container:hover {
-        background: #181818;
-        border-color: rgba(255, 255, 255, 0.25);
+        background: ${isLight ? '#ffffff' : '#181818'};
+        border-color: ${isLight ? 'rgba(0, 0, 0, 0.25)' : 'rgba(255, 255, 255, 0.25)'};
         transform: translateY(-2px);
       }
       .logo-shield {
-        background: #ffffff;
-        color: #000000;
+        background: ${isLight ? '#0f172a' : '#ffffff'};
+        color: ${isLight ? '#ffffff' : '#000000'};
         font-weight: 900;
         font-size: 11px;
         width: 18px;
@@ -287,39 +302,57 @@
         transform: rotate(12deg);
       }
       .grade-pill {
-        background: #1a1a1a;
-        padding: 2px 7px;
+        background: ${isLight ? '#f1f5f9' : '#1a1a1a'};
+        color: ${isLight ? '#0f172a' : '#ebebeb'};
+        padding: 2px 6px;
         border-radius: 6px;
         font-weight: 800;
         font-family: monospace;
-        border: 1px solid #2a2a2a;
+        border: 1px solid ${isLight ? '#cbd5e1' : '#2a2a2a'};
       }
       .close-btn {
         background: none;
         border: none;
-        color: #888888;
+        color: ${isLight ? '#94a3b8' : '#888888'};
         cursor: pointer;
-        font-size: 16px;
+        font-size: 15px;
         line-height: 1;
         padding: 2px 4px;
         margin-left: 2px;
         transition: all 0.2s ease;
       }
       .close-btn:hover {
-        opacity: 1;
         color: #FF6B50;
         transform: scale(1.15);
       }
       .pill-chip {
-        background: #161616;
-        padding: 2px 8px;
-        border-radius: 10px;
+        background: ${isLight ? '#f8fafc' : '#161616'};
+        padding: 2px 7px;
+        border-radius: 8px;
         font-weight: 600;
         font-size: 10px;
-        color: #aaaaaa;
-        border: 1px solid #222222;
+        color: ${isLight ? '#475569' : '#aaaaaa'};
+        border: 1px solid ${isLight ? '#e2e8f0' : '#222222'};
         display: inline-flex;
         align-items: center;
+        gap: 3px;
+        white-space: nowrap;
+      }
+      .pill-chip.adblock-active {
+        background: ${isLight ? 'rgba(16, 185, 129, 0.12)' : 'rgba(16, 185, 129, 0.15)'};
+        color: ${isLight ? '#059669' : '#10b981'};
+        border-color: ${isLight ? 'rgba(16, 185, 129, 0.3)' : 'rgba(16, 185, 129, 0.35)'};
+        font-weight: 700;
+      }
+      .pill-chip.adblock-paused {
+        background: ${isLight ? 'rgba(245, 158, 11, 0.12)' : 'rgba(245, 158, 11, 0.15)'};
+        color: ${isLight ? '#d97706' : '#f59e0b'};
+        border-color: ${isLight ? 'rgba(245, 158, 11, 0.3)' : 'rgba(245, 158, 11, 0.35)'};
+        font-weight: 700;
+      }
+      .pill-chip.adblock-disabled {
+        background: ${isLight ? '#f1f5f9' : '#181818'};
+        color: ${isLight ? '#64748b' : '#71717a'};
       }
 
       /* Expanded Panel */
@@ -328,42 +361,36 @@
         max-height: calc(100vh - 40px);
         overflow-y: auto;
         overflow-x: hidden;
-        background: #050505;
-        border: 1px solid #222222;
+        background: ${isLight ? '#ffffff' : '#050505'};
+        border: 1px solid ${isLight ? '#e2e8f0' : '#222222'};
         border-radius: 18px;
         padding: 14px;
-        box-shadow: 0 20px 50px rgba(0,0,0,0.88);
-        color: #ebebeb;
+        box-shadow: ${isLight ? '0 20px 50px rgba(0,0,0,0.18)' : '0 20px 50px rgba(0,0,0,0.88)'};
+        color: ${isLight ? '#0f172a' : '#ebebeb'};
         font-size: 11px;
         display: flex;
         flex-direction: column;
-        gap: 12px;
+        gap: 10px;
         scrollbar-width: thin;
-        scrollbar-color: #333333 #111111;
+        scrollbar-color: ${isLight ? '#cbd5e1 #f1f5f9' : '#333333 #111111'};
       }
-      .panel-container::-webkit-scrollbar {
-        width: 5px;
-      }
-      .panel-container::-webkit-scrollbar-track {
-        background: #111111;
-        border-radius: 4px;
-      }
-      .panel-container::-webkit-scrollbar-thumb {
-        background: #333333;
-        border-radius: 4px;
-      }
+      .panel-container::-webkit-scrollbar { width: 5px; }
+      .panel-container::-webkit-scrollbar-track { background: ${isLight ? '#f1f5f9' : '#111111'}; border-radius: 4px; }
+      .panel-container::-webkit-scrollbar-thumb { background: ${isLight ? '#cbd5e1' : '#333333'}; border-radius: 4px; }
+
       .panel-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        border-bottom: 1px solid #222222;
+        border-bottom: 1px solid ${isLight ? '#e2e8f0' : '#222222'};
         padding-bottom: 10px;
       }
-      .site-title { font-weight: 800; font-size: 13px; color: #fff; }
-      .meta-row { display: flex; justify-content: space-between; color: #888888; font-size: 10.5px; }
+      .site-title { font-weight: 800; font-size: 13px; color: ${isLight ? '#0f172a' : '#ffffff'}; }
+      .meta-row { display: flex; justify-content: space-between; color: ${isLight ? '#64748b' : '#888888'}; font-size: 10.5px; }
+      
       .section-card {
-        background: #111111;
-        border: 1px solid #222222;
+        background: ${isLight ? '#f8fafc' : '#111111'};
+        border: 1px solid ${isLight ? '#e2e8f0' : '#222222'};
         border-radius: 12px;
         padding: 10px;
         display: flex;
@@ -375,7 +402,7 @@
         color: #000000;
         border: none;
         border-radius: 8px;
-        padding: 8px 10px;
+        padding: 7px 10px;
         font-size: 11px;
         font-weight: 700;
         cursor: pointer;
@@ -386,65 +413,51 @@
       }
       .action-btn:hover { background: #E55A40; color: #ffffff; }
       .secondary-btn {
-        background: #161616;
-        color: #ebebeb;
-        border: 1px solid #333333;
+        background: ${isLight ? '#ffffff' : '#161616'};
+        color: ${isLight ? '#0f172a' : '#ebebeb'};
+        border: 1px solid ${isLight ? '#cbd5e1' : '#333333'};
         border-radius: 8px;
         padding: 7px 10px;
         font-size: 10.5px;
+        font-weight: 600;
         cursor: pointer;
         text-align: center;
         text-decoration: none;
         display: block;
         transition: all 0.2s ease;
       }
-      .secondary-btn:hover { background: #ffffff; color: #000000; }
+      .secondary-btn:hover { background: ${isLight ? '#f1f5f9' : '#222222'}; }
 
       .expandable-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
         cursor: pointer;
-        padding: 4px 0;
+        padding: 3px 0;
         font-weight: 700;
         font-size: 11px;
-        color: #fff;
+        color: ${isLight ? '#0f172a' : '#ffffff'};
       }
       .expandable-content {
         display: flex;
         flex-wrap: wrap;
-        gap: 6px;
+        gap: 5px;
         margin-top: 6px;
         max-height: 120px;
         overflow-y: auto;
         padding-right: 4px;
         scrollbar-width: thin;
-        scrollbar-color: #333333 #111111;
-        transition: max-height 0.25s ease;
-      }
-      .expandable-content.collapsed {
-        max-height: 0;
-        margin-top: 0;
-        overflow: hidden;
-        padding: 0;
-      }
-      .toggle-icon {
-        transition: transform 0.3s ease;
-        font-size: 10px;
-      }
-      .toggle-icon.collapsed {
-        transform: rotate(-90deg);
       }
       .tracker-chip {
         display: inline-flex;
         align-items: center;
         font-weight: 700;
         font-size: 10px;
-        background: rgba(255, 107, 80, 0.15);
-        border: 1px solid rgba(255, 107, 80, 0.35);
+        background: rgba(255, 107, 80, 0.12);
+        border: 1px solid rgba(255, 107, 80, 0.3);
         color: #FF6B50;
-        padding: 4px 10px;
-        border-radius: 12px;
+        padding: 3px 8px;
+        border-radius: 10px;
         white-space: nowrap;
       }
       .cookie-chip {
@@ -453,14 +466,24 @@
         font-weight: 700;
         font-family: monospace;
         font-size: 10px;
-        background: #181818;
-        border: 1px solid #333333;
-        color: #ebebeb;
-        padding: 4px 10px;
-        border-radius: 12px;
+        background: ${isLight ? '#f1f5f9' : '#181818'};
+        border: 1px solid ${isLight ? '#e2e8f0' : '#333333'};
+        color: ${isLight ? '#334155' : '#ebebeb'};
+        padding: 3px 8px;
+        border-radius: 10px;
         white-space: nowrap;
       }
     `;
+
+    // AdBlock Chip HTML in Collapsed Pill
+    let adblockChipHtml = "";
+    if (isGlobalOff) {
+      adblockChipHtml = `<span class="pill-chip adblock-disabled">🛡️ Ads Off</span>`;
+    } else if (isPaused) {
+      adblockChipHtml = `<span class="pill-chip adblock-paused">⏸️ Ads Paused</span>`;
+    } else {
+      adblockChipHtml = `<span class="pill-chip adblock-active">🛡️ ${blockedCount} Ads Blocked</span>`;
+    }
 
     if (!isExpanded) {
       shadowRoot.innerHTML = `
@@ -469,9 +492,10 @@
           <span class="logo-shield">G.</span>
           <span style="font-weight:700;">${domain}</span>
           <span class="grade-pill">${grade} (${score}/100)</span>
+          ${adblockChipHtml}
           <span class="pill-chip">⚡ ${detectedTrackers.length} Trackers</span>
           <span class="pill-chip">🍪 ${activeCookies.length} Cookies</span>
-          <button class="close-btn" id="guardra-close-pill">✕</button>
+          <button class="close-btn" id="guardra-close-pill" title="Dismiss">✕</button>
         </div>
       `;
 
@@ -496,7 +520,7 @@
             <span>🚨 Breach: ${breaches[0].breach_date || "Recorded"}</span>
             <span>${breaches.length} Incident${breaches.length > 1 ? "s" : ""}</span>
           </div>
-          <div style="font-size:10px; color:#ebebeb; margin-top:2px; line-height:1.2;">
+          <div style="font-size:10px; color:${isLight ? '#334155' : '#ebebeb'}; margin-top:2px; line-height:1.2;">
             ${breaches[0].name}
           </div>
           ${breaches[0].article_url ? `
@@ -507,6 +531,24 @@
         </div>
       ` : "";
 
+      // Adblock Section in Expanded Panel
+      const adblockPanelHtml = `
+        <div class="section-card" style="border-left: 3px solid ${isPaused ? '#f59e0b' : '#10b981'};">
+          <div class="meta-row" style="align-items:center;">
+            <span style="font-weight:700; color:${isLight ? '#0f172a' : '#ffffff'};">🛡️ Ad & Tracker Shield</span>
+            <span style="color:${isPaused ? '#f59e0b' : '#10b981'}; font-weight:700; font-family:monospace;">
+              ${isGlobalOff ? 'DISABLED' : (isPaused ? 'PAUSED' : `${blockedCount} BLOCKED`)}
+            </span>
+          </div>
+          <div style="font-size:10px; color:${isLight ? '#64748b' : '#888888'};">
+            ${isPaused ? `Ad blocking paused on ${domain}. Ads will load normally.` : `DNR network engine & cosmetic filters actively blocking ads on ${domain}.`}
+          </div>
+          <button class="${isPaused ? 'action-btn' : 'secondary-btn'}" id="guardra-panel-toggle-adblock" style="${isPaused ? 'background:#f59e0b; color:#000; margin-top:4px;' : 'margin-top:4px;'}">
+            ${isPaused ? `▶️ Resume Ad Blocking on ${domain}` : `⏸️ Pause on ${domain}`}
+          </button>
+        </div>
+      `;
+
       shadowRoot.innerHTML = `
         <style>${css}</style>
         <div class="panel-container">
@@ -515,16 +557,16 @@
               <span class="logo-shield">G.</span>
               <div>
                 <div class="site-title">${domain}</div>
-                <div style="font-size:9.5px; color:#888888; font-family:monospace; text-transform:uppercase; letter-spacing:0.05em;">Midnight Audit</div>
+                <div style="font-size:9.5px; color:${isLight ? '#64748b' : '#888888'}; font-family:monospace; text-transform:uppercase; letter-spacing:0.05em;">Midnight Audit</div>
               </div>
             </div>
-            <button class="close-btn" id="guardra-minimize-panel">✕</button>
+            <button class="close-btn" id="guardra-minimize-panel" title="Minimize">✕</button>
           </div>
 
           <div class="section-card">
             <div class="meta-row">
               <span>Privacy Score</span>
-              <span style="font-family:monospace; font-weight:700; color:#fff;">${grade} (${score}/100)</span>
+              <span style="font-family:monospace; font-weight:700; color:${isLight ? '#0f172a' : '#fff'};">${grade} (${score}/100)</span>
             </div>
             <div class="meta-row">
               <span>DPDP Act 2023</span>
@@ -536,6 +578,7 @@
             </div>
           </div>
 
+          ${adblockPanelHtml}
           ${breachHtml}
 
           <div class="section-card" style="padding: 10px;">
@@ -563,6 +606,21 @@
           </div>
         </div>
       `;
+
+      // Panel Adblock Toggle Handler
+      const panelAdblockToggle = shadowRoot.getElementById("guardra-panel-toggle-adblock");
+      if (panelAdblockToggle) {
+        panelAdblockToggle.addEventListener("click", () => {
+          const cleanDom = domain.toLowerCase();
+          chrome.runtime.sendMessage({
+            type: "TOGGLE_SITE_ADBLOCK",
+            domain: cleanDom,
+            paused: !isPaused
+          }, () => {
+            location.reload();
+          });
+        });
+      }
 
       const trackersHeader = shadowRoot.getElementById("guardra-trackers-header");
       const trackersContent = shadowRoot.getElementById("guardra-trackers-content");
@@ -692,22 +750,37 @@
 
   // 7. Strict Cookie Enforcement & Always-On In-Page Shield listeners
   chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === "local" && changes.guardra_inpage_enabled !== undefined) {
-      const enabled = changes.guardra_inpage_enabled.newValue !== false;
-      if (!enabled) {
-        isDismissed = true;
-        const rootHost = document.getElementById("guardra-inpage-root");
-        if (rootHost) rootHost.remove();
-      } else {
-        isDismissed = false;
-        if (currentRating) {
-          _doRenderFloatingPill(currentRating);
+    if (area === "local") {
+      if (changes.guardra_inpage_enabled !== undefined) {
+        const enabled = changes.guardra_inpage_enabled.newValue !== false;
+        if (!enabled) {
+          isDismissed = true;
+          const rootHost = document.getElementById("guardra-inpage-root");
+          if (rootHost) rootHost.remove();
+        } else {
+          isDismissed = false;
+          if (currentRating) renderFloatingPill(currentRating);
         }
+      }
+      if (changes.guardra_theme !== undefined || changes.adblock_paused_domains !== undefined || changes.adblock_global_enabled !== undefined) {
+        if (currentRating) renderFloatingPill(currentRating);
       }
     }
   });
 
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+    if (msg.type === "THEME_CHANGED") {
+      if (currentRating) renderFloatingPill(currentRating);
+      sendResponse({ success: true });
+      return true;
+    }
+
+    if (msg.type === "ADBLOCK_ITEM_BLOCKED") {
+      if (currentRating && !isDismissed) renderFloatingPill(currentRating);
+      sendResponse({ success: true });
+      return true;
+    }
+
     if (msg.type === "TOGGLE_INPAGE_SHIELD") {
       if (msg.enabled === false) {
         isDismissed = true;
@@ -745,6 +818,7 @@
       } else {
         checkAndApplyCosmeticFilter();
       }
+      if (currentRating) renderFloatingPill(currentRating);
       sendResponse({ success: true });
       return true;
     }
@@ -755,6 +829,7 @@
       } else {
         checkAndApplyCosmeticFilter();
       }
+      if (currentRating) renderFloatingPill(currentRating);
       sendResponse({ success: true });
       return true;
     }

@@ -236,6 +236,15 @@ document.addEventListener("DOMContentLoaded", async () => {
       const newTheme = isLight ? "dark" : "light";
       applyTheme(newTheme);
       await chrome.storage.local.set({ guardra_theme: newTheme });
+
+      try {
+        const tabs = await chrome.tabs.query({});
+        for (const t of tabs) {
+          if (t.id && t.url && t.url.startsWith("http")) {
+            chrome.tabs.sendMessage(t.id, { type: "THEME_CHANGED", theme: newTheme }).catch(() => {});
+          }
+        }
+      } catch (e) {}
     });
   }
 
