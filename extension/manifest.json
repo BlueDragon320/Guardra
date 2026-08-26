@@ -9,8 +9,7 @@
     "tabs",
     "alarms",
     "cookies",
-    "declarativeNetRequest",
-    "declarativeNetRequestFeedback"
+    "declarativeNetRequest"
   ],
   "declarative_net_request": {
     "rule_resources": [
@@ -32,7 +31,7 @@
   "browser_specific_settings": {
     "gecko": {
       "id": "guardra-privacy@guardra.dev",
-      "strict_min_version": "109.0"
+      "strict_min_version": "115.0"
     }
   },
   "background": {
@@ -40,6 +39,12 @@
     "service_worker": "background/service_worker.js"
   },
   "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/tracker_defuser.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
     {
       "matches": ["*://*.youtube.com/*"],
       "css": ["content/youtube_cosmetics.css"],

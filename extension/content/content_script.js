@@ -31,46 +31,7 @@
     isTrackerBlockingActive = res.guardra_block_trackers !== false; // Default ON
     isAutoCookieDisableActive = res.guardra_auto_disable_cookies === true; // Default OFF
 
-    // 1. If Tracker Blocking is active (DEFAULT: ON), stub all tracker APIs & beacons
-    if (isTrackerBlockingActive) {
-      const code = `
-        window['ga-disable-ALL'] = true;
-        window.ga = function(){};
-        window.gtag = function(){};
-        window.fbq = function(){};
-        window.ttq = { track: function(){}, page: function(){}, load: function(){} };
-        window.hj = function(){};
-        window._hjSettings = {};
-        window.clarity = function(){};
-        window.mixpanel = { track: function(){}, identify: function(){}, init: function(){} };
-        window.amplitude = { logEvent: function(){}, init: function(){} };
-        const originalSendBeacon = navigator.sendBeacon;
-        navigator.sendBeacon = function(url, data) {
-          if (typeof url === 'string' && (
-            url.includes('google-analytics.com') ||
-            url.includes('googletagmanager.com') ||
-            url.includes('facebook.com/tr/') ||
-            url.includes('tiktok.com') ||
-            url.includes('hotjar.com') ||
-            url.includes('clarity.ms') ||
-            url.includes('criteo.com') ||
-            url.includes('outbrain.com') ||
-            url.includes('taboola.com')
-          )) {
-            return true;
-          }
-          return originalSendBeacon.apply(this, arguments);
-        };
-      `;
-      const script = document.createElement('script');
-      script.textContent = code;
-      if (document.documentElement) {
-        document.documentElement.appendChild(script);
-        script.remove();
-      }
-    }
-
-    // 2. Only if Cookie Auto-Disable is explicitly enabled (DEFAULT: OFF), clear non-essential cookies
+    // If Cookie Auto-Disable is explicitly enabled (DEFAULT: OFF), clear non-essential cookies
     if (isAutoCookieDisableActive) {
       setInterval(() => {
         try {
@@ -482,6 +443,61 @@
     const css = `
       * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
       ::selection { background: #FF6B50; color: #fff; }
+
+      @keyframes guardraPillEntrance {
+        0% {
+          opacity: 0;
+          transform: translateY(18px) scale(0.92);
+        }
+        100% {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+      @keyframes guardraPillExit {
+        0% {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+        100% {
+          opacity: 0;
+          transform: translateY(12px) scale(0.94);
+        }
+      }
+      @keyframes guardraPanelExpand {
+        0% {
+          opacity: 0;
+          transform: translateY(24px) scale(0.93);
+          transform-origin: bottom right;
+        }
+        100% {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+          transform-origin: bottom right;
+        }
+      }
+      @keyframes guardraPanelCollapse {
+        0% {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+          transform-origin: bottom right;
+        }
+        100% {
+          opacity: 0;
+          transform: translateY(18px) scale(0.93);
+          transform-origin: bottom right;
+        }
+      }
+      @keyframes guardraCardFadeIn {
+        0% {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        100% {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
       
       .pill-container {
         display: flex;
@@ -496,13 +512,19 @@
         font-size: 11px;
         box-shadow: ${isLight ? '0 10px 30px rgba(0,0,0,0.12)' : '0 12px 36px rgba(0,0,0,0.75)'};
         cursor: pointer;
-        transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
         user-select: none;
+        animation: guardraPillEntrance 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+      .pill-container.closing {
+        animation: guardraPillExit 0.18s cubic-bezier(0.4, 0, 1, 1) forwards;
+        pointer-events: none;
       }
       .pill-container:hover {
         background: ${isLight ? '#ffffff' : '#181818'};
         border-color: ${isLight ? 'rgba(0, 0, 0, 0.25)' : 'rgba(255, 255, 255, 0.25)'};
         transform: translateY(-2px);
+        box-shadow: ${isLight ? '0 14px 36px rgba(0,0,0,0.16)' : '0 16px 42px rgba(0,0,0,0.85)'};
       }
       .logo-shield {
         background: ${isLight ? '#0f172a' : '#ffffff'};
@@ -538,11 +560,11 @@
         line-height: 1;
         padding: 2px 4px;
         margin-left: 2px;
-        transition: all 0.2s ease;
+        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
       }
       .close-btn:hover {
         color: #FF6B50;
-        transform: scale(1.15);
+        transform: scale(1.18) rotate(90deg);
       }
       .pill-chip {
         background: ${isLight ? '#f8fafc' : '#161616'};
@@ -556,6 +578,10 @@
         align-items: center;
         gap: 3px;
         white-space: nowrap;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      .pill-chip:hover {
+        transform: translateY(-1px);
       }
       .pill-chip.adblock-active {
         background: ${isLight ? 'rgba(16, 185, 129, 0.12)' : 'rgba(16, 185, 129, 0.15)'};
@@ -574,26 +600,31 @@
         color: ${isLight ? '#64748b' : '#71717a'};
       }
 
-      /* Expanded Panel */
+      /* Expanded Panel (+25% Scaled) */
       .panel-container {
-        width: 330px;
+        width: 412px;
         max-height: calc(100vh - 40px);
         overflow-y: auto;
         overflow-x: hidden;
         background: ${isLight ? '#ffffff' : '#050505'};
         border: 1px solid ${isLight ? '#e2e8f0' : '#222222'};
-        border-radius: 18px;
-        padding: 14px;
-        box-shadow: ${isLight ? '0 20px 50px rgba(0,0,0,0.18)' : '0 20px 50px rgba(0,0,0,0.88)'};
+        border-radius: 22px;
+        padding: 18px;
+        box-shadow: ${isLight ? '0 24px 60px rgba(0,0,0,0.18)' : '0 24px 60px rgba(0,0,0,0.88)'};
         color: ${isLight ? '#0f172a' : '#ebebeb'};
-        font-size: 11px;
+        font-size: 13.5px;
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: 12px;
         scrollbar-width: thin;
         scrollbar-color: ${isLight ? '#cbd5e1 #f1f5f9' : '#333333 #111111'};
+        animation: guardraPanelExpand 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
       }
-      .panel-container::-webkit-scrollbar { width: 5px; }
+      .panel-container.closing {
+        animation: guardraPanelCollapse 0.2s cubic-bezier(0.4, 0, 1, 1) forwards;
+        pointer-events: none;
+      }
+      .panel-container::-webkit-scrollbar { width: 6px; }
       .panel-container::-webkit-scrollbar-track { background: ${isLight ? '#f1f5f9' : '#111111'}; border-radius: 4px; }
       .panel-container::-webkit-scrollbar-thumb { background: ${isLight ? '#cbd5e1' : '#333333'}; border-radius: 4px; }
 
@@ -602,70 +633,95 @@
         justify-content: space-between;
         align-items: center;
         border-bottom: 1px solid ${isLight ? '#e2e8f0' : '#222222'};
-        padding-bottom: 10px;
+        padding-bottom: 12px;
       }
-      .site-title { font-weight: 800; font-size: 13px; color: ${isLight ? '#0f172a' : '#ffffff'}; }
-      .meta-row { display: flex; justify-content: space-between; color: ${isLight ? '#64748b' : '#888888'}; font-size: 10.5px; }
+      .panel-header .logo-shield {
+        width: 24px;
+        height: 24px;
+        font-size: 13.5px;
+        border-radius: 5px;
+      }
+      .site-title { font-weight: 800; font-size: 16px; color: ${isLight ? '#0f172a' : '#ffffff'}; }
+      .meta-row { display: flex; justify-content: space-between; color: ${isLight ? '#64748b' : '#888888'}; font-size: 13px; }
       
       .section-card {
         background: ${isLight ? '#f8fafc' : '#111111'};
         border: 1px solid ${isLight ? '#e2e8f0' : '#222222'};
-        border-radius: 12px;
-        padding: 10px;
+        border-radius: 15px;
+        padding: 13px;
         display: flex;
         flex-direction: column;
-        gap: 6px;
+        gap: 8px;
+        animation: guardraCardFadeIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) backwards;
       }
+      .section-card:nth-child(2) { animation-delay: 0.04s; }
+      .section-card:nth-child(3) { animation-delay: 0.08s; }
+      .section-card:nth-child(4) { animation-delay: 0.12s; }
+      .section-card:nth-child(5) { animation-delay: 0.16s; }
+
       .action-btn {
         background: #FF6B50;
         color: #000000;
         border: none;
-        border-radius: 8px;
-        padding: 7px 10px;
-        font-size: 11px;
+        border-radius: 10px;
+        padding: 9px 12px;
+        font-size: 13.5px;
         font-weight: 700;
         cursor: pointer;
         text-align: center;
         display: block;
         text-decoration: none;
-        transition: all 0.2s ease;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
       }
       .action-btn:hover { background: #E55A40; color: #ffffff; }
+      .action-btn:active { transform: scale(0.96); }
+
       .secondary-btn {
         background: ${isLight ? '#ffffff' : '#161616'};
         color: ${isLight ? '#0f172a' : '#ebebeb'};
         border: 1px solid ${isLight ? '#cbd5e1' : '#333333'};
-        border-radius: 8px;
-        padding: 7px 10px;
-        font-size: 10.5px;
+        border-radius: 10px;
+        padding: 9px 12px;
+        font-size: 13px;
         font-weight: 600;
         cursor: pointer;
         text-align: center;
         text-decoration: none;
         display: block;
-        transition: all 0.2s ease;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
       }
       .secondary-btn:hover { background: ${isLight ? '#f1f5f9' : '#222222'}; }
+      .secondary-btn:active { transform: scale(0.96); }
 
       .expandable-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
         cursor: pointer;
-        padding: 3px 0;
+        padding: 4px 0;
         font-weight: 700;
-        font-size: 11px;
+        font-size: 13.5px;
         color: ${isLight ? '#0f172a' : '#ffffff'};
+        user-select: none;
+      }
+      .toggle-icon {
+        display: inline-block;
+        font-size: 13px;
+        transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      .toggle-icon.open {
+        transform: rotate(180deg);
       }
       .expandable-content {
         display: flex;
         flex-direction: column;
-        gap: 6px;
-        margin-top: 6px;
-        max-height: 180px;
+        gap: 8px;
+        margin-top: 8px;
+        max-height: 225px;
         overflow-y: auto;
-        padding-right: 4px;
+        padding-right: 5px;
         scrollbar-width: thin;
+        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
       }
       .item-row {
         display: flex;
@@ -673,10 +729,15 @@
         align-items: center;
         background: ${isLight ? '#f8fafc' : '#141414'};
         border: 1px solid ${isLight ? '#e2e8f0' : '#262626'};
-        border-radius: 8px;
-        padding: 6px 9px;
-        gap: 8px;
-        transition: all 0.2s ease;
+        border-radius: 10px;
+        padding: 8px 11px;
+        gap: 10px;
+        transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      .item-row:hover:not(.disabled) {
+        transform: translateX(3px);
+        background: ${isLight ? '#f1f5f9' : '#181818'};
+        border-color: ${isLight ? '#cbd5e1' : '#333333'};
       }
       .item-row.disabled {
         opacity: 0.6;
@@ -685,12 +746,12 @@
       .item-info {
         display: flex;
         flex-direction: column;
-        gap: 2px;
+        gap: 3px;
         overflow: hidden;
         flex: 1;
       }
       .item-name {
-        font-size: 11px;
+        font-size: 13px;
         font-weight: 700;
         color: ${isLight ? '#0f172a' : '#f1f5f9'};
         text-overflow: ellipsis;
@@ -698,10 +759,10 @@
         overflow: hidden;
       }
       .item-badge {
-        font-size: 9px;
+        font-size: 11px;
         font-weight: 600;
-        padding: 1px 6px;
-        border-radius: 6px;
+        padding: 2px 7px;
+        border-radius: 7px;
         display: inline-block;
         width: fit-content;
       }
@@ -719,18 +780,21 @@
         background: ${isLight ? '#ffffff' : '#1e1e1e'};
         color: ${isLight ? '#ef4444' : '#f87171'};
         border: 1px solid ${isLight ? '#fca5a5' : '#451a1a'};
-        border-radius: 6px;
-        padding: 3px 8px;
-        font-size: 9.5px;
+        border-radius: 7px;
+        padding: 4px 10px;
+        font-size: 11.5px;
         font-weight: 700;
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
         white-space: nowrap;
       }
       .btn-item-action:hover:not(.disabled) {
         background: #ef4444;
         color: #ffffff;
         border-color: #ef4444;
+      }
+      .btn-item-action:active:not(.disabled) {
+        transform: scale(0.95);
       }
       .btn-item-action.disabled {
         background: ${isLight ? '#f1f5f9' : '#1a1a1a'};
@@ -742,21 +806,24 @@
         background: ${isLight ? '#f1f5f9' : '#1e1e1e'};
         color: ${isLight ? '#0f172a' : '#ebebeb'};
         border: 1px solid ${isLight ? '#cbd5e1' : '#333333'};
-        border-radius: 6px;
-        padding: 3px 7px;
-        font-size: 9.5px;
+        border-radius: 7px;
+        padding: 4px 9px;
+        font-size: 11.5px;
         font-weight: 700;
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
         display: inline-flex;
         align-items: center;
-        gap: 4px;
+        gap: 5px;
         white-space: nowrap;
       }
       .btn-section-action:hover:not(.disabled) {
         background: #FF6B50;
         color: #ffffff;
         border-color: #FF6B50;
+      }
+      .btn-section-action:active:not(.disabled) {
+        transform: scale(0.95);
       }
       .btn-section-action.disabled {
         background: ${isLight ? '#f8fafc' : '#161616'};
@@ -768,11 +835,11 @@
         display: inline-flex;
         align-items: center;
         font-weight: 700;
-        font-size: 10px;
+        font-size: 12px;
         background: rgba(255, 107, 80, 0.12);
         border: 1px solid rgba(255, 107, 80, 0.3);
         color: #FF6B50;
-        padding: 3px 8px;
+        padding: 4px 10px;
         border-radius: 10px;
         white-space: nowrap;
       }
@@ -781,22 +848,37 @@
         align-items: center;
         font-weight: 700;
         font-family: monospace;
-        font-size: 10px;
+        font-size: 12px;
         background: ${isLight ? '#f1f5f9' : '#181818'};
         border: 1px solid ${isLight ? '#e2e8f0' : '#333333'};
         color: ${isLight ? '#334155' : '#ebebeb'};
-        padding: 3px 8px;
+        padding: 4px 10px;
         border-radius: 10px;
         white-space: nowrap;
       }
+      .close-btn {
+        background: none;
+        border: none;
+        color: ${isLight ? '#94a3b8' : '#888888'};
+        cursor: pointer;
+        font-size: 18px;
+        line-height: 1;
+        padding: 2px 5px;
+        margin-left: 3px;
+        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      .close-btn:hover {
+        color: #FF6B50;
+        transform: scale(1.18) rotate(90deg);
+      }
     `;
 
-    // AdBlock Chip HTML in Collapsed Pill
+    // AdBlock Chip HTML in Collapsed Pill (Compact: without "Blocked" and "Total" words)
     let adblockChipHtml = "";
     if (isGlobalOff) {
-      adblockChipHtml = `<span class="pill-chip adblock-disabled">🛡️ Ads Off</span>`;
+      adblockChipHtml = `<span class="pill-chip adblock-disabled" title="Ad Blocking Disabled">🛡️ Off</span>`;
     } else {
-      adblockChipHtml = `<span class="pill-chip adblock-active">🛡️ ${blockedCount} Blocked (${lifetimeCount} Total)</span>`;
+      adblockChipHtml = `<span class="pill-chip adblock-active" title="Ads Blocked: ${blockedCount} session (${lifetimeCount} total)">🛡️ ${blockedCount} (${lifetimeCount})</span>`;
     }
 
     if (!isExpanded) {
@@ -807,24 +889,32 @@
           <span style="font-weight:700;">${domain}</span>
           <span class="grade-pill">${grade} (${score}/100)</span>
           ${adblockChipHtml}
-          <span class="pill-chip">⚡ ${trackerList.length} Trackers</span>
-          <span class="pill-chip">🍪 ${activeCookies.length} Cookies</span>
+          <span class="pill-chip" title="Trackers Detected: ${trackerList.length}">⚡ ${trackerList.length}</span>
+          <span class="pill-chip" title="Cookies Active: ${activeCookies.length}">🍪 ${activeCookies.length}</span>
           <button class="close-btn" id="guardra-close-pill" title="Dismiss">✕</button>
         </div>
       `;
 
       shadowRoot.getElementById("guardra-pill").addEventListener("click", (e) => {
         if (e.target.id === "guardra-close-pill") return;
-        isExpanded = true;
-        _doRenderFloatingPill(currentRating, cachedAutoDisable, cachedTheme, cachedAdblockStatus, cachedCookieAudit);
-        renderFloatingPill(currentRating);
+        const pill = shadowRoot.getElementById("guardra-pill");
+        if (pill) pill.classList.add("closing");
+        setTimeout(() => {
+          isExpanded = true;
+          _doRenderFloatingPill(currentRating, cachedAutoDisable, cachedTheme, cachedAdblockStatus, cachedCookieAudit);
+          renderFloatingPill(currentRating);
+        }, 150);
       });
 
       shadowRoot.getElementById("guardra-close-pill").addEventListener("click", (e) => {
         e.stopPropagation();
-        isDismissed = true;
-        chrome.storage.local.set({ guardra_inpage_enabled: false });
-        rootHost.remove();
+        const pill = shadowRoot.getElementById("guardra-pill");
+        if (pill) pill.classList.add("closing");
+        setTimeout(() => {
+          isDismissed = true;
+          chrome.storage.local.set({ guardra_inpage_enabled: false });
+          rootHost.remove();
+        }, 150);
       });
     } else {
       const breaches = currentRating?.breaches || [];
@@ -855,7 +945,7 @@
               ${isGlobalOff ? 'DISABLED' : `${blockedCount} Session / ${lifetimeCount} Total`}
             </span>
           </div>
-          <div style="font-size:10px; color:${isLight ? '#64748b' : '#888888'};">
+          <div style="font-size:12px; color:${isLight ? '#64748b' : '#888888'};">
             ${isGlobalOff ? 'Ad blocking is turned OFF across all websites.' : 'DNR engine & cosmetic rules actively blocking ads.'}
           </div>
         </div>
@@ -865,11 +955,11 @@
         <style>${css}</style>
         <div class="panel-container">
           <div class="panel-header">
-            <div style="display:flex; align-items:center; gap:8px;">
+            <div style="display:flex; align-items:center; gap:10px;">
               <span class="logo-shield">G.</span>
               <div>
                 <div class="site-title">${domain}</div>
-                <div style="font-size:9.5px; color:${isLight ? '#64748b' : '#888888'}; font-family:monospace; text-transform:uppercase; letter-spacing:0.05em;">Midnight Audit</div>
+                <div style="font-size:11.5px; color:${isLight ? '#64748b' : '#888888'}; font-family:monospace; text-transform:uppercase; letter-spacing:0.05em;">Midnight Audit</div>
               </div>
             </div>
             <button class="close-btn" id="guardra-minimize-panel" title="Minimize">✕</button>
@@ -893,9 +983,9 @@
           ${adblockPanelHtml}
           ${breachHtml}
 
-          <div class="section-card" style="padding: 10px;">
+          <div class="section-card">
             <div class="expandable-header" id="guardra-trackers-header">
-              <div style="display:flex; align-items:center; gap:8px;">
+              <div style="display:flex; align-items:center; gap:10px;">
                 <span>⚡ Trackers (${trackerList.length})</span>
                 ${trackerList.length > 0 ? `<button class="btn-section-action" id="guardra-disable-all-trackers-btn" title="Disable all trackers on this page">⚡ Disable All Trackers</button>` : ''}
               </div>
@@ -924,13 +1014,13 @@
                     </button>
                   </div>
                 `;
-              }).join("") : `<span style="color: #71717a; font-size: 10px; font-style: italic; padding: 4px 0;">None detected on page</span>`}
+              }).join("") : `<span style="color: #71717a; font-size: 12px; font-style: italic; padding: 4px 0;">None detected on page</span>`}
             </div>
           </div>
 
-          <div class="section-card" style="padding: 10px;">
+          <div class="section-card">
             <div class="expandable-header" id="guardra-cookies-header">
-              <div style="display:flex; align-items:center; gap:8px;">
+              <div style="display:flex; align-items:center; gap:10px;">
                 <span>🍪 Cookies (${detailedCookiesList.length})</span>
                 <button class="btn-section-action" id="guardra-disable-non-essential-cookies-btn" title="Purge advertising & analytics cookies">🍪 Disable Non-Essential Cookies</button>
               </div>
@@ -969,7 +1059,7 @@
           const isClosed = trackersContent.style.display === "none";
           trackersContent.style.display = isClosed ? "flex" : "none";
           if (trackersIcon) {
-            trackersIcon.textContent = isClosed ? "▼" : "▲";
+            trackersIcon.classList.toggle("open", !isClosed);
           }
         });
       }
@@ -983,7 +1073,7 @@
           const isClosed = cookiesContent.style.display === "none";
           cookiesContent.style.display = isClosed ? "flex" : "none";
           if (cookiesIcon) {
-            cookiesIcon.textContent = isClosed ? "▼" : "▲";
+            cookiesIcon.classList.toggle("open", !isClosed);
           }
         });
       }
@@ -1102,9 +1192,13 @@
       if (minBtn) {
         minBtn.addEventListener("click", (e) => {
           e.stopPropagation();
-          isExpanded = false;
-          _doRenderFloatingPill(currentRating, cachedAutoDisable, cachedTheme, cachedAdblockStatus, cachedCookieAudit);
-          renderFloatingPill(currentRating);
+          const panel = shadowRoot.querySelector(".panel-container");
+          if (panel) panel.classList.add("closing");
+          setTimeout(() => {
+            isExpanded = false;
+            _doRenderFloatingPill(currentRating, cachedAutoDisable, cachedTheme, cachedAdblockStatus, cachedCookieAudit);
+            renderFloatingPill(currentRating);
+          }, 180);
         });
       }
     }
@@ -1585,66 +1679,8 @@
   let ytAdInterval = null;
   let isAdCurrentlyHandled = false;
 
-  function injectYouTubeMainWorldAdBlocker() {
-    if (!location.hostname.includes("youtube.com")) return;
-    const code = `
-      (function() {
-        if (window.__guardra_yt_injected) return;
-        window.__guardra_yt_injected = true;
-
-        function sanitize(obj) {
-          if (!obj || typeof obj !== 'object') return;
-          if (obj.adPlacements) delete obj.adPlacements;
-          if (obj.playerAds) delete obj.playerAds;
-          if (obj.adSlots) delete obj.adSlots;
-          if (obj.adBreakHeartbeatParams) delete obj.adBreakHeartbeatParams;
-          if (obj.playerConfig && obj.playerConfig.adPlacements) delete obj.playerConfig.adPlacements;
-        }
-
-        try {
-          if (window.ytInitialPlayerResponse) sanitize(window.ytInitialPlayerResponse);
-
-          let originalResponse = window.ytInitialPlayerResponse;
-          Object.defineProperty(window, 'ytInitialPlayerResponse', {
-            get() { return originalResponse; },
-            set(val) {
-              sanitize(val);
-              originalResponse = val;
-            },
-            configurable: true
-          });
-
-          const origFetch = window.fetch;
-          window.fetch = async function() {
-            const response = await origFetch.apply(this, arguments);
-            const url = arguments[0] ? (typeof arguments[0] === 'string' ? arguments[0] : arguments[0].url) : '';
-            if (url && (url.includes('/youtubei/v1/player') || url.includes('/youtubei/v1/next'))) {
-              try {
-                const clone = response.clone();
-                const data = await clone.json();
-                sanitize(data);
-                return new Response(JSON.stringify(data), {
-                  status: response.status,
-                  statusText: response.statusText,
-                  headers: response.headers
-                });
-              } catch (e) {}
-            }
-            return response;
-          };
-        } catch (e) {}
-      })();
-    `;
-    const script = document.createElement("script");
-    script.textContent = code;
-    (document.head || document.documentElement).appendChild(script);
-    script.remove();
-  }
-
   function initYouTubeAdSkipper() {
     if (!location.hostname.includes("youtube.com")) return;
-    injectYouTubeMainWorldAdBlocker();
-
     if (ytAdInterval) return;
 
     function handleYouTubeAds() {

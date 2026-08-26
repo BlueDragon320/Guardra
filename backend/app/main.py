@@ -4,7 +4,7 @@ import json
 import zipfile
 import logging
 from datetime import datetime
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, Response, Request
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import get_db_connection, init_db
 from app.routers import policy, deletion, breach, hub
@@ -80,8 +80,8 @@ def _migrate_and_fix_policy_urls():
                 new_url = f"https://www.{dom}/privacy-policy"
                 cursor.execute("UPDATE websites SET policy_url = ? WHERE domain = ?", (new_url, dom))
         conn.commit()
-    except Exception:
-        pass
+    except Exception as e:
+        logger.error(f"Error migrating policy URLs: {e}")
     finally:
         conn.close()
 
@@ -108,8 +108,8 @@ def _sync_visited_pings_to_websites():
                     ) VALUES (?, ?, 'Visited Site', 60, 'C', 'amber', '{}', '{}', 'extension_visited', 1, ?, ?, ?, ?)
                 """, (dom, dom.split(".")[0].upper(), now_iso, now_iso, expires_iso, now_iso))
         conn.commit()
-    except Exception:
-        pass
+    except Exception as e:
+        logger.error(f"Error syncing visited pings to websites: {e}")
     finally:
         conn.close()
 
@@ -171,8 +171,6 @@ def _seed_cached_policies():
     finally:
         conn.close()
 
-
-from fastapi import FastAPI, Response, Request
 
 @app.get("/")
 async def root(request: Request):
