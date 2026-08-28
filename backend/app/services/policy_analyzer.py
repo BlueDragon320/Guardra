@@ -675,12 +675,89 @@ def _extract_concerns(text: str, score: int) -> List[str]:
     return concerns
 
 
+KNOWN_CANONICAL_POLICY_URLS = {
+    "bewakoof.com": "https://www.bewakoof.com/privacy-policy-and-disclaimer",
+    "youtube.com": "https://policies.google.com/privacy",
+    "youtu.be": "https://policies.google.com/privacy",
+    "youtube-nocookie.com": "https://policies.google.com/privacy",
+    "google.com": "https://policies.google.com/privacy",
+    "google.co.in": "https://policies.google.com/privacy",
+    "meta.com": "https://www.facebook.com/privacy/policy/",
+    "facebook.com": "https://www.facebook.com/privacy/policy/",
+    "instagram.com": "https://privacycenter.instagram.com/policy",
+    "whatsapp.com": "https://www.whatsapp.com/legal/privacy-policy",
+    "apple.com": "https://www.apple.com/legal/privacy/en-ww/",
+    "croma.com": "https://www.croma.com/privacy-policy",
+    "kletech.ac.in": "https://www.kletech.ac.in/privacy-policy",
+    "swiggy.com": "https://www.swiggy.com/privacy-policy",
+    "zomato.com": "https://www.zomato.com/privacy",
+    "flipkart.com": "https://www.flipkart.com/pages/privacypolicy",
+    "boat-lifestyle.com": "https://www.boat-lifestyle.com/pages/privacy-policy",
+    "myntra.com": "https://www.myntra.com/privacypolicy",
+    "nykaa.com": "https://www.nykaa.com/privacy-policy",
+    "ajio.com": "https://www.ajio.com/privacy-policy",
+    "meesho.com": "https://www.meesho.com/legal/privacy",
+    "zepto.com": "https://www.zeptonow.com/privacy-policy",
+    "blinkit.com": "https://blinkit.com/privacy",
+    "tatacliq.com": "https://www.tatacliq.com/privacy-policy",
+    "mamaearth.in": "https://mamaearth.in/privacy-policy",
+    "zerodha.com": "https://zerodha.com/privacy",
+    "amazon.in": "https://www.amazon.in/gp/help/customer/display.html?nodeId=200534380",
+    "amazon.com": "https://www.amazon.com/gp/help/customer/display.html?nodeId=468496",
+    "paytm.com": "https://paytm.com/privacy-policy",
+    "netflix.com": "https://help.netflix.com/legal/privacy",
+    "twitter.com": "https://twitter.com/en/privacy",
+    "x.com": "https://x.com/en/privacy",
+    "linkedin.com": "https://www.linkedin.com/legal/privacy-policy"
+}
+
+
 async def discover_and_fetch_policy(clean_domain: str) -> tuple[str, str]:
     """
-    Builds candidate URLs checking BOTH https://www.{clean}/... and https://{clean}/...
-    including Shopify /pages/privacy-policy, /policies/privacy-policy, and legal portal paths.
+    Robust multi-stage policy discovery engine:
+    1. Checks canonical policy mapping dictionary.
+    2. Probes expanded non-standard path permutations.
+    3. Crawls homepage footer & nav links.
+    4. Automatically bypasses Cloudflare/Akamai 403 WAF blocks via unblocked reader relay.
     """
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9"
+    }
+
+    # 1. Check known canonical policy URLs first (e.g. Bewakoof, YouTube -> Google Policies, Meta -> Facebook Privacy)
+    canonical = KNOWN_CANONICAL_POLICY_URLS.get(clean_domain)
+    if not canonical:
+        for k, v in KNOWN_CANONICAL_POLICY_URLS.items():
+            if clean_domain == k or clean_domain.endswith("." + k):
+                canonical = v
+                break
+
+    if canonical:
+        try:
+            async with httpx.AsyncClient(timeout=8.0, follow_redirects=True, verify=False) as client:
+                resp = await client.get(canonical, headers=headers)
+                if resp.status_code == 200 and len(resp.text) > 400:
+                    return canonical, resp.text
+                elif resp.status_code in [403, 503, 429]:
+                    # WAF detected on canonical URL: bypass via reader relay
+                    try:
+                        j_resp = await client.get(f"https://r.jina.ai/{canonical}", headers={"User-Agent": "Mozilla/5.0"}, timeout=10.0)
+                        if j_resp.status_code == 200 and len(j_resp.text) > 400:
+                            return canonical, j_resp.text
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+
+    # 2. Prevent probing false channel URLs on YouTube
+    if "youtube.com" in clean_domain or "youtu.be" in clean_domain:
+        return "https://policies.google.com/privacy", ""
+
     paths = [
+        # Non-standard E-Commerce / Startup paths (Bewakoof, Nykaa, D2C)
+        "/privacy-policy-and-disclaimer", "/privacy-policy-disclaimer", "/privacy-policy-and-terms",
         # Standard paths
         "/privacy-policy", "/privacy-policy/", "/privacy", "/privacy/",
         # Shopify & D2C Brand E-Commerce (Noise, Boat Lifestyle, Mamaearth, Sugar, Snitch, Lenskart)
@@ -688,22 +765,20 @@ async def discover_and_fetch_policy(clean_domain: str) -> tuple[str, str]:
         "/policies/privacy-policy", "/policies/privacy-policy/",
         # Legal & Corporate Portals (Apple, Flipkart, Google, Netflix, Amazon)
         "/pages/privacypolicy", "/legal/privacy", "/legal/privacy-policy", "/legal/privacy/",
+        "/legal/privacy-notice", "/privacy-notice", "/privacy-notice/",
         "/legal/privacy-policy/", "/privacy-statement", "/privacypolicy", "/terms-and-privacy",
-        "/about/privacy", "/about/privacy-policy", "/in/privacy-policy", "/en-in/privacy-policy"
+        "/terms-and-conditions/privacy-policy",
+        "/about/privacy", "/about/privacy-policy", "/in/privacy-policy", "/en-in/privacy-policy",
+        "/help/privacy", "/help/privacy-policy"
     ]
     
     candidates = []
     for p in paths:
         candidates.append(f"https://www.{clean_domain}{p}")
         candidates.append(f"https://{clean_domain}{p}")
-        
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9"
-    }
     
-    async with httpx.AsyncClient(timeout=10.0, follow_redirects=True, verify=False) as client:
+    async with httpx.AsyncClient(timeout=8.0, follow_redirects=True, verify=False) as client:
+        blocked_candidates = []
         for url in candidates:
             try:
                 resp = await client.get(url, headers=headers)
@@ -711,10 +786,23 @@ async def discover_and_fetch_policy(clean_domain: str) -> tuple[str, str]:
                     text_lower = resp.text.lower()
                     if "privacy" in text_lower or "personal data" in text_lower or "information" in text_lower or "cookies" in text_lower:
                         return str(resp.url), resp.text
+                elif resp.status_code in [403, 503, 429] and len(blocked_candidates) < 3:
+                    blocked_candidates.append(url)
+            except Exception:
+                continue
+
+        # If direct probe ran into WAF (403/503), try unblocked reader relay on the top candidate
+        for b_url in blocked_candidates:
+            try:
+                j_resp = await client.get(f"https://r.jina.ai/{b_url}", headers={"User-Agent": "Mozilla/5.0"}, timeout=10.0)
+                if j_resp.status_code == 200 and len(j_resp.text) > 400:
+                    text_lower = j_resp.text.lower()
+                    if "privacy" in text_lower or "personal data" in text_lower or "information" in text_lower:
+                        return b_url, j_resp.text
             except Exception:
                 continue
                 
-        # Try homepage
+        # Try homepage DOM inspection
         homepages = [f"https://www.{clean_domain}", f"https://{clean_domain}"]
         for hp in homepages:
             try:
@@ -732,6 +820,10 @@ async def discover_and_fetch_policy(clean_domain: str) -> tuple[str, str]:
                                 p_resp = await client.get(target_url, headers=headers)
                                 if p_resp.status_code == 200 and len(p_resp.text) > 500:
                                     return str(p_resp.url), p_resp.text
+                                elif p_resp.status_code in [403, 503]:
+                                    j_resp = await client.get(f"https://r.jina.ai/{target_url}", headers={"User-Agent": "Mozilla/5.0"}, timeout=10.0)
+                                    if j_resp.status_code == 200 and len(j_resp.text) > 500:
+                                        return target_url, j_resp.text
                             except Exception:
                                 continue
             except Exception:

@@ -338,9 +338,9 @@ async function getApiBase() {
 }
 
 
-async function fetchSiteRating(domain) {
+async function fetchSiteRating(domain, isIncognito = false) {
   const start = Date.now();
-  const rating = await fetchSiteRatingRaw(domain);
+  const rating = await fetchSiteRatingRaw(domain, isIncognito);
   const end = Date.now();
   if (rating) {
     rating.latency = end - start;
@@ -348,7 +348,7 @@ async function fetchSiteRating(domain) {
   return rating;
 }
 
-async function fetchSiteRatingRaw(domain) {
+async function fetchSiteRatingRaw(domain, isIncognito = false) {
   const requestStart = Date.now();
   if (!domain) return null;
   const cleanDom = domain.replace(/^www\./, "").toLowerCase();
@@ -374,11 +374,13 @@ async function fetchSiteRatingRaw(domain) {
       clearTimeout(timeoutId);
       if (resp.ok) {
         const liveRating = await resp.json();
-        await chrome.storage.local.set({ 
-          [`cached_rating_${cleanDom}`]: liveRating,
-          currentTabRating: liveRating,
-          currentTabDomain: cleanDom
-        });
+        if (!isIncognito) {
+          await chrome.storage.local.set({ 
+            [`cached_rating_${cleanDom}`]: liveRating,
+            currentTabRating: liveRating,
+            currentTabDomain: cleanDom
+          });
+        }
         return liveRating;
       }
     } catch (e) {}
@@ -770,9 +772,20 @@ chrome.cookies.onChanged.addListener(async (changeInfo) => {
 const tabLastReported = new Map();
 const domainLastReported = new Map();
 
-async function reportBrowserActivity(tabId, tabUrl, domain, trackers) {
+async function reportBrowserActivity(tabId, tabUrl, domain, trackers, isIncognito = false) {
+  if (isIncognito) return; // Strict Private Browsing isolation (Policy §6.3.2)
   const cleanDom = (domain || "").replace(/^www\./, "").toLowerCase();
   if (!cleanDom || cleanDom === "localhost" || cleanDom === "127.0.0.1") return;
+
+  // Strict Opt-in Telemetry Consent Check (Policy §6.2.2.1)
+  try {
+    const consentRes = await chrome.storage.local.get("guardra_telemetry_consent");
+    if (!consentRes || consentRes.guardra_telemetry_consent !== true) {
+      return; // Disabled by default until explicit opt-in
+    }
+  } catch (e) {
+    return;
+  }
 
   const now = Date.now();
   if (tabId) {
@@ -786,7 +799,7 @@ async function reportBrowserActivity(tabId, tabUrl, domain, trackers) {
   domainLastReported.set(cleanDom, now);
 
   const start = Date.now();
-  let rating = await fetchSiteRatingRaw(cleanDom);
+  let rating = await fetchSiteRatingRaw(cleanDom, isIncognito);
   const latency = Date.now() - start;
 
   const endpoints = [
@@ -794,9 +807,10 @@ async function reportBrowserActivity(tabId, tabUrl, domain, trackers) {
     "http://localhost:8000/api/hub/telemetry"
   ];
   
+  // Sanitize to domain-only URL (strip query parameters, tokens, paths) (Policy §6.1.3)
   const payload = {
     domain: cleanDom,
-    url: tabUrl,
+    url: `https://${cleanDom}/`,
     action_type: "Active Tab Scanned",
     details: `Detected ${trackers ? trackers.length : 0} trackers on ${cleanDom}`,
     trackers_detected: trackers || [],
@@ -957,8 +971,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.type === "GET_CURRENT_RATING") {
+    const isIncognito = sender.tab ? sender.tab.incognito : false;
     if (message.domain) {
-      fetchSiteRating(message.domain).then(rating => {
+      fetchSiteRating(message.domain, isIncognito).then(rating => {
         sendResponse({ domain: message.domain, rating });
       });
       return true;
@@ -967,7 +982,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     const tabUrl = sender.tab?.url;
     const domain = tabUrl ? extractDomain(tabUrl) : null;
     if (domain) {
-      fetchSiteRating(domain).then(rating => {
+      fetchSiteRating(domain, isIncognito).then(rating => {
         sendResponse({ domain, rating });
       });
       return true;
@@ -981,8 +996,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         if (activeTab && activeTab.url) {
           const d = extractDomain(activeTab.url);
+          const tabIncognito = activeTab.incognito || false;
           if (d) {
-            const r = await fetchSiteRating(d);
+            const r = await fetchSiteRating(d, tabIncognito);
             sendResponse({ domain: d, rating: r });
             return;
           }
@@ -993,8 +1009,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
   }
 
-  // Telemetry sync if remote API configured
+  // Telemetry sync if remote API configured and explicitly consented
   if (message.type === "BROWSER_ACTIVITY") {
+    const isIncognito = sender.tab ? sender.tab.incognito : false;
+    if (isIncognito) {
+      return; // Strict Private Browsing isolation
+    }
     const data = message.data;
     const tabId = sender.tab ? sender.tab.id : null;
     if (tabId && data.trackers_detected) {
@@ -1007,7 +1027,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         }
       });
     }
-    reportBrowserActivity(tabId, data.url, data.hostname, data.trackers_detected);
+    reportBrowserActivity(tabId, data.url, data.hostname, data.trackers_detected, isIncognito);
   }
 
   // --- Ad Blocker Message Handlers ---
@@ -1172,30 +1192,7 @@ async function setGlobalAdBlocking(enabled) {
   return { success: true, enabled };
 }
 
-// Listen for matched rules if debug feedback API available
-try {
-  if (chrome.declarativeNetRequest && chrome.declarativeNetRequest.onRuleMatchedDebug) {
-    chrome.declarativeNetRequest.onRuleMatchedDebug.addListener((info) => {
-      const tabId = info.request.tabId;
-      if (tabId && tabId > 0) {
-        let stats = tabBlockedStats.get(tabId) || { count: 0, items: [] };
-        stats.count++;
-        if (stats.items.length < 50) {
-          stats.items.push({ url: info.request.url, ruleId: info.rule.ruleId, time: Date.now() });
-        }
-        tabBlockedStats.set(tabId, stats);
-
-        addLifetimeBlockedCount(1).then(newLifetime => {
-          let dom = null;
-          if (info.request.initiator) {
-            dom = extractDomain(info.request.initiator);
-          }
-          notifyAdblockCountUpdated(dom, tabId, stats.count, newLifetime);
-        });
-      }
-    });
-  }
-} catch (e) {}
+// DNR rulesets are managed declaratively via manifest.json rulesets and syncAdBlockEngine
 
 // Clean up tab stats on tab remove
 try {

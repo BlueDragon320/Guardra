@@ -401,16 +401,34 @@ document.addEventListener("DOMContentLoaded", async () => {
     const btn = document.getElementById("btn-toggle-details");
     if (details.classList.contains("hidden")) {
       details.classList.remove("hidden");
-      btn.innerHTML = `
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="18 15 12 9 6 15"/>
-        </svg> Hide Rubric`;
+      btn.replaceChildren();
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("width", "13");
+      svg.setAttribute("height", "13");
+      svg.setAttribute("viewBox", "0 0 24 24");
+      svg.setAttribute("fill", "none");
+      svg.setAttribute("stroke", "currentColor");
+      svg.setAttribute("stroke-width", "2");
+      const poly = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+      poly.setAttribute("points", "18 15 12 9 6 15");
+      svg.appendChild(poly);
+      btn.appendChild(svg);
+      btn.appendChild(document.createTextNode(" Hide Rubric"));
     } else {
       details.classList.add("hidden");
-      btn.innerHTML = `
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="6 9 12 15 18 9"/>
-        </svg> View Rubric`;
+      btn.replaceChildren();
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("width", "13");
+      svg.setAttribute("height", "13");
+      svg.setAttribute("viewBox", "0 0 24 24");
+      svg.setAttribute("fill", "none");
+      svg.setAttribute("stroke", "currentColor");
+      svg.setAttribute("stroke-width", "2");
+      const poly = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+      poly.setAttribute("points", "6 9 12 15 18 9");
+      svg.appendChild(poly);
+      btn.appendChild(svg);
+      btn.appendChild(document.createTextNode(" View Rubric"));
     }
   });
 
@@ -641,7 +659,7 @@ function renderPopup(data, tabUrl, tabId) {
 
   // Render Detailed Rubric
   const rubricList = document.getElementById("rubric-list");
-  rubricList.innerHTML = "";
+  rubricList.replaceChildren();
 
   const labels = {
     data_sharing: "Third-Party Data Sharing",
@@ -656,15 +674,32 @@ function renderPopup(data, tabUrl, tabId) {
     const row = document.createElement("div");
     row.className = "rubric-row";
     const color = item.score >= 75 ? "#10b981" : (item.score >= 50 ? "#f59e0b" : "#ef4444");
-    row.innerHTML = `
-      <div class="rubric-meta">
-        <span>${labels[key] || key}</span>
-        <span style="color: ${color}; font-weight: 600;">${item.score}/100</span>
-      </div>
-      <div class="rubric-bar-bg">
-        <div class="rubric-bar-fill" style="width: ${item.score}%; background: ${color};"></div>
-      </div>
-    `;
+    
+    const metaDiv = document.createElement("div");
+    metaDiv.className = "rubric-meta";
+    
+    const labelSpan = document.createElement("span");
+    labelSpan.textContent = labels[key] || key;
+    
+    const scoreSpan = document.createElement("span");
+    scoreSpan.style.color = color;
+    scoreSpan.style.fontWeight = "600";
+    scoreSpan.textContent = `${item.score}/100`;
+    
+    metaDiv.appendChild(labelSpan);
+    metaDiv.appendChild(scoreSpan);
+    
+    const barBg = document.createElement("div");
+    barBg.className = "rubric-bar-bg";
+    
+    const barFill = document.createElement("div");
+    barFill.className = "rubric-bar-fill";
+    barFill.style.width = `${item.score}%`;
+    barFill.style.background = color;
+    barBg.appendChild(barFill);
+    
+    row.appendChild(metaDiv);
+    row.appendChild(barBg);
     rubricList.appendChild(row);
   }
 
@@ -682,26 +717,67 @@ function renderPopup(data, tabUrl, tabId) {
   // Grievance contact
   const grievanceContact = document.getElementById("grievance-contact");
   if (grievanceContact) {
+    grievanceContact.replaceChildren();
     if (data.compliance?.dpdp?.grievance_email) {
       const officer = cleanOfficerName(data.compliance.dpdp.grievance_officer);
       const email = data.compliance.dpdp.grievance_email;
-      grievanceContact.innerHTML = `
-        <div style="color:var(--text-main); font-weight:600; margin-bottom:2px;">${officer}</div>
-        <a href="mailto:${email}" style="color:var(--color-accent); text-decoration:none; font-family:monospace; font-size:11px;">${email}</a>
-      `;
+      const officerDiv = document.createElement("div");
+      officerDiv.style.color = "var(--text-main)";
+      officerDiv.style.fontWeight = "600";
+      officerDiv.style.marginBottom = "2px";
+      officerDiv.textContent = officer;
+      
+      const emailA = document.createElement("a");
+      emailA.href = `mailto:${encodeURIComponent(email)}`;
+      emailA.style.color = "var(--color-accent)";
+      emailA.style.textDecoration = "none";
+      emailA.style.fontFamily = "monospace";
+      emailA.style.fontSize = "11px";
+      emailA.textContent = email;
+      
+      grievanceContact.appendChild(officerDiv);
+      grievanceContact.appendChild(emailA);
     } else if (data.compliance?.gdpr?.dpo_contact) {
-      grievanceContact.innerHTML = `
-        <div style="color:var(--text-main); font-weight:600; margin-bottom:2px;">Data Protection Officer (DPO)</div>
-        <a href="mailto:${data.compliance.gdpr.dpo_contact}" style="color:var(--color-accent); text-decoration:none; font-family:monospace; font-size:11px;">${data.compliance.gdpr.dpo_contact}</a>
-      `;
+      const officerDiv = document.createElement("div");
+      officerDiv.style.color = "var(--text-main)";
+      officerDiv.style.fontWeight = "600";
+      officerDiv.style.marginBottom = "2px";
+      officerDiv.textContent = "Data Protection Officer (DPO)";
+      
+      const emailA = document.createElement("a");
+      emailA.href = `mailto:${encodeURIComponent(data.compliance.gdpr.dpo_contact)}`;
+      emailA.style.color = "var(--color-accent)";
+      emailA.style.textDecoration = "none";
+      emailA.style.fontFamily = "monospace";
+      emailA.style.fontSize = "11px";
+      emailA.textContent = data.compliance.gdpr.dpo_contact;
+      
+      grievanceContact.appendChild(officerDiv);
+      grievanceContact.appendChild(emailA);
     } else if (data.contacts?.email && data.contacts.email.length > 0) {
       const pEmail = data.contacts.email.find(e => e.includes("privacy") || e.includes("grievance") || e.includes("dpo")) || data.contacts.email[0];
-      grievanceContact.innerHTML = `
-        <div style="color:var(--text-main); font-weight:600; margin-bottom:2px;">Privacy Redressal Contact</div>
-        <a href="mailto:${pEmail}" style="color:var(--color-accent); text-decoration:none; font-family:monospace; font-size:11px;">${pEmail}</a>
-      `;
+      const officerDiv = document.createElement("div");
+      officerDiv.style.color = "var(--text-main)";
+      officerDiv.style.fontWeight = "600";
+      officerDiv.style.marginBottom = "2px";
+      officerDiv.textContent = "Privacy Redressal Contact";
+      
+      const emailA = document.createElement("a");
+      emailA.href = `mailto:${encodeURIComponent(pEmail)}`;
+      emailA.style.color = "var(--color-accent)";
+      emailA.style.textDecoration = "none";
+      emailA.style.fontFamily = "monospace";
+      emailA.style.fontSize = "11px";
+      emailA.textContent = pEmail;
+      
+      grievanceContact.appendChild(officerDiv);
+      grievanceContact.appendChild(emailA);
     } else {
-      grievanceContact.innerHTML = `<span style="color:var(--text-muted); font-size:11px;">No designated officer contact found in policy.</span>`;
+      const noOfficerSpan = document.createElement("span");
+      noOfficerSpan.style.color = "var(--text-muted)";
+      noOfficerSpan.style.fontSize = "11px";
+      noOfficerSpan.textContent = "No designated officer contact found in policy.";
+      grievanceContact.appendChild(noOfficerSpan);
     }
   }
 
@@ -768,7 +844,7 @@ function loadCookieGovernance(domain, tabUrl, tabId) {
     if (badge) badge.textContent = "Inactive";
     if (essentialEl) essentialEl.textContent = "-";
     if (trackingEl) trackingEl.textContent = "-";
-    if (trackerList) trackerList.innerHTML = "";
+    if (trackerList) trackerList.replaceChildren();
     if (totalBadge) totalBadge.textContent = "0";
     return;
   }
@@ -809,7 +885,7 @@ function loadCookieGovernance(domain, tabUrl, tabId) {
     }
 
     if (trackerList && (res.cookies || res.trackers)) {
-      trackerList.innerHTML = "";
+      trackerList.replaceChildren();
       const trackersToRender = res.trackers || [];
       const cookiesToRender = res.cookies || [];
       
@@ -961,7 +1037,7 @@ function renderBreaches(breaches) {
   const breachTag = document.getElementById("breach-status-tag");
   if (!breachList || !breachTag) return;
 
-  breachList.innerHTML = "";
+  breachList.replaceChildren();
 
   // Update Breach Check button indicator and count badge
   const breachBadge = document.getElementById("breach-count-badge");
@@ -986,62 +1062,109 @@ function renderBreaches(breaches) {
       const card = document.createElement("div");
       card.className = "breach-card";
 
-      const tagsHtml = (b.data_classes || []).map(cls => `<span class="breach-tag">${cls}</span>`).join("");
-      
-      // Multi-article pills (minimum 3 links)
-      let articlesHtml = "";
-      const articlesList = (b.articles && b.articles.length > 0) 
-        ? b.articles 
+      const header = document.createElement("div");
+      header.className = "breach-card-header";
+
+      const title = document.createElement("span");
+      title.className = "breach-title";
+      title.textContent = b.name || "Data Leak Incident";
+
+      const date = document.createElement("span");
+      date.className = "breach-date";
+      date.textContent = b.breach_date || "Disclosed";
+
+      header.appendChild(title);
+      header.appendChild(date);
+      card.appendChild(header);
+
+      const desc = document.createElement("p");
+      desc.className = "breach-desc";
+      desc.textContent = b.description || "Security incident compromised customer records.";
+      card.appendChild(desc);
+
+      if (b.data_classes && b.data_classes.length > 0) {
+        const tagsDiv = document.createElement("div");
+        tagsDiv.className = "breach-tags";
+        b.data_classes.forEach(cls => {
+          const tag = document.createElement("span");
+          tag.className = "breach-tag";
+          tag.textContent = cls;
+          tagsDiv.appendChild(tag);
+        });
+        card.appendChild(tagsDiv);
+      }
+
+      const articlesList = (b.articles && b.articles.length > 0)
+        ? b.articles
         : (b.article_url ? [{ source: "Investigative Report", url: b.article_url }] : []);
 
       if (articlesList.length > 0) {
-        const pills = articlesList.map(art => `
-          <a href="${art.url}" target="_blank" rel="noopener noreferrer" class="breach-article-pill" data-url="${art.url}">
-            <span>📰 ${art.source || "Article"} ↗</span>
-          </a>
-        `).join("");
+        const articlesWrap = document.createElement("div");
+        articlesWrap.className = "breach-articles-wrap";
 
-        articlesHtml = `
-          <div class="breach-articles-wrap">
-            <span class="breach-articles-label">Verified Incident Coverage (${articlesList.length} Sources):</span>
-            <div class="breach-articles-grid">${pills}</div>
-          </div>
-        `;
-      }
+        const label = document.createElement("span");
+        label.className = "breach-articles-label";
+        label.textContent = `Verified Incident Coverage (${articlesList.length} Sources):`;
+        articlesWrap.appendChild(label);
 
-      card.innerHTML = `
-        <div class="breach-card-header">
-          <span class="breach-title">${b.name || "Data Leak Incident"}</span>
-          <span class="breach-date">${b.breach_date || "Disclosed"}</span>
-        </div>
-        <p class="breach-desc">${b.description || "Security incident compromised customer records."}</p>
-        ${tagsHtml ? `<div class="breach-tags">${tagsHtml}</div>` : ""}
-        ${articlesHtml}
-      `;
+        const grid = document.createElement("div");
+        grid.className = "breach-articles-grid";
 
-      card.querySelectorAll(".breach-article-pill, .breach-article-btn").forEach(btn => {
-        btn.addEventListener("click", (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          const targetUrl = btn.getAttribute("data-url") || btn.href;
-          if (targetUrl) chrome.tabs.create({ url: targetUrl });
+        articlesList.forEach(art => {
+          const pill = document.createElement("a");
+          pill.href = art.url;
+          pill.target = "_blank";
+          pill.rel = "noopener noreferrer";
+          pill.className = "breach-article-pill";
+          pill.setAttribute("data-url", art.url);
+
+          const span = document.createElement("span");
+          span.textContent = `📰 ${art.source || "Article"} ↗`;
+          pill.appendChild(span);
+
+          pill.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (art.url) chrome.tabs.create({ url: art.url });
+          });
+
+          grid.appendChild(pill);
         });
-      });
+
+        articlesWrap.appendChild(grid);
+        card.appendChild(articlesWrap);
+      }
 
       breachList.appendChild(card);
     });
   } else {
     breachTag.className = "breach-status-tag clean";
     breachTag.textContent = "0 Breaches";
-    breachList.innerHTML = `
-      <div class="clean-notice">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-          <polyline points="22 4 12 14.01 9 11.01"/>
-        </svg>
-        <span>No known public security breaches recorded.</span>
-      </div>
-    `;
+
+    const cleanNotice = document.createElement("div");
+    cleanNotice.className = "clean-notice";
+
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("width", "14");
+    svg.setAttribute("height", "14");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("fill", "none");
+    svg.setAttribute("stroke", "currentColor");
+    svg.setAttribute("stroke-width", "2");
+
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", "M22 11.08V12a10 10 0 1 1-5.93-9.14");
+    const poly = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+    poly.setAttribute("points", "22 4 12 14.01 9 11.01");
+    svg.appendChild(path);
+    svg.appendChild(poly);
+
+    const span = document.createElement("span");
+    span.textContent = "No known public security breaches recorded.";
+
+    cleanNotice.appendChild(svg);
+    cleanNotice.appendChild(span);
+    breachList.appendChild(cleanNotice);
   }
 }
 

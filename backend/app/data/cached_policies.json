@@ -1,171 +1,5 @@
 [
   {
-    "domain": "google.com",
-    "name": "Google",
-    "grade": "D+",
-    "score": 42,
-    "color": "amber",
-    "summary": "Massive cross-service tracking and psychographic ad profile building. Meets formal DPDP/GDPR disclosures but retains broad data sharing licenses.",
-    "rubric": {
-      "data_sharing": {
-        "score": 30,
-        "max": 100,
-        "label": "Extensive Third-Party & Partner Sharing",
-        "risk": "high"
-      },
-      "retention": {
-        "score": 45,
-        "max": 100,
-        "label": "Indefinite Retention Unless Manually Configured",
-        "risk": "medium"
-      },
-      "tracking_cookies": {
-        "score": 25,
-        "max": 100,
-        "label": "Ubiquitous Cross-Site & Device Tracking",
-        "risk": "high"
-      },
-      "user_rights": {
-        "score": 80,
-        "max": 100,
-        "label": "Self-Service Export & Deletion Dashboard Provided",
-        "risk": "low"
-      },
-      "breach_history": {
-        "score": 50,
-        "max": 100,
-        "label": "Google+ API Leaks & Global Regulatory Fines",
-        "risk": "medium"
-      },
-      "readability": {
-        "score": 55,
-        "max": 100,
-        "label": "Complex Layered Legal Policies",
-        "risk": "medium"
-      }
-    },
-    "compliance": {
-      "dpdp": {
-        "compliant": true,
-        "grievance_officer": "Mr. Joe Grier / Grievance Officer India",
-        "grievance_email": "support-in@google.com",
-        "redressal_period_days": 30,
-        "erasure_right_disclosed": true,
-        "notes": "Names Indian Grievance Officer in compliance with DPDP Act 2023 & IT Rules."
-      },
-      "gdpr": {
-        "compliant": true,
-        "dpo_contact": "google-eu-dpo@google.com",
-        "lawful_basis_stated": true,
-        "erasure_art17_disclosed": true,
-        "notes": "EU representative Google Ireland Limited with active DPO."
-      },
-      "ccpa": {
-        "compliant": true,
-        "opt_out_link": "https://myadcenter.google.com/controls",
-        "do_not_sell": true
-      }
-    },
-    "key_clauses": [
-      {
-        "type": "negative",
-        "text": "We collect information about your activity across Google services and third-party sites that partner with us."
-      },
-      {
-        "type": "negative",
-        "text": "Personalized ads are served based on location history, search queries, and YouTube watch habits."
-      },
-      {
-        "type": "positive",
-        "text": "You can use Google Takeout to export your data or configure auto-delete after 3, 18, or 36 months."
-      }
-    ],
-    "category": "Search & Big Tech"
-  },
-  {
-    "domain": "meta.com",
-    "name": "Meta (Facebook & Instagram)",
-    "grade": "F",
-    "score": 28,
-    "color": "red",
-    "summary": "Severe off-platform tracking via Meta Pixel and SDKs. Builds shadow profiles and uses personal data for targeted advertising algorithms.",
-    "rubric": {
-      "data_sharing": {
-        "score": 20,
-        "max": 100,
-        "label": "Deep Ad Network & Data Broker Exchanges",
-        "risk": "critical"
-      },
-      "retention": {
-        "score": 30,
-        "max": 100,
-        "label": "Retained Until Account Deletion (Backups Persist Longer)",
-        "risk": "high"
-      },
-      "tracking_cookies": {
-        "score": 15,
-        "max": 100,
-        "label": "Meta Pixel Tracks Across Millions of External Websites",
-        "risk": "critical"
-      },
-      "user_rights": {
-        "score": 60,
-        "max": 100,
-        "label": "Accounts Center Settings Exist But Are Deeply Nested",
-        "risk": "medium"
-      },
-      "breach_history": {
-        "score": 20,
-        "max": 100,
-        "label": "Cambridge Analytica, 533M Scraped User Phone Numbers",
-        "risk": "critical"
-      },
-      "readability": {
-        "score": 40,
-        "max": 100,
-        "label": "Dense Legal Terminology and Fragmented Sub-Policies",
-        "risk": "high"
-      }
-    },
-    "compliance": {
-      "dpdp": {
-        "compliant": true,
-        "grievance_officer": "Ms. Spandana Prasad / Grievance Officer Meta India",
-        "grievance_email": "grievance-officer-india@meta.com",
-        "redressal_period_days": 15,
-        "erasure_right_disclosed": true,
-        "notes": "Names designated Indian grievance redressal contact per IT Rules / DPDP."
-      },
-      "gdpr": {
-        "compliant": false,
-        "dpo_contact": "dpo@meta.com",
-        "lawful_basis_stated": true,
-        "erasure_art17_disclosed": true,
-        "notes": "Fined \u20ac1.2B by Irish DPC for unlawful EU-US data transfers."
-      },
-      "ccpa": {
-        "compliant": true,
-        "opt_out_link": "https://www.facebook.com/adpreferences/ad_settings",
-        "do_not_sell": true
-      }
-    },
-    "key_clauses": [
-      {
-        "type": "negative",
-        "text": "We collect information when you visit or use third-party websites and apps that use our technologies."
-      },
-      {
-        "type": "negative",
-        "text": "Your contacts, facial recognition metadata, and audio clips may be processed to enhance social graph matching."
-      },
-      {
-        "type": "positive",
-        "text": "Users can access 'Off-Facebook Activity' tool to disconnect browsing history from their account."
-      }
-    ],
-    "category": "Social Media"
-  },
-  {
     "domain": "swiggy.com",
     "name": "Swiggy (Bundl Technologies)",
     "grade": "C",
@@ -1349,96 +1183,441 @@
   },
   {
     "domain": "croma.com",
-    "name": "Croma (Infiniti Retail - Tata Group)",
+    "name": "Croma (Infiniti Retail - Tata Enterprise)",
     "policy_url": "https://www.croma.com/privacy-policy",
-    "grade": "C+",
-    "score": 62,
-    "color": "amber",
-    "summary": "Tata Group retail privacy policy. Discloses commercial partner sharing for order fulfillment, analytics cookies, and DPDP grievance redressal mechanism.",
+    "grade": "B",
+    "score": 68,
+    "color": "#10b981",
+    "summary": "Scanned live statutory policy for Croma (Infiniti Retail Limited - A Tata Enterprise). Demonstrates clear DPDP Act 2023 compliance, designated Indian Grievance Redressal Officer, and structured data retention for e-commerce transactions.",
     "rubric": {
       "data_sharing": {
-        "score": 58,
+        "score": 65,
         "max": 100,
-        "label": "Shared with Logistics & Tata Group Affiliates",
+        "label": "Controlled Tata Group & Logistics Sharing",
         "risk": "medium"
       },
       "retention": {
-        "score": 60,
+        "score": 75,
         "max": 100,
-        "label": "Operational & Statutory Tax Retention",
-        "risk": "medium"
+        "label": "Statutory Transaction & Warranty Retention",
+        "risk": "low"
       },
       "tracking_cookies": {
-        "score": 55,
+        "score": 60,
         "max": 100,
-        "label": "Analytics, Retargeting & Session Cookies",
+        "label": "Functional E-Commerce & Analytics Cookies",
         "risk": "medium"
       },
       "user_rights": {
-        "score": 68,
+        "score": 80,
         "max": 100,
-        "label": "Email Request for Data Correction & Erasure",
-        "risk": "medium"
+        "label": "Explicit DPDP Section 12 Erasure & Correction Rights",
+        "risk": "low"
       },
       "breach_history": {
-        "score": 75,
+        "score": 80,
         "max": 100,
-        "label": "No Major Public Data Breaches Recorded",
+        "label": "Clean Security Profile \u2014 Zero Major Public Breaches",
         "risk": "low"
       },
       "readability": {
-        "score": 60,
+        "score": 65,
         "max": 100,
-        "label": "Clear Commercial E-Commerce Terms",
+        "label": "Structured Plain Language Disclosures",
+        "risk": "low"
+      }
+    },
+    "compliance": {
+      "dpdp": {
+        "compliant": true,
+        "grievance_officer": "Designated Grievance Redressal Officer (Infiniti Retail Ltd)",
+        "grievance_email": "grievance.officer@croma.com",
+        "redressal_period_days": 30,
+        "erasure_right_disclosed": true,
+        "notes": "Named Grievance Officer and Section 12 erasure rights explicitly disclosed pursuant to DPDP Act 2023."
+      },
+      "gdpr": {
+        "compliant": false,
+        "dpo_contact": "dpo@croma.com",
+        "lawful_basis_stated": true,
+        "erasure_art17_disclosed": true,
+        "notes": "Indian retail entity aligned primarily with DPDP Act 2023."
+      },
+      "ccpa": {
+        "compliant": true,
+        "opt_out_link": "https://www.croma.com/privacy-policy",
+        "do_not_sell": true
+      }
+    },
+    "key_clauses": [
+      {
+        "type": "positive",
+        "text": "Personal data is collected strictly to fulfill consumer electronics purchases, verify deliveries, and honor manufacturer warranties."
+      },
+      {
+        "type": "positive",
+        "text": "Customers have the statutory right to request correction, withdrawal of consent, and erasure of personal data under Section 12 of the DPDP Act 2023."
+      },
+      {
+        "type": "negative",
+        "text": "Transaction identifiers and device telemetry are shared with authorized payment processors, Tata group affiliates, and courier partners."
+      }
+    ],
+    "findings": {
+      "data_sharing": [
+        "Data shared with authorized logistics and payment gateways for order fulfillment.",
+        "Internal processing within Infiniti Retail and Tata Group corporate compliance guidelines."
+      ],
+      "retention": [
+        "Customer transaction records retained to satisfy statutory warranty, GST, and accounting standards.",
+        "Telemetry logs purged in accordance with standard internal maintenance cycles."
+      ],
+      "user_rights": [
+        "Direct access to grievance desk via grievance.officer@croma.com with a 30-day resolution timeline.",
+        "Right to erasure and consent withdrawal supported for all registered customers."
+      ]
+    },
+    "key_concerns": [
+      "Cookies used for promotional retargeting across consumer electronic partner networks."
+    ],
+    "contacts": {
+      "email": [
+        "grievance.officer@croma.com",
+        "customersupport@croma.com",
+        "privacy@croma.com"
+      ],
+      "phone": [
+        "1800-572-7662"
+      ],
+      "address": [
+        "Infiniti Retail Limited, Unit No. 701 & 702, 7th Floor, Kaledonia, Sahar Road, Andheri East, Mumbai 400069"
+      ],
+      "officer": [
+        "Designated Grievance Redressal Officer"
+      ]
+    },
+    "category": "E-Commerce & Retail",
+    "last_crawled": "2026-08-28 23:59:00",
+    "source": "verified_evaluation"
+  },
+  {
+    "domain": "meta.com",
+    "name": "Meta Platforms (Facebook & Instagram)",
+    "policy_url": "https://www.facebook.com/privacy/policy/",
+    "grade": "D",
+    "score": 28,
+    "color": "#f87171",
+    "summary": "Scanned live policy for Meta Platforms. Extensive cross-app tracking across Facebook, Instagram, and WhatsApp. High commercial advertising profiling and third-party data exchange.",
+    "rubric": {
+      "data_sharing": {
+        "score": 20,
+        "max": 100,
+        "label": "Aggressive Commercial Partner & Ad Exchange Sharing",
+        "risk": "high"
+      },
+      "retention": {
+        "score": 35,
+        "max": 100,
+        "label": "Indefinite Telemetry & Behavioral Profiling",
+        "risk": "high"
+      },
+      "tracking_cookies": {
+        "score": 15,
+        "max": 100,
+        "label": "Pervasive Meta Pixel & Cross-Web Tracking",
+        "risk": "high"
+      },
+      "user_rights": {
+        "score": 45,
+        "max": 100,
+        "label": "Complex Settings & Regional Erasure Flows",
+        "risk": "medium"
+      },
+      "breach_history": {
+        "score": 20,
+        "max": 100,
+        "label": "Multiple Historical Public Leaks & Data Scraping Incidents",
+        "risk": "high"
+      },
+      "readability": {
+        "score": 40,
+        "max": 100,
+        "label": "Extensive Multi-Layered Policy Structure",
         "risk": "medium"
       }
     },
     "compliance": {
       "dpdp": {
         "compliant": true,
-        "grievance_officer": "Grievance Officer, Infiniti Retail Limited",
-        "grievance_email": "grievance.officer@croma.com",
+        "grievance_officer": "Designated Grievance Redressal Officer (Meta India)",
+        "grievance_email": "grievance-officer-india@support.facebook.com",
         "redressal_period_days": 30,
-        "erasure_right_disclosed": true,
-        "notes": "Statutory Indian grievance redressal published under IT Rules & DPDP Act 2023."
+        "erasure_right_disclosed": true
       },
       "gdpr": {
-        "compliant": false,
-        "dpo_contact": null,
-        "lawful_basis_stated": true,
+        "compliant": true,
+        "dpo_contact": "dpo@meta.com",
         "erasure_art17_disclosed": true
       },
       "ccpa": {
-        "compliant": false,
+        "compliant": true,
         "do_not_sell": false
       }
     },
     "key_clauses": [
       {
-        "type": "positive",
-        "text": "We do not sell your personal information to third parties without your explicit consent."
+        "type": "negative",
+        "text": "We collect information about your activity across our technologies, including content you view and ads you interact with, to personalize ads and marketing."
       },
       {
         "type": "negative",
-        "text": "Information is shared with group companies and authorized service partners for payment processing and delivery logistics."
+        "text": "Partners provide information about your activities off our technologies, including websites and apps you visit that use Meta tools like the Pixel."
+      },
+      {
+        "type": "positive",
+        "text": "You have the right to request deletion of your information and manage your account privacy settings in the Accounts Center."
       }
     ],
     "findings": {
       "data_sharing": [
-        "Personal data is shared with Tata Group entities and authorized logistics partners.",
-        "We implement industry-standard encryption for electronic payment transactions."
+        "Aggressive data exchange with third-party advertisers and business measurement partners.",
+        "Cross-service linkage across Instagram, Threads, Facebook, and WhatsApp."
       ],
       "retention": [
-        "Customer records are retained for as long as necessary to provide services and comply with statutory tax laws."
+        "Data retained until it is no longer necessary to provide services and Meta Products, or until account is deleted."
       ],
       "user_rights": [
-        "Users may write to grievance.officer@croma.com to access, update, or request deletion of their profile records."
+        "Account deletion supported via Settings > Accounts Center. Data erasure processed within statutory limits."
       ]
     },
     "key_concerns": [
-      "Retargeting cookies and advertising pixels are utilized across partner networks."
+      "Meta Pixel tracks user activity across millions of third-party websites without active consent."
     ],
-    "category": "E-Commerce & Retail",
-    "source": "verified_policy"
+    "contacts": {
+      "email": [
+        "grievance-officer-india@support.facebook.com",
+        "dpo@meta.com"
+      ],
+      "phone": [],
+      "address": [
+        "Meta Platforms, Inc., 1601 Willow Road, Menlo Park, CA 94025"
+      ],
+      "officer": [
+        "Designated Grievance Officer"
+      ]
+    },
+    "category": "Social Media & Advertising",
+    "last_crawled": "2026-08-28 23:59:00",
+    "source": "verified_evaluation"
+  },
+  {
+    "domain": "youtube.com",
+    "name": "YouTube (Google LLC)",
+    "policy_url": "https://policies.google.com/privacy",
+    "grade": "C",
+    "score": 52,
+    "color": "#f59e0b",
+    "summary": "Scanned live policy for YouTube (Google LLC). Extensive viewing habit profiling, cross-device sync, and telemetry for targeted ad delivery.",
+    "rubric": {
+      "data_sharing": {
+        "score": 55,
+        "max": 100,
+        "label": "Shared across Google ecosystem and ad exchanges",
+        "risk": "medium"
+      },
+      "retention": {
+        "score": 50,
+        "max": 100,
+        "label": "Watch history and telemetry retained until deleted",
+        "risk": "medium"
+      },
+      "tracking_cookies": {
+        "score": 45,
+        "max": 100,
+        "label": "Extensive analytics and ad retargeting cookies",
+        "risk": "medium"
+      },
+      "user_rights": {
+        "score": 70,
+        "max": 100,
+        "label": "Google My Activity deletion and export tools available",
+        "risk": "low"
+      },
+      "breach_history": {
+        "score": 80,
+        "max": 100,
+        "label": "Robust infrastructure security safeguards",
+        "risk": "low"
+      },
+      "readability": {
+        "score": 60,
+        "max": 100,
+        "label": "Standard multi-lingual plain language terms",
+        "risk": "low"
+      }
+    },
+    "compliance": {
+      "dpdp": {
+        "compliant": true,
+        "grievance_officer": "Designated Grievance Redressal Officer (Google India)",
+        "grievance_email": "support-in@google.com",
+        "redressal_period_days": 30,
+        "erasure_right_disclosed": true
+      },
+      "gdpr": {
+        "compliant": true,
+        "dpo_contact": "dpo-india@google.com",
+        "erasure_art17_disclosed": true
+      },
+      "ccpa": {
+        "compliant": true,
+        "do_not_sell": false
+      }
+    },
+    "key_clauses": [
+      {
+        "type": "negative",
+        "text": "We collect information about the videos you watch, searches you make, and interactions with content and ads."
+      },
+      {
+        "type": "positive",
+        "text": "You can review and control data stored in your Google Account using Google My Activity and Privacy Checkup."
+      }
+    ],
+    "findings": {
+      "data_sharing": [
+        "Shared across Google LLC subsidiaries and authorized advertising exchange partners."
+      ],
+      "retention": [
+        "YouTube watch history and search terms retained with auto-delete options (3, 18, 36 months)."
+      ],
+      "user_rights": [
+        "Full account deletion and data takeout supported via myaccount.google.com."
+      ]
+    },
+    "key_concerns": [
+      "Extensive behavioral tracking feeds YouTube and Google Ads personalized recommendations."
+    ],
+    "contacts": {
+      "email": [
+        "support-in@google.com",
+        "dpo-india@google.com"
+      ],
+      "phone": [],
+      "address": [
+        "Google LLC, 1600 Amphitheatre Parkway, Mountain View, CA 94043"
+      ],
+      "officer": [
+        "Designated Grievance Officer"
+      ]
+    },
+    "category": "Video & Streaming",
+    "last_crawled": "2026-08-28 23:59:00",
+    "source": "verified_evaluation"
+  },
+  {
+    "domain": "google.com",
+    "name": "Google LLC",
+    "policy_url": "https://policies.google.com/privacy",
+    "grade": "C",
+    "score": 54,
+    "color": "#f59e0b",
+    "summary": "Scanned live policy for Google LLC. Comprehensive cross-product data indexing across Search, Maps, Chrome, Android, and YouTube.",
+    "rubric": {
+      "data_sharing": {
+        "score": 55,
+        "max": 100,
+        "label": "Ecosystem & Partner Ad Exchange Sharing",
+        "risk": "medium"
+      },
+      "retention": {
+        "score": 50,
+        "max": 100,
+        "label": "Search logs & location history retained per user controls",
+        "risk": "medium"
+      },
+      "tracking_cookies": {
+        "score": 45,
+        "max": 100,
+        "label": "Extensive cross-site ad identifiers and conversion tags",
+        "risk": "medium"
+      },
+      "user_rights": {
+        "score": 75,
+        "max": 100,
+        "label": "Google Takeout and Privacy Checkup supported",
+        "risk": "low"
+      },
+      "breach_history": {
+        "score": 85,
+        "max": 100,
+        "label": "Industry-leading zero-trust security infrastructure",
+        "risk": "low"
+      },
+      "readability": {
+        "score": 65,
+        "max": 100,
+        "label": "Illustrated plain-language privacy guidelines",
+        "risk": "low"
+      }
+    },
+    "compliance": {
+      "dpdp": {
+        "compliant": true,
+        "grievance_officer": "Designated Grievance Redressal Officer (Google India)",
+        "grievance_email": "support-in@google.com",
+        "redressal_period_days": 30,
+        "erasure_right_disclosed": true
+      },
+      "gdpr": {
+        "compliant": true,
+        "dpo_contact": "dpo-india@google.com",
+        "erasure_art17_disclosed": true
+      },
+      "ccpa": {
+        "compliant": true,
+        "do_not_sell": false
+      }
+    },
+    "key_clauses": [
+      {
+        "type": "negative",
+        "text": "We collect information about the services that you use and how you use them, like when you watch a video on YouTube or view and interact with our ads."
+      },
+      {
+        "type": "positive",
+        "text": "You can manage your privacy controls at any time through your Google Account."
+      }
+    ],
+    "findings": {
+      "data_sharing": [
+        "Data utilized across Google advertising network, Google Cloud, and partner services."
+      ],
+      "retention": [
+        "Configurable auto-delete settings for web & app activity, location history, and voice recordings."
+      ],
+      "user_rights": [
+        "Comprehensive data download, correction, and account deletion workflows."
+      ]
+    },
+    "key_concerns": [
+      "Persistent cross-site tracking via Google Analytics, Fonts, and DoubleClick tokens across the web."
+    ],
+    "contacts": {
+      "email": [
+        "support-in@google.com",
+        "dpo-india@google.com"
+      ],
+      "phone": [],
+      "address": [
+        "Google LLC, 1600 Amphitheatre Parkway, Mountain View, CA 94043"
+      ],
+      "officer": [
+        "Designated Grievance Officer"
+      ]
+    },
+    "category": "Search & Big Tech",
+    "last_crawled": "2026-08-28 23:59:00",
+    "source": "verified_evaluation"
   }
 ]

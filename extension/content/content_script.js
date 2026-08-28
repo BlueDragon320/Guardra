@@ -427,6 +427,120 @@
     });
   }
 
+  function applyPillPosition(host, pos) {
+    if (!host) return;
+    const vh = window.innerHeight || 800;
+    const vw = window.innerWidth || 1200;
+
+    if (!pos) {
+      host.style.bottom = "20px";
+      host.style.right = "20px";
+      host.style.top = "auto";
+      host.style.left = "auto";
+      host.style.justifyContent = "flex-end";
+      host.style.alignItems = "flex-end";
+      return;
+    }
+
+    if (pos.bottom !== null && pos.bottom !== undefined) {
+      host.style.bottom = `${pos.bottom}px`;
+      host.style.top = "auto";
+      host.style.justifyContent = "flex-end";
+    } else if (pos.top !== null && pos.top !== undefined) {
+      host.style.top = `${pos.top}px`;
+      host.style.bottom = "auto";
+      host.style.justifyContent = "flex-start";
+    }
+
+    if (pos.right !== null && pos.right !== undefined) {
+      host.style.right = `${pos.right}px`;
+      host.style.left = "auto";
+      host.style.alignItems = "flex-end";
+    } else if (pos.left !== null && pos.left !== undefined) {
+      host.style.left = `${pos.left}px`;
+      host.style.right = "auto";
+      host.style.alignItems = "flex-start";
+    }
+  }
+
+  // --- Global Drag & Drop State (Attached Once at Module Level) ---
+  let isDraggingPill = false;
+  let isDragModeActive = false;
+  let didDragOrHoldPill = false;
+  let dragStartCoords = { x: 0, y: 0 };
+  let hostStartCoords = { x: 0, y: 0 };
+  let globalHoldTimer = null;
+  let pillMouseDownTime = 0;
+
+  window.addEventListener("mousemove", (e) => {
+    if (!isDraggingPill) return;
+    const rootHost = document.getElementById("guardra-inpage-root");
+    if (!rootHost) return;
+
+    const deltaX = e.clientX - dragStartCoords.x;
+    const deltaY = e.clientY - dragStartCoords.y;
+
+    let newX = hostStartCoords.x + deltaX;
+    let newY = hostStartCoords.y + deltaY;
+
+    const rect = rootHost.getBoundingClientRect();
+    const maxX = window.innerWidth - rect.width - 10;
+    const maxY = window.innerHeight - rect.height - 10;
+
+    newX = Math.max(10, Math.min(newX, maxX));
+    newY = Math.max(10, Math.min(newY, maxY));
+
+    rootHost.style.left = `${newX}px`;
+    rootHost.style.top = `${newY}px`;
+    rootHost.style.right = "auto";
+    rootHost.style.bottom = "auto";
+  }, { passive: true });
+
+  window.addEventListener("mouseup", (e) => {
+    if (globalHoldTimer) {
+      clearTimeout(globalHoldTimer);
+      globalHoldTimer = null;
+    }
+    if (isDraggingPill || isDragModeActive) {
+      isDraggingPill = false;
+      isDragModeActive = false;
+      didDragOrHoldPill = true;
+
+      const rootHost = document.getElementById("guardra-inpage-root");
+      if (rootHost) {
+        if (shadowRoot) {
+          const pillEl = shadowRoot.getElementById("guardra-pill");
+          if (pillEl) {
+            pillEl.classList.remove("reposition-active");
+            pillEl.classList.remove("dragging");
+          }
+          const tooltip = shadowRoot.getElementById("guardra-drag-tooltip");
+          if (tooltip) tooltip.style.display = "none";
+        }
+
+        const rect = rootHost.getBoundingClientRect();
+        const vh = window.innerHeight || 800;
+        const vw = window.innerWidth || 1200;
+        const isTop = rect.top < (vh / 2);
+        const isLeft = rect.left < (vw / 2);
+
+        const posData = {
+          top: isTop ? Math.max(10, Math.round(rect.top)) : null,
+          bottom: !isTop ? Math.max(10, Math.round(vh - rect.bottom)) : null,
+          left: isLeft ? Math.max(10, Math.round(rect.left)) : null,
+          right: !isLeft ? Math.max(10, Math.round(vw - rect.right)) : null
+        };
+
+        applyPillPosition(rootHost, posData);
+        try {
+          chrome.storage.local.set({ guardra_pill_pos: posData });
+        } catch (err) {}
+      }
+
+      setTimeout(() => { didDragOrHoldPill = false; }, 300);
+    }
+  });
+
   function _doRenderFloatingPill(rating, autoDisableCookies = false, theme = "dark", adblockStatus = { globalEnabled: true, sitePaused: false, totalBlockedCount: 0 }, cookieAudit = null) {
     if (isDismissed) return;
     currentRating = rating;
@@ -441,9 +555,50 @@
     if (!rootHost) {
       rootHost = document.createElement("div");
       rootHost.id = "guardra-inpage-root";
-      rootHost.style.cssText = "all: initial; position: fixed; bottom: 20px; right: 20px; z-index: 2147483647; max-height: calc(100vh - 40px); display: flex; flex-direction: column; justify-content: flex-end; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;";
+      rootHost.style.cssText = "all: initial; position: fixed; bottom: 20px; right: 20px; z-index: 2147483647; max-height: calc(100vh - 40px); display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-end; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;";
       document.body.appendChild(rootHost);
       shadowRoot = rootHost.attachShadow({ mode: "open" });
+
+      try {
+        chrome.storage.local.get(["guardra_pill_pos"], (res) => {
+          if (res && res.guardra_pill_pos && rootHost) {
+            applyPillPosition(rootHost, res.guardra_pill_pos);
+          } else {
+            applyPillPosition(rootHost, null);
+          }
+        });
+      } catch (e) {}
+    }
+
+    // Dynamic orientation calculation for current expand/collapse direction
+    let isTopHalf = false;
+    let isLeftHalf = false;
+    let originY = "bottom";
+    let originX = "right";
+    let expandOffsetY = "20px";
+
+    if (rootHost) {
+      const rect = rootHost.getBoundingClientRect();
+      const vh = window.innerHeight || 800;
+      const vw = window.innerWidth || 1200;
+
+      isTopHalf = rect.top < (vh / 2);
+      isLeftHalf = rect.left < (vw / 2);
+
+      originY = isTopHalf ? "top" : "bottom";
+      originX = isLeftHalf ? "left" : "right";
+      expandOffsetY = isTopHalf ? "-20px" : "20px";
+
+      if (isTopHalf) {
+        rootHost.style.justifyContent = "flex-start";
+      } else {
+        rootHost.style.justifyContent = "flex-end";
+      }
+      if (isLeftHalf) {
+        rootHost.style.alignItems = "flex-start";
+      } else {
+        rootHost.style.alignItems = "flex-end";
+      }
     }
 
     const grade = rating?.grade || "C";
@@ -577,25 +732,25 @@
       @keyframes guardraPanelExpand {
         0% {
           opacity: 0;
-          transform: translateY(24px) scale(0.93);
-          transform-origin: bottom right;
+          transform: translateY(${expandOffsetY}) scale(0.93);
+          transform-origin: ${originY} ${originX};
         }
         100% {
           opacity: 1;
           transform: translateY(0) scale(1);
-          transform-origin: bottom right;
+          transform-origin: ${originY} ${originX};
         }
       }
       @keyframes guardraPanelCollapse {
         0% {
           opacity: 1;
           transform: translateY(0) scale(1);
-          transform-origin: bottom right;
+          transform-origin: ${originY} ${originX};
         }
         100% {
           opacity: 0;
-          transform: translateY(18px) scale(0.93);
-          transform-origin: bottom right;
+          transform: translateY(${expandOffsetY}) scale(0.93);
+          transform-origin: ${originY} ${originX};
         }
       }
       @keyframes guardraCardFadeIn {
@@ -624,11 +779,54 @@
         cursor: pointer;
         transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
         user-select: none;
+        position: relative;
         animation: guardraPillEntrance 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
       }
       .pill-container.closing {
         animation: guardraPillExit 0.18s cubic-bezier(0.4, 0, 1, 1) forwards;
         pointer-events: none;
+      }
+      .pill-container.hold-charging {
+        border-color: #10b981 !important;
+        box-shadow: 0 0 16px rgba(16, 185, 129, 0.55) !important;
+        animation: guardraHoldPulse 0.8s infinite alternate !important;
+      }
+      @keyframes guardraHoldPulse {
+        0% { transform: scale(1); }
+        100% { transform: scale(1.04); }
+      }
+      .pill-container.reposition-active {
+        border-color: #10b981 !important;
+        background: ${isLight ? '#ecfdf5' : '#064e3b'} !important;
+        box-shadow: 0 0 24px rgba(16, 185, 129, 0.8) !important;
+        cursor: grab !important;
+      }
+      .pill-container.dragging {
+        cursor: grabbing !important;
+        opacity: 0.92;
+      }
+      .drag-tooltip {
+        position: absolute;
+        bottom: calc(100% + 8px);
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(17, 17, 17, 0.95);
+        color: #fff;
+        border: 1px solid #10b981;
+        font-size: 10.5px;
+        font-weight: 700;
+        padding: 4px 10px;
+        border-radius: 8px;
+        white-space: nowrap;
+        pointer-events: none;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+        z-index: 1000;
+        animation: guardraCardFadeIn 0.2s ease-out;
+      }
+      .drag-tooltip.ready {
+        background: #10b981;
+        color: #000;
+        border-color: #34d399;
       }
       .pill-container:hover {
         background: ${isLight ? '#ffffff' : '#181818'};
@@ -998,8 +1196,20 @@
       adblockChipHtml = `<span class="pill-chip adblock-active" title="Ads Blocked: ${blockedCount} session (${lifetimeCount} total)">🛡️ ${blockedCount} (${lifetimeCount})</span>`;
     }
 
+  function renderHTMLSafely(container, htmlContent) {
+    container.replaceChildren();
+    const parser = new DOMParser();
+    const parsedDoc = parser.parseFromString(htmlContent, "text/html");
+    Array.from(parsedDoc.head.childNodes).forEach(node => {
+      container.appendChild(document.importNode(node, true));
+    });
+    Array.from(parsedDoc.body.childNodes).forEach(node => {
+      container.appendChild(document.importNode(node, true));
+    });
+  }
+
     if (!isExpanded) {
-      shadowRoot.innerHTML = `
+      renderHTMLSafely(shadowRoot, `
         <style>${css}</style>
         <div class="pill-container" id="guardra-pill">
           <span class="logo-shield">G.</span>
@@ -1010,23 +1220,62 @@
           <span class="pill-chip" title="Cookies Active: ${activeCookies.length}">🍪 ${activeCookies.length}</span>
           <button class="close-btn" id="guardra-close-pill" title="Dismiss">✕</button>
         </div>
-      `;
+      `);
 
-      shadowRoot.getElementById("guardra-pill").addEventListener("click", (e) => {
+      const pillEl = shadowRoot.getElementById("guardra-pill");
+      let holdTimer = null;
+      let isDragMode = false;
+      let isDragging = false;
+      let didDragOrHold = false;
+      let dragStartX = 0, dragStartY = 0;
+      let hostStartX = 0, hostStartY = 0;
+      // Left-click 3-second hold detector (Completely silent during 3s, triggers ONLY after 3s)
+      pillEl.addEventListener("mousedown", (e) => {
         if (e.target.id === "guardra-close-pill") return;
-        const pill = shadowRoot.getElementById("guardra-pill");
-        if (pill) pill.classList.add("closing");
+
+        if (e.button === 0) { // Primary Left Click
+          pillMouseDownTime = Date.now();
+          didDragOrHoldPill = false;
+
+          globalHoldTimer = setTimeout(() => {
+            isDragModeActive = true;
+            didDragOrHoldPill = true;
+            pillEl.classList.add("reposition-active");
+            pillEl.classList.add("dragging");
+
+            let tooltip = shadowRoot.getElementById("guardra-drag-tooltip");
+            if (!tooltip) {
+              tooltip = document.createElement("div");
+              tooltip.id = "guardra-drag-tooltip";
+              tooltip.className = "drag-tooltip ready";
+              pillEl.appendChild(tooltip);
+            }
+            tooltip.textContent = "📍 Drag & drop anywhere on screen!";
+            tooltip.style.display = "block";
+
+            const rect = rootHost.getBoundingClientRect();
+            dragStartCoords = { x: e.clientX, y: e.clientY };
+            hostStartCoords = { x: rect.left, y: rect.top };
+            isDraggingPill = true;
+          }, 3000);
+        }
+      });
+
+      // Normal quick left click expands the pill stably
+      pillEl.addEventListener("click", (e) => {
+        if (e.target.id === "guardra-close-pill" || isDragModeActive || isDraggingPill || didDragOrHoldPill || (Date.now() - pillMouseDownTime > 800 && pillMouseDownTime > 0)) {
+          return;
+        }
+        if (pillEl) pillEl.classList.add("closing");
         setTimeout(() => {
           isExpanded = true;
           _doRenderFloatingPill(currentRating, cachedAutoDisable, cachedTheme, cachedAdblockStatus, cachedCookieAudit);
-          renderFloatingPill(currentRating);
-        }, 150);
+        }, 120);
       });
 
       shadowRoot.getElementById("guardra-close-pill").addEventListener("click", (e) => {
         e.stopPropagation();
-        const pill = shadowRoot.getElementById("guardra-pill");
-        if (pill) pill.classList.add("closing");
+        if (pillEl) pillEl.classList.add("closing");
         setTimeout(() => {
           isDismissed = true;
           chrome.storage.local.set({ guardra_inpage_enabled: false });
@@ -1070,7 +1319,7 @@
 
       const cleanGrievanceDisplay = (grievanceEmail || "").replace(/\b(?:if\s+you|please|in\s+case|write\s+to|reach\s+out|contact|appointed|under\s+section|email)\b.*$/i, "").trim().replace(/[\.\:\,\-]+$/, "").trim() || "Not found";
 
-      shadowRoot.innerHTML = `
+      renderHTMLSafely(shadowRoot, `
         <style>${css}</style>
         <div class="panel-container">
           <div class="panel-header">
@@ -1176,7 +1425,7 @@
             </div>
           </div>
         </div>
-      `;
+      `);
 
       const trackersHeader = shadowRoot.getElementById("guardra-trackers-header");
       const trackersContent = shadowRoot.getElementById("guardra-trackers-content");
@@ -1331,8 +1580,14 @@
           setTimeout(() => {
             isExpanded = false;
             _doRenderFloatingPill(currentRating, cachedAutoDisable, cachedTheme, cachedAdblockStatus, cachedCookieAudit);
-            renderFloatingPill(currentRating);
-          }, 180);
+          }, 150);
+        });
+      }
+
+      const panelContainer = shadowRoot.querySelector(".panel-container");
+      if (panelContainer) {
+        panelContainer.addEventListener("click", (e) => {
+          e.stopPropagation();
         });
       }
     }
@@ -1342,7 +1597,14 @@
     if (shadowRoot && !isExpanded) {
       const pill = shadowRoot.getElementById("guardra-pill");
       if (pill) {
-        pill.innerHTML = `<span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#10b981;"></span><span style="font-weight:600; color:#34d399;">${statusText}</span>`;
+        pill.replaceChildren();
+        const dot = document.createElement("span");
+        dot.style.cssText = "display:inline-block; width:6px; height:6px; border-radius:50%; background:#10b981;";
+        const text = document.createElement("span");
+        text.style.cssText = "font-weight:600; color:#34d399;";
+        text.textContent = statusText;
+        pill.appendChild(dot);
+        pill.appendChild(text);
         setTimeout(() => {
           if (shadowRoot && !isExpanded) renderFloatingPill(currentRating);
         }, 3000);
@@ -1447,13 +1709,13 @@
 
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.type === "THEME_CHANGED") {
-      if (currentRating) renderFloatingPill(currentRating);
+      if (currentRating && !isDismissed) renderFloatingPill(currentRating);
       sendResponse({ success: true });
       return true;
     }
 
     if (msg.type === "ADBLOCK_ITEM_BLOCKED") {
-      if (currentRating && !isDismissed) renderFloatingPill(currentRating);
+      if (currentRating && !isDismissed && !isExpanded) renderFloatingPill(currentRating);
       sendResponse({ success: true });
       return true;
     }
@@ -1510,7 +1772,7 @@
       (detectedTrackers || []).forEach(t => {
         t.isBlocked = true;
       });
-      if (currentRating && !isDismissed) {
+      if (currentRating && !isDismissed && !isExpanded) {
         renderFloatingPill(currentRating);
       }
       updateFloatingPill("Trackers Disabled");
@@ -1519,7 +1781,7 @@
     }
 
     if (msg.type === "ADBLOCK_COUNT_UPDATED" || msg.type === "COOKIE_AUDIT_UPDATED") {
-      if (currentRating && !isDismissed) {
+      if (currentRating && !isDismissed && !isExpanded) {
         renderFloatingPill(currentRating);
       }
       sendResponse({ success: true });
@@ -1532,7 +1794,7 @@
       } else {
         checkAndApplyCosmeticFilter();
       }
-      if (currentRating) renderFloatingPill(currentRating);
+      if (currentRating && !isExpanded) renderFloatingPill(currentRating);
       sendResponse({ success: true });
       return true;
     }
@@ -1775,6 +2037,14 @@
     });
   }
 
+  let lastSpaSweepTime = 0;
+  function throttledSpaAdSweep() {
+    const now = Date.now();
+    if (now - lastSpaSweepTime < 1500) return;
+    lastSpaSweepTime = now;
+    runSpaAdSweep();
+  }
+
   function applyCosmeticAdFilter() {
     let style = document.getElementById("guardra-cosmetic-adblock");
     if (!style) {
@@ -1785,17 +2055,12 @@
       (document.head || document.documentElement).appendChild(style);
     }
 
-    // Start continuous SPA sweeper
-    if (!spaAdSweeperInterval) {
-      runSpaAdSweep();
-      spaAdSweeperInterval = setInterval(runSpaAdSweep, 250);
-      window.addEventListener("scroll", runSpaAdSweep, { passive: true });
-
-      const target = document.body || document.documentElement;
-      if (target) {
-        spaAdObserver = new MutationObserver(runSpaAdSweep);
-        spaAdObserver.observe(target, { childList: true, subtree: true });
-      }
+    // Only run SPA sweeper for supported infinite scroll feed platforms (Instagram, Facebook, Reddit, X/Twitter)
+    const isSpaFeedSite = /instagram\.com|facebook\.com|reddit\.com|x\.com|twitter\.com/i.test(location.hostname);
+    if (isSpaFeedSite && !spaAdSweeperInterval) {
+      throttledSpaAdSweep();
+      spaAdSweeperInterval = setInterval(throttledSpaAdSweep, 2000);
+      window.addEventListener("scroll", throttledSpaAdSweep, { passive: true });
     }
   }
 
@@ -1811,7 +2076,7 @@
       spaAdObserver.disconnect();
       spaAdObserver = null;
     }
-    window.removeEventListener("scroll", runSpaAdSweep);
+    window.removeEventListener("scroll", throttledSpaAdSweep);
 
     // Unhide previously blocked elements
     document.querySelectorAll("[data-guardra-blocked='true']").forEach(el => {
