@@ -9,7 +9,8 @@
     "tabs",
     "alarms",
     "cookies",
-    "declarativeNetRequest"
+    "declarativeNetRequest",
+    "declarativeNetRequestFeedback"
   ],
   "declarative_net_request": {
     "rule_resources": [

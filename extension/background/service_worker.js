@@ -438,44 +438,101 @@ async function fetchSiteRatingRaw(domain) {
 // --- Cookie Classification & Governance Engine ---
 const STRICT_ESSENTIAL_COOKIE_PATTERNS = [
   /^(__Secure-|__Host-)/i,
-  /^(__Secure-|__Host-)?(sess|session|sid|token|auth|jwt|bearer|login|user_session|secure_session)/i,
-  /^(__Secure-|__Host-)?(phpsessid|jsessionid|aspsessionid|connect\.sid|ss-id|ci_session)/i,
-  /^(__Secure-|__Host-)?(csrf|_csrf|xsrf|_xsrf|csrf_token|antiforgery|__cf_bm|cf_clearance|__cfruid)/i,
-  /^(__Secure-|__Host-)?(cart|basket|order|checkout|currency|locale|lang|country)/i,
-  /^(__Secure-|__Host-)?(cookie_consent|optanon|cookieconsent|cc_cookie|gdpr|eu_consent|notice_preferences)/i,
-  /^(__Secure-|__Host-)?(apisid|sapisid|hsid|ssid|psid|login_info|visitor_info1_live|ysc|pref|device_info|gps)/i
+  /^(__Secure-|__Host-)?(sess|session|sid|token|auth|jwt|bearer|login|user_session|secure_session|account|logged_in|user_id|member_id|identity)/i,
+  /^(__Secure-|__Host-)?(phpsessid|jsessionid|aspsessionid|connect\.sid|ss-id|ci_session|laravel_session|express\.sid|rack\.session)/i,
+  /^(__Secure-|__Host-)?(csrf|_csrf|xsrf|_xsrf|csrf_token|antiforgery|__cf_bm|cf_clearance|__cfduid|__cfruid|AWSALB|AWSALBCORS|ak_bmsc|bm_sz|bm_sv|recaptcha)/i,
+  /^(__Secure-|__Host-)?(cart|basket|order|checkout|currency|locale|lang|language|country|timezone|payment|bag|items|rzp_)/i,
+  /^(__Secure-|__Host-)?(cookie_consent|optanon|cookieconsent|cc_cookie|gdpr|eu_consent|notice_preferences|cookie_notice)/i,
+  /^(__Secure-|__Host-)?(theme|mode|dark_mode|sidebar|view|layout|fontSize|collapsed|nav)/i,
+  /^(__Secure-|__Host-)?(apisid|sapisid|hsid|ssid|psid|login_info|visitor_info1_live|ysc|pref|device_info|gps|sidcc)/i
 ];
 
 const KNOWN_TRACKER_COOKIE_PATTERNS = [
-  /^(_ga|_gid|_gat|_gcl|__utm|gtag|gads|1P_JAR|NID|DSID|IDE)/i,
-  /^(_fbp|_fbc|datr|sb|fr|c_user|xs|act|presence)/i,
-  /^(_ttp|_tt)/i,
-  /^(_clck|_clsk|MUID)/i,
-  /^(cto_|_hj)/i
+  // Google Analytics, Google Ads, Conversion Linker, DoubleClick
+  /^(_ga|_gid|_gat|_gcl|__utm|gtag|__gads|__gpi|1P_JAR|DSID|IDE|test_cookie|_gac_|_gcl_au)/i,
+  // Meta / Facebook Pixel & Social Trackers (exact names for short tokens like fr, xs, sb, act, wd)
+  /^(_fbp|_fbc|datr|presence|spin|_?c_user)$|^(fr|sb|xs|act|wd)$/i,
+  // TikTok & Snap
+  /^(_ttp|_tt_|_tt$|ttq|sc_at|snap_)/i,
+  // Microsoft Clarity, Bing, LinkedIn Ads
+  /^(_clck|_clsk|MUID|MR|_uetsid|_uetvid|bcookie|lidc|li_sugr)/i,
+  // Hotjar, FullStory, LogRocket, Inspectlet
+  /^(_hjSession|_hjSessionUser|_hjid|_hjIncluded|_hjTLDTest|_hj|_fs_|_lr_)/i,
+  // Criteo, Taboola, Outbrain, Adroll, Yahoo, PubMatic
+  /^(cto_|criteo|_taboola|outbrain|adroll|_kuid_|_pubcid|yandex|ya_)/i,
+  // Product Analytics & Telemetry (Mixpanel, Amplitude, Segment, Heap, HubSpot)
+  /^(mp_|mixpanel|ajs_|amplitude|segment|__hstc|__hssc|__hssrc|hubspotutk|heap)/i,
+  // Third-party Data Brokers & Ad exchanges
+  /^(bk_|tuuid|tdid|uuid2|ad_id|pixel_id|tr_id|visitor_id_tracking|adroll)/i
 ];
 
 function isEssentialCookie(cookie) {
-  const name = (cookie.name || "").trim();
-  const domain = (cookie.domain || "").toLowerCase();
+  const name = (typeof cookie === "string" ? cookie : (cookie.name || "")).trim();
+  const domain = (typeof cookie === "object" && cookie.domain ? cookie.domain : "").toLowerCase();
 
+  // Explicit Google / YouTube authentication & session preservation on google/youtube domains
   const isGoogleAuthDomain = domain.includes("google.com") || domain.includes("youtube.com") || domain.includes("youtube-nocookie.com");
-
-  if (!isGoogleAuthDomain) {
-    for (const pat of KNOWN_TRACKER_COOKIE_PATTERNS) {
-      if (pat.test(name)) return false;
-    }
-  } else {
-    const googleAuthPatterns = /^(__Secure-|__Host-)?(SID|HSID|SSID|APISID|SAPISID|LOGIN_INFO|VISITOR_INFO1_LIVE|YSC|PREF|GPS|DEVICE_INFO|NID)/i;
+  if (isGoogleAuthDomain) {
+    const googleAuthPatterns = /^(__Secure-|__Host-)?(SID|HSID|SSID|APISID|SAPISID|LOGIN_INFO|VISITOR_INFO1_LIVE|YSC|PREF|GPS|DEVICE_INFO|NID|SIDCC)/i;
     if (googleAuthPatterns.test(name)) return true;
   }
 
-  for (const pat of STRICT_ESSENTIAL_COOKIE_PATTERNS) {
+  // Explicit essential patterns (session, auth, csrf, security, cart, preferences)
+  for (const pat of KNOWN_ESSENTIAL_COOKIE_PATTERNS) {
     if (pat.test(name)) return true;
   }
-  if (cookie.session || !cookie.expirationDate) {
-    return true;
+
+  // If cookie name matches ANY known non-essential tracker/ad pattern -> NON-ESSENTIAL
+  for (const pat of KNOWN_TRACKER_COOKIE_PATTERNS) {
+    if (pat.test(name)) return false;
   }
-  return false;
+
+  // All other first-party, authentication, session, security, cart, preferences, and operational cookies are ESSENTIAL
+  return true;
+}
+
+function classifyCookie(cookie) {
+  const name = (typeof cookie === "string" ? cookie : (cookie.name || "")).trim();
+  const domain = (typeof cookie === "object" && cookie.domain ? cookie.domain : "").toLowerCase();
+  const isEss = isEssentialCookie(cookie);
+
+  if (!isEss) {
+    const nameLower = name.toLowerCase();
+    let category = "Analytics / Tracking";
+    if (nameLower.startsWith("_fb") || nameLower.includes("criteo") || nameLower.startsWith("_tt") || nameLower.includes("ide") || nameLower.includes("gads") || nameLower.includes("adroll") || nameLower.includes("doubleclick")) {
+      category = "Advertising & Retargeting";
+    } else if (nameLower.startsWith("_ga") || nameLower.startsWith("_gi") || nameLower.includes("analytics") || nameLower.includes("hotjar") || nameLower.includes("clarity") || nameLower.startsWith("mp_") || nameLower.startsWith("ajs_")) {
+      category = "Analytics & Telemetry";
+    }
+    return {
+      category,
+      isEssential: false,
+      isTracking: true,
+      action: "block"
+    };
+  }
+
+  // Essential category determination
+  const nameLower = name.toLowerCase();
+  let category = "Essential Cookie";
+  if (nameLower.includes("session") || nameLower.includes("sess") || nameLower.includes("sid") || nameLower.includes("phpsessid") || nameLower.includes("jsessionid")) {
+    category = "Essential (Session)";
+  } else if (nameLower.includes("auth") || nameLower.includes("token") || nameLower.includes("jwt") || nameLower.includes("login") || nameLower.includes("user")) {
+    category = "Essential (Authentication)";
+  } else if (nameLower.includes("csrf") || nameLower.includes("xsrf") || nameLower.includes("cf_") || nameLower.includes("secure") || nameLower.includes("bm_")) {
+    category = "Essential (Security)";
+  } else if (nameLower.includes("cart") || nameLower.includes("basket") || nameLower.includes("order") || nameLower.includes("checkout") || nameLower.includes("payment")) {
+    category = "Essential (Shopping Cart)";
+  } else if (nameLower.includes("theme") || nameLower.includes("lang") || nameLower.includes("locale") || nameLower.includes("mode") || nameLower.includes("view")) {
+    category = "Functional (Preferences)";
+  }
+
+  return {
+    category,
+    isEssential: true,
+    isTracking: false,
+    action: "allow"
+  };
 }
 
 async function getDomainCookies(domain, tabUrl) {
@@ -522,7 +579,8 @@ async function auditDomainCookies(domain, tabUrl, tabId) {
   const detailedCookies = [];
 
   cookies.forEach(c => {
-    const isEss = isEssentialCookie(c);
+    const info = classifyCookie(c);
+    const isEss = info.isEssential;
     if (isEss) {
       essential++;
       essentialNames.push(c.name);
@@ -531,21 +589,11 @@ async function auditDomainCookies(domain, tabUrl, tabId) {
       trackingNames.push(c.name);
     }
 
-    let category = isEss ? "Essential Cookie" : "Analytics/Advertising";
-    const nameLower = (c.name || "").toLowerCase();
-    if (nameLower.includes("ad") || nameLower.startsWith("_fb") || nameLower.includes("criteo") || nameLower.startsWith("_tt") || nameLower.includes("nid") || nameLower.includes("ide")) {
-      category = "Advertising";
-    } else if (nameLower.startsWith("_ga") || nameLower.startsWith("_gi") || nameLower.includes("analytics") || nameLower.includes("hotjar") || nameLower.includes("clarity")) {
-      category = "Analytics";
-    } else if (nameLower.includes("session") || nameLower.includes("auth") || nameLower.includes("login") || nameLower.includes("cart") || nameLower.includes("csrf")) {
-      category = "Essential";
-    }
-
     detailedCookies.push({
       name: c.name,
       domain: c.domain,
       isTracking: !isEss,
-      category: category,
+      category: info.category,
       value: c.value,
       storeId: c.storeId,
       path: c.path,
@@ -673,12 +721,12 @@ async function enforceStrictCookies(domain, tabUrl) {
     const tabs = await chrome.tabs.query({});
     for (const t of tabs) {
       if (t.url && extractDomain(t.url) === cleanDom) {
-        chrome.tabs.sendMessage(t.id, { type: "STRICT_COOKIES_ENFORCED", domain: cleanDom }, () => {
+        chrome.tabs.sendMessage(t.id, { type: "STRICT_COOKIES_ENFORCED", domain: cleanDom, removedCount: removed, keptCount: kept }, () => {
           if (chrome.runtime.lastError) {}
         });
-        updateTabState(t.id, t.url);
       }
     }
+    notifyCookieAuditUpdated(cleanDom);
   } catch (e) {}
 
   return {

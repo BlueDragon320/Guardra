@@ -9,17 +9,120 @@
 
   const TRACKER_SIGNATURES = [
     { name: "Google Analytics / Tag Manager", regex: /(google-analytics\.com|googletagmanager\.com|gtag\/js)/i },
+    { name: "Google Ads / DoubleClick", regex: /(doubleclick\.net|adservice\.google\.com|googleadservices\.com|pagead2\.googlesyndication\.com)/i },
     { name: "Meta / Facebook Pixel", regex: /(connect\.facebook\.net|fbevents\.js|facebook\.com\/tr)/i },
     { name: "TikTok Pixel", regex: /(analytics\.tiktok\.com|ttq)/i },
-    { name: "Microsoft Clarity", regex: /(clarity\.ms|clarity\/js)/i },
+    { name: "Microsoft Clarity / Bing Ads", regex: /(clarity\.ms|clarity\/js|bat\.bing\.com)/i },
     { name: "Hotjar Session Recording", regex: /(static\.hotjar\.com|hotjar)/i },
     { name: "Criteo Ad Retargeting", regex: /(criteo\.net|criteo\.com)/i },
     { name: "Mixpanel Analytics", regex: /(mixpanel\.com|cdn\.mxpnl\.com)/i },
     { name: "Amplitude Telemetry", regex: /(amplitude\.com|cdn\.amplitude\.com)/i },
     { name: "Segment / Analytics.js", regex: /(cdn\.segment\.com|analytics\.js)/i },
     { name: "Amazon Ad System", regex: /(amazon-adsystem\.com|media-amazon\.com\/images\/G\/01\/ad-sdk)/i },
-    { name: "Taboola / Outbrain Ad Feeds", regex: /(taboola\.com|outbrain\.com)/i }
+    { name: "Taboola / Outbrain Ad Feeds", regex: /(taboola\.com|outbrain\.com)/i },
+    { name: "Twitter / X Pixel", regex: /(ads-twitter\.com|static\.ads-twitter\.com)/i },
+    { name: "LinkedIn Insight Tag", regex: /(snap\.licdn\.com|linkedin\.com\/px)/i },
+    { name: "Pinterest Pixel", regex: /(pintrk|ct\.pinterest\.com)/i },
+    { name: "Yandex Metrika", regex: /(mc\.yandex\.ru|metrika)/i },
+    { name: "Sentry / Datadog Telemetry", regex: /(sentry\.io|browser-intake-datadoghq\.com)/i },
+    { name: "AppsFlyer / CleverTap", regex: /(appsflyer\.com|clevertap\.com)/i },
+    { name: "Cloudflare Web Analytics", regex: /(beacon\.min\.js|cloudflareinsights\.com)/i },
+    { name: "Reddit Pixel", regex: /(redditstatic\.com\/ads|alb\.reddit\.com)/i }
   ];
+
+  const KNOWN_ESSENTIAL_COOKIE_PATTERNS = [
+    /^(__Secure-|__Host-)/i,
+    /^(__Secure-|__Host-)?(sess|session|sid|token|auth|jwt|bearer|login|user_session|secure_session|account|logged_in|user_id|member_id|identity)/i,
+    /^(__Secure-|__Host-)?(phpsessid|jsessionid|aspsessionid|connect\.sid|ss-id|ci_session|laravel_session|express\.sid|rack\.session)/i,
+    /^(__Secure-|__Host-)?(csrf|_csrf|xsrf|_xsrf|csrf_token|antiforgery|__cf_bm|cf_clearance|__cfduid|__cfruid|AWSALB|AWSALBCORS|ak_bmsc|bm_sz|bm_sv|recaptcha)/i,
+    /^(__Secure-|__Host-)?(cart|basket|order|checkout|currency|locale|lang|language|country|timezone|payment|bag|items|rzp_)/i,
+    /^(__Secure-|__Host-)?(cookie_consent|optanon|cookieconsent|cc_cookie|gdpr|eu_consent|notice_preferences|cookie_notice)/i,
+    /^(__Secure-|__Host-)?(theme|mode|dark_mode|sidebar|view|layout|fontSize|collapsed|nav)/i,
+    /^(__Secure-|__Host-)?(apisid|sapisid|hsid|ssid|psid|login_info|visitor_info1_live|ysc|pref|device_info|gps|sidcc)/i
+  ];
+
+  const KNOWN_TRACKER_COOKIE_PATTERNS = [
+    // Google Analytics, Google Ads, Conversion Linker, DoubleClick
+    /^(_ga|_gid|_gat|_gcl|__utm|gtag|__gads|__gpi|1P_JAR|DSID|IDE|test_cookie|_gac_|_gcl_au)/i,
+    // Meta / Facebook Pixel & Social Trackers (exact names for short tokens like fr, xs, sb, act, wd)
+    /^(_fbp|_fbc|datr|presence|spin|_?c_user)$|^(fr|sb|xs|act|wd)$/i,
+    // TikTok & Snap
+    /^(_ttp|_tt_|_tt$|ttq|sc_at|snap_)/i,
+    // Microsoft Clarity, Bing, LinkedIn Ads
+    /^(_clck|_clsk|MUID|MR|_uetsid|_uetvid|bcookie|lidc|li_sugr)/i,
+    // Hotjar, FullStory, LogRocket, Inspectlet
+    /^(_hjSession|_hjSessionUser|_hjid|_hjIncluded|_hjTLDTest|_hj|_fs_|_lr_)/i,
+    // Criteo, Taboola, Outbrain, Adroll, Yahoo, PubMatic
+    /^(cto_|criteo|_taboola|outbrain|adroll|_kuid_|_pubcid|yandex|ya_)/i,
+    // Product Analytics & Telemetry (Mixpanel, Amplitude, Segment, Heap, HubSpot)
+    /^(mp_|mixpanel|ajs_|amplitude|segment|__hstc|__hssc|__hssrc|hubspotutk|heap)/i,
+    // Third-party Data Brokers & Ad exchanges
+    /^(bk_|tuuid|tdid|uuid2|ad_id|pixel_id|tr_id|visitor_id_tracking|adroll)/i
+  ];
+
+  function isEssentialCookie(cookie) {
+    const name = (typeof cookie === "string" ? cookie : (cookie.name || "")).trim();
+    const domain = (typeof cookie === "object" && cookie.domain ? cookie.domain : (window.location.hostname || "")).toLowerCase();
+
+    // Google / YouTube auth & session preservation on google/youtube domains
+    const isGoogleAuthDomain = domain.includes("google.com") || domain.includes("youtube.com") || domain.includes("youtube-nocookie.com");
+    if (isGoogleAuthDomain) {
+      const googleAuthPatterns = /^(__Secure-|__Host-)?(SID|HSID|SSID|APISID|SAPISID|LOGIN_INFO|VISITOR_INFO1_LIVE|YSC|PREF|GPS|DEVICE_INFO|NID|SIDCC)/i;
+      if (googleAuthPatterns.test(name)) return true;
+    }
+
+    for (const pat of KNOWN_ESSENTIAL_COOKIE_PATTERNS) {
+      if (pat.test(name)) return true;
+    }
+
+    for (const pat of KNOWN_TRACKER_COOKIE_PATTERNS) {
+      if (pat.test(name)) return false;
+    }
+    return true;
+  }
+
+  function classifyCookie(cookie) {
+    const name = (typeof cookie === "string" ? cookie : (cookie.name || "")).trim();
+    const domain = (typeof cookie === "object" && cookie.domain ? cookie.domain : (window.location.hostname || "")).toLowerCase();
+    const isEss = isEssentialCookie(cookie);
+
+    if (!isEss) {
+      const nameLower = name.toLowerCase();
+      let category = "Analytics/Tracking";
+      if (nameLower.startsWith("_fb") || nameLower.includes("criteo") || nameLower.startsWith("_tt") || nameLower.includes("ide") || nameLower.includes("gads") || nameLower.includes("adroll") || nameLower.includes("doubleclick")) {
+        category = "Advertising & Retargeting";
+      } else if (nameLower.startsWith("_ga") || nameLower.startsWith("_gi") || nameLower.includes("analytics") || nameLower.includes("hotjar") || nameLower.includes("clarity") || nameLower.startsWith("mp_") || nameLower.startsWith("ajs_")) {
+        category = "Analytics & Telemetry";
+      }
+      return {
+        category,
+        isEssential: false,
+        isTracking: true,
+        action: "block"
+      };
+    }
+
+    const nameLower = name.toLowerCase();
+    let category = "Essential Cookie";
+    if (nameLower.includes("session") || nameLower.includes("sess") || nameLower.includes("sid") || nameLower.includes("phpsessid") || nameLower.includes("jsessionid")) {
+      category = "Essential (Session)";
+    } else if (nameLower.includes("auth") || nameLower.includes("token") || nameLower.includes("jwt") || nameLower.includes("login") || nameLower.includes("user")) {
+      category = "Essential (Authentication)";
+    } else if (nameLower.includes("csrf") || nameLower.includes("xsrf") || nameLower.includes("cf_") || nameLower.includes("secure") || nameLower.includes("bm_")) {
+      category = "Essential (Security)";
+    } else if (nameLower.includes("cart") || nameLower.includes("basket") || nameLower.includes("order") || nameLower.includes("checkout") || nameLower.includes("payment")) {
+      category = "Essential (Shopping Cart)";
+    } else if (nameLower.includes("theme") || nameLower.includes("lang") || nameLower.includes("locale") || nameLower.includes("mode") || nameLower.includes("view")) {
+      category = "Functional (Preferences)";
+    }
+
+    return {
+      category,
+      isEssential: true,
+      isTracking: false,
+      action: "allow"
+    };
+  }
 
   let autoActionsExecuted = [];
   let detectedTrackers = [];
@@ -353,7 +456,14 @@
     let detailedCookiesList = [];
     if (cookieAudit && cookieAudit.cookies && cookieAudit.cookies.length > 0) {
       activeCookies = cookieAudit.cookies.filter(c => !c.disabled && !c.isBlocked).map(c => c.name);
-      detailedCookiesList = [...cookieAudit.cookies];
+      detailedCookiesList = cookieAudit.cookies.map(c => {
+        const info = classifyCookie(c);
+        return {
+          ...c,
+          isTracking: c.isTracking !== undefined ? c.isTracking : info.isTracking,
+          category: c.category || info.category
+        };
+      });
     }
     if (activeCookies.length === 0) {
       try {
@@ -362,13 +472,13 @@
             const name = c.split("=")[0].trim();
             if (name && !activeCookies.includes(name)) {
               activeCookies.push(name);
-              const isEss = isEssentialCookie({ name });
+              const info = classifyCookie(name);
               if (!detailedCookiesList.some(dc => dc.name === name)) {
                 detailedCookiesList.push({
                   name: name,
-                  isTracking: !isEss,
-                  category: isEss ? "Essential Cookie" : "Analytics/Advertising",
-                  isBlocked: autoDisableCookies && !isEss
+                  isTracking: info.isTracking,
+                  category: info.category,
+                  isBlocked: autoDisableCookies && info.isTracking
                 });
               }
             }
@@ -600,22 +710,22 @@
         color: ${isLight ? '#64748b' : '#71717a'};
       }
 
-      /* Expanded Panel (+25% Scaled) */
+      /* Expanded Panel (-7% Scaled) */
       .panel-container {
-        width: 412px;
+        width: 383px;
         max-height: calc(100vh - 40px);
         overflow-y: auto;
         overflow-x: hidden;
         background: ${isLight ? '#ffffff' : '#050505'};
         border: 1px solid ${isLight ? '#e2e8f0' : '#222222'};
-        border-radius: 22px;
-        padding: 18px;
-        box-shadow: ${isLight ? '0 24px 60px rgba(0,0,0,0.18)' : '0 24px 60px rgba(0,0,0,0.88)'};
+        border-radius: 20px;
+        padding: 16px;
+        box-shadow: ${isLight ? '0 20px 50px rgba(0,0,0,0.18)' : '0 20px 50px rgba(0,0,0,0.88)'};
         color: ${isLight ? '#0f172a' : '#ebebeb'};
-        font-size: 13.5px;
+        font-size: 12.5px;
         display: flex;
         flex-direction: column;
-        gap: 12px;
+        gap: 10px;
         scrollbar-width: thin;
         scrollbar-color: ${isLight ? '#cbd5e1 #f1f5f9' : '#333333 #111111'};
         animation: guardraPanelExpand 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -633,25 +743,25 @@
         justify-content: space-between;
         align-items: center;
         border-bottom: 1px solid ${isLight ? '#e2e8f0' : '#222222'};
-        padding-bottom: 12px;
+        padding-bottom: 10px;
       }
       .panel-header .logo-shield {
-        width: 24px;
-        height: 24px;
-        font-size: 13.5px;
+        width: 22px;
+        height: 22px;
+        font-size: 12.5px;
         border-radius: 5px;
       }
-      .site-title { font-weight: 800; font-size: 16px; color: ${isLight ? '#0f172a' : '#ffffff'}; }
-      .meta-row { display: flex; justify-content: space-between; color: ${isLight ? '#64748b' : '#888888'}; font-size: 13px; }
+      .site-title { font-weight: 800; font-size: 15px; color: ${isLight ? '#0f172a' : '#ffffff'}; }
+      .meta-row { display: flex; justify-content: space-between; color: ${isLight ? '#64748b' : '#888888'}; font-size: 12px; }
       
       .section-card {
         background: ${isLight ? '#f8fafc' : '#111111'};
         border: 1px solid ${isLight ? '#e2e8f0' : '#222222'};
-        border-radius: 15px;
-        padding: 13px;
+        border-radius: 13px;
+        padding: 11px;
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: 7px;
         animation: guardraCardFadeIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) backwards;
       }
       .section-card:nth-child(2) { animation-delay: 0.04s; }
@@ -663,9 +773,9 @@
         background: #FF6B50;
         color: #000000;
         border: none;
-        border-radius: 10px;
-        padding: 9px 12px;
-        font-size: 13.5px;
+        border-radius: 9px;
+        padding: 8px 11px;
+        font-size: 12.5px;
         font-weight: 700;
         cursor: pointer;
         text-align: center;
@@ -680,9 +790,9 @@
         background: ${isLight ? '#ffffff' : '#161616'};
         color: ${isLight ? '#0f172a' : '#ebebeb'};
         border: 1px solid ${isLight ? '#cbd5e1' : '#333333'};
-        border-radius: 10px;
-        padding: 9px 12px;
-        font-size: 13px;
+        border-radius: 9px;
+        padding: 8px 11px;
+        font-size: 12px;
         font-weight: 600;
         cursor: pointer;
         text-align: center;
@@ -698,15 +808,15 @@
         justify-content: space-between;
         align-items: center;
         cursor: pointer;
-        padding: 4px 0;
+        padding: 3px 0;
         font-weight: 700;
-        font-size: 13.5px;
+        font-size: 12.5px;
         color: ${isLight ? '#0f172a' : '#ffffff'};
         user-select: none;
       }
       .toggle-icon {
         display: inline-block;
-        font-size: 13px;
+        font-size: 12px;
         transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
       }
       .toggle-icon.open {
@@ -715,11 +825,11 @@
       .expandable-content {
         display: flex;
         flex-direction: column;
-        gap: 8px;
-        margin-top: 8px;
-        max-height: 225px;
+        gap: 7px;
+        margin-top: 6px;
+        max-height: 200px;
         overflow-y: auto;
-        padding-right: 5px;
+        padding-right: 4px;
         scrollbar-width: thin;
         transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
       }
@@ -729,9 +839,9 @@
         align-items: center;
         background: ${isLight ? '#f8fafc' : '#141414'};
         border: 1px solid ${isLight ? '#e2e8f0' : '#262626'};
-        border-radius: 10px;
-        padding: 8px 11px;
-        gap: 10px;
+        border-radius: 9px;
+        padding: 7px 10px;
+        gap: 8px;
         transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
       }
       .item-row:hover:not(.disabled) {
@@ -751,7 +861,7 @@
         flex: 1;
       }
       .item-name {
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 700;
         color: ${isLight ? '#0f172a' : '#f1f5f9'};
         text-overflow: ellipsis;
@@ -759,10 +869,10 @@
         overflow: hidden;
       }
       .item-badge {
-        font-size: 11px;
+        font-size: 10px;
         font-weight: 600;
-        padding: 2px 7px;
-        border-radius: 7px;
+        padding: 2px 6px;
+        border-radius: 6px;
         display: inline-block;
         width: fit-content;
       }
@@ -780,20 +890,20 @@
         background: ${isLight ? '#ffffff' : '#1e1e1e'};
         color: ${isLight ? '#ef4444' : '#f87171'};
         border: 1px solid ${isLight ? '#fca5a5' : '#451a1a'};
-        border-radius: 7px;
-        padding: 4px 10px;
-        font-size: 11.5px;
+        border-radius: 6px;
+        padding: 3px 8px;
+        font-size: 11px;
         font-weight: 700;
         cursor: pointer;
         transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
         white-space: nowrap;
       }
-      .btn-item-action:hover:not(.disabled) {
+      .btn-item-action:hover:not(.disabled):not([disabled]) {
         background: #ef4444;
         color: #ffffff;
         border-color: #ef4444;
       }
-      .btn-item-action:active:not(.disabled) {
+      .btn-item-action:active:not(.disabled):not([disabled]) {
         transform: scale(0.95);
       }
       .btn-item-action.disabled {
@@ -802,19 +912,26 @@
         border-color: ${isLight ? '#e2e8f0' : '#2a2a2a'};
         cursor: default;
       }
+      .btn-item-action.essential-badge {
+        background: ${isLight ? 'rgba(16, 185, 129, 0.1)' : 'rgba(16, 185, 129, 0.12)'};
+        color: #10b981;
+        border-color: rgba(16, 185, 129, 0.3);
+        cursor: default;
+        pointer-events: none;
+      }
       .btn-section-action {
         background: ${isLight ? '#f1f5f9' : '#1e1e1e'};
         color: ${isLight ? '#0f172a' : '#ebebeb'};
         border: 1px solid ${isLight ? '#cbd5e1' : '#333333'};
-        border-radius: 7px;
-        padding: 4px 9px;
-        font-size: 11.5px;
+        border-radius: 6px;
+        padding: 3px 8px;
+        font-size: 11px;
         font-weight: 700;
         cursor: pointer;
         transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
         display: inline-flex;
         align-items: center;
-        gap: 5px;
+        gap: 4px;
         white-space: nowrap;
       }
       .btn-section-action:hover:not(.disabled) {
@@ -951,6 +1068,8 @@
         </div>
       `;
 
+      const cleanGrievanceDisplay = (grievanceEmail || "").replace(/\b(?:if\s+you|please|in\s+case|write\s+to|reach\s+out|contact|appointed|under\s+section|email)\b.*$/i, "").trim().replace(/[\.\:\,\-]+$/, "").trim() || "Not found";
+
       shadowRoot.innerHTML = `
         <style>${css}</style>
         <div class="panel-container">
@@ -959,7 +1078,6 @@
               <span class="logo-shield">G.</span>
               <div>
                 <div class="site-title">${domain}</div>
-                <div style="font-size:11.5px; color:${isLight ? '#64748b' : '#888888'}; font-family:monospace; text-transform:uppercase; letter-spacing:0.05em;">Midnight Audit</div>
               </div>
             </div>
             <button class="close-btn" id="guardra-minimize-panel" title="Minimize">✕</button>
@@ -976,8 +1094,11 @@
             </div>
             <div class="meta-row">
               <span>Grievance Contact</span>
-              <span style="font-family:monospace; color:${grievanceEmail === 'Not found' ? '#ef4444' : '#38bdf8'};">${grievanceEmail}</span>
+              <span style="font-family:monospace; color:${cleanGrievanceDisplay === 'Not found' ? '#ef4444' : '#38bdf8'};">${cleanGrievanceDisplay}</span>
             </div>
+            <a href="https://guardra-api.botvaibhav.dev/?domain=${domain}#scanner" target="_blank" class="secondary-btn" style="display:flex; align-items:center; justify-content:center; gap:6px; text-decoration:none; color:#FF6B50; border-color:rgba(255,107,80,0.4); font-size:11.5px; font-weight:700; padding:6px 10px; margin-top:2px;">
+              <span>🔍 Why this score? Live Guardra Web Audit ↗</span>
+            </a>
           </div>
 
           ${adblockPanelHtml}
@@ -1029,19 +1150,26 @@
             <div class="expandable-content" id="guardra-cookies-content">
               ${detailedCookiesList.length > 0 ? detailedCookiesList.map((c, idx) => {
                 const cName = c.name || c;
-                const isTracking = c.isTracking !== undefined ? c.isTracking : !isEssentialCookie({ name: cName });
+                const info = classifyCookie(c);
+                const isTracking = c.isTracking !== undefined ? c.isTracking : info.isTracking;
                 const isBlocked = (autoDisableCookies && isTracking) || c.isBlocked || c.disabled;
-                const category = c.category || (isTracking ? "Analytics/Tracking" : "Essential Cookie");
+                const category = c.category || info.category;
 
                 return `
-                  <div class="item-row ${isBlocked ? 'disabled' : ''}" id="guardra-cookie-row-${idx}">
+                  <div class="item-row ${isTracking && isBlocked ? 'disabled' : ''}" id="guardra-cookie-row-${idx}" data-is-tracking="${isTracking}">
                     <div class="item-info">
                       <div class="item-name" style="font-family: monospace;">${cName}</div>
                       <span class="item-badge ${isTracking ? 'tracking' : 'essential'}">${category}</span>
                     </div>
-                    <button class="btn-item-action btn-disable-cookie ${isBlocked ? 'disabled' : ''}" data-cookie-name="${cName}" data-idx="${idx}">
-                      ${isBlocked ? '✅ Disabled' : 'Disable'}
-                    </button>
+                    ${isTracking ? `
+                      <button class="btn-item-action btn-disable-cookie ${isBlocked ? 'disabled' : ''}" data-cookie-name="${cName}" data-idx="${idx}" data-is-tracking="true">
+                        ${isBlocked ? '✅ Disabled' : 'Disable'}
+                      </button>
+                    ` : `
+                      <span class="btn-item-action essential-badge" title="Essential cookie protected from deletion">
+                        🛡️ Protected
+                      </span>
+                    `}
                   </div>
                 `;
               }).join("") : `<span style="color: #71717a; font-size: 10px; font-style: italic; padding: 4px 0;">No cookies stored</span>`}
@@ -1113,17 +1241,22 @@
             type: "ENFORCE_STRICT_COOKIES",
             domain: domain,
             url: window.location.href
-          }, () => {
-            disableNonEssentialCookiesBtn.textContent = "✅ Non-Essential Disabled";
+          }, (res) => {
+            const removed = (res && res.removed !== undefined) ? res.removed : 0;
+            disableNonEssentialCookiesBtn.textContent = `✅ Non-Essential Disabled (${removed})`;
             disableNonEssentialCookiesBtn.classList.add("disabled");
-            shadowRoot.querySelectorAll(".btn-disable-cookie").forEach(b => {
-              b.textContent = "✅ Disabled";
-              b.classList.add("disabled");
+
+            // ONLY mark non-essential / tracking rows and buttons as disabled!
+            shadowRoot.querySelectorAll(".item-row[data-is-tracking='true']").forEach(row => {
+              row.classList.add("disabled");
+              const btn = row.querySelector(".btn-disable-cookie");
+              if (btn) {
+                btn.textContent = "✅ Disabled";
+                btn.classList.add("disabled");
+              }
             });
-            shadowRoot.querySelectorAll(".item-badge.tracking").forEach(badge => {
-              const row = badge.closest(".item-row");
-              if (row) row.classList.add("disabled");
-            });
+
+            updateFloatingPill(`Non-Essential Cookies Disabled (${removed} purged)`);
           });
         });
       }
@@ -1158,7 +1291,8 @@
           e.stopPropagation();
           const cName = btn.getAttribute("data-cookie-name");
           const idx = btn.getAttribute("data-idx");
-          if (btn.classList.contains("disabled")) return;
+          const isTracking = btn.getAttribute("data-is-tracking") === "true";
+          if (!isTracking || btn.classList.contains("disabled")) return;
 
           btn.textContent = "Disabling...";
           btn.style.opacity = "0.7";
@@ -1349,8 +1483,24 @@
         });
       } catch (e) {}
 
+      if (shadowRoot) {
+        shadowRoot.querySelectorAll(".item-row[data-is-tracking='true']").forEach(row => {
+          row.classList.add("disabled");
+          const btn = row.querySelector(".btn-disable-cookie");
+          if (btn) {
+            btn.textContent = "✅ Disabled";
+            btn.classList.add("disabled");
+          }
+        });
+        const disBtn = shadowRoot.getElementById("guardra-disable-non-essential-cookies-btn");
+        if (disBtn) {
+          disBtn.textContent = msg.removedCount ? `✅ Non-Essential Disabled (${msg.removedCount})` : "✅ Non-Essential Disabled";
+          disBtn.classList.add("disabled");
+        }
+      }
+
       automateCookieRejection();
-      updateFloatingPill("Strict Cookies Enforced");
+      updateFloatingPill(msg.removedCount ? `Non-Essential Cookies Disabled (${msg.removedCount})` : "Non-Essential Cookies Disabled");
       sendResponse({ success: true });
       return true;
     }

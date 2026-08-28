@@ -228,11 +228,13 @@ body {
 }
 
 .adblock-stat-chip {
+  flex: 1;
   display: flex;
   align-items: baseline;
+  justify-content: center;
   gap: 6px;
   background: rgba(255, 255, 255, 0.04);
-  padding: 5px 10px;
+  padding: 6px 10px;
   border-radius: 8px;
   border: 1px solid var(--border-color);
 }
@@ -250,36 +252,27 @@ body {
   font-weight: 500;
 }
 
-.adblock-mode-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(16, 185, 129, 0.1);
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  color: #10B981;
-  font-size: 11px;
+.api-report-btn {
+  background: rgba(255, 107, 80, 0.1);
+  color: #FF6B50;
+  border: 1px solid rgba(255, 107, 80, 0.35);
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-size: 10.5px;
   font-weight: 700;
-  padding: 5px 10px;
-  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-decoration: none;
+  transition: all 0.2s ease;
 }
 
-.adblock-mode-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #10B981;
-  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
-}
-
-.adblock-card.disabled .adblock-mode-badge {
-  background: rgba(100, 116, 139, 0.1);
-  border-color: rgba(100, 116, 139, 0.3);
-  color: #94a3b8;
-}
-
-.adblock-card.disabled .adblock-mode-dot {
-  background: #64748b;
-  box-shadow: none;
+.api-report-btn:hover {
+  background: #FF6B50;
+  color: #000000;
+  border-color: #FF6B50;
 }
 
 /* Site Card */

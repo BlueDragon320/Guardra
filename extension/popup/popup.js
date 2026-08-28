@@ -615,7 +615,10 @@ function renderPopup(data, tabUrl, tabId) {
   }
 
   // Summary
-  document.getElementById("summary-text").textContent = data.summary;
+  const summaryEl = document.getElementById("summary-text");
+  if (summaryEl) {
+    summaryEl.textContent = data.summary || "";
+  }
 
   // Render Cookie Governance
   loadCookieGovernance(data.domain, tabUrl, tabId);
@@ -665,17 +668,52 @@ function renderPopup(data, tabUrl, tabId) {
     rubricList.appendChild(row);
   }
 
+  // Grievance contact helper to clean up sentence fragments
+  function cleanOfficerName(name) {
+    if (!name) return "Designated Grievance Redressal Officer";
+    let cleaned = name.replace(/\b(?:if\s+you|please|in\s+case|write\s+to|reach\s+out|contact|appointed|under\s+section|email)\b.*$/i, "").trim();
+    cleaned = cleaned.replace(/[\.\:\,\-]+$/, "").trim();
+    if (!cleaned || cleaned.length < 5 || cleaned.toLowerCase() === "grievance officer") {
+      return "Designated Grievance Officer";
+    }
+    return cleaned;
+  }
+
   // Grievance contact
   const grievanceContact = document.getElementById("grievance-contact");
-  if (data.compliance?.dpdp?.grievance_email) {
-    grievanceContact.textContent = `${data.compliance.dpdp.grievance_officer || "Grievance Officer"}: ${data.compliance.dpdp.grievance_email}`;
-  } else if (data.compliance?.gdpr?.dpo_contact) {
-    grievanceContact.textContent = `DPO: ${data.compliance.gdpr.dpo_contact}`;
-  } else if (data.contacts?.email && data.contacts.email.length > 0) {
-    const pEmail = data.contacts.email.find(e => e.includes("privacy") || e.includes("grievance") || e.includes("dpo")) || data.contacts.email[0];
-    grievanceContact.textContent = `Contact: ${pEmail}`;
-  } else {
-    grievanceContact.textContent = "Not found";
+  if (grievanceContact) {
+    if (data.compliance?.dpdp?.grievance_email) {
+      const officer = cleanOfficerName(data.compliance.dpdp.grievance_officer);
+      const email = data.compliance.dpdp.grievance_email;
+      grievanceContact.innerHTML = `
+        <div style="color:var(--text-main); font-weight:600; margin-bottom:2px;">${officer}</div>
+        <a href="mailto:${email}" style="color:var(--color-accent); text-decoration:none; font-family:monospace; font-size:11px;">${email}</a>
+      `;
+    } else if (data.compliance?.gdpr?.dpo_contact) {
+      grievanceContact.innerHTML = `
+        <div style="color:var(--text-main); font-weight:600; margin-bottom:2px;">Data Protection Officer (DPO)</div>
+        <a href="mailto:${data.compliance.gdpr.dpo_contact}" style="color:var(--color-accent); text-decoration:none; font-family:monospace; font-size:11px;">${data.compliance.gdpr.dpo_contact}</a>
+      `;
+    } else if (data.contacts?.email && data.contacts.email.length > 0) {
+      const pEmail = data.contacts.email.find(e => e.includes("privacy") || e.includes("grievance") || e.includes("dpo")) || data.contacts.email[0];
+      grievanceContact.innerHTML = `
+        <div style="color:var(--text-main); font-weight:600; margin-bottom:2px;">Privacy Redressal Contact</div>
+        <a href="mailto:${pEmail}" style="color:var(--color-accent); text-decoration:none; font-family:monospace; font-size:11px;">${pEmail}</a>
+      `;
+    } else {
+      grievanceContact.innerHTML = `<span style="color:var(--text-muted); font-size:11px;">No designated officer contact found in policy.</span>`;
+    }
+  }
+
+  // Dynamic Guardra API Link for current site
+  const apiBtn = document.getElementById("btn-open-api-breakdown");
+  const apiText = document.getElementById("api-link-text");
+  if (apiBtn && data.domain) {
+    const cleanDom = data.domain.replace(/^www\./, "");
+    apiBtn.href = `https://guardra-api.botvaibhav.dev/?domain=${encodeURIComponent(cleanDom)}#scanner`;
+    if (apiText) {
+      apiText.textContent = `Why this score? Live Guardra Web Audit for ${cleanDom} ↗`;
+    }
   }
 
   // Update Ad Block UI State

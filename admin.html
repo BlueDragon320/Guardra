@@ -1,0 +1,1898 @@
+<!DOCTYPE html>
+<html lang="en" class="dark selection-coral">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guardra Server — Admin Rating & Crawler Portal</title>
+  
+  <!-- Tab Icon / Favicon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23050505'/%3E%3Crect x='2.5' y='2.5' width='27' height='27' rx='5.5' fill='%23FFFFFF'/%3E%3Ctext x='16' y='22.5' font-family='-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif' font-weight='900' font-size='18' text-anchor='middle' fill='%23050505'%3EG.%3C/text%3E%3C/svg%3E" />
+  <link rel="alternate icon" type="image/png" href="/favicon.png" />
+  <link rel="apple-touch-icon" href="/favicon.png" />
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: '#10b981',
+            accent: '#FF6B50',
+            darkbg: '#050505',
+            surface: '#111111',
+            surfaceHover: '#181818',
+            bordercol: '#222222'
+          },
+          fontFamily: {
+            sans: ['Satoshi', 'Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @font-face {
+      font-family: 'Satoshi';
+      src: url('https://vgbujcuwptvheqijyjbe.supabase.co/storage/v1/object/public/hmac-uploads/uploads/4aed2f49-a476-436f-bae8-f31aa18f46fa/1767920861040-60c1c779/Satoshi-Variable.woff2') format('woff2');
+      font-weight: 300 900;
+      font-display: swap;
+      font-style: normal;
+    }
+    body { background-color: #050505; color: #ebebeb; font-family: 'Satoshi', 'Inter', sans-serif; }
+    .selection-coral::selection { background-color: #FF6B50; color: white; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #050505; }
+    ::-webkit-scrollbar-thumb { background: #222222; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #333333; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection-coral">
+
+  <!-- Top Navbar -->
+  <header class="h-14 border-b border-bordercol px-6 flex items-center justify-between bg-surface/90 backdrop-blur-md sticky top-0 z-30">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded bg-white flex items-center justify-center text-black font-black text-lg transition-transform hover:rotate-12 cursor-pointer">
+        G.
+      </div>
+      <div>
+        <h1 class="text-sm font-bold tracking-tight text-zinc-100 flex items-center gap-2">
+          Guardra Server Admin
+          <span class="text-[10px] font-mono text-zinc-400 px-1.5 py-0.5 rounded bg-zinc-900 border border-bordercol">Midnight v2.0</span>
+        </h1>
+      </div>
+    </div>
+
+    <!-- View Switcher Tabs -->
+    <div class="flex items-center bg-darkbg p-1 rounded-lg border border-bordercol gap-1">
+      <button id="tabBtnSites" onclick="switchTab('sites')" class="px-3 py-1 text-xs font-medium rounded-md bg-surface text-brand border border-bordercol transition">
+        🏢 1000+ Monitored Sites
+      </button>
+      <button id="tabBtnAnalytics" onclick="switchTab('analytics')" class="px-3 py-1 text-xs font-medium rounded-md text-zinc-400 hover:text-zinc-200 transition flex items-center gap-1.5">
+        <span>📈 Traffic & Graphs</span>
+      </button>
+      <button id="tabBtnPings" onclick="switchTab('pings')" class="px-3 py-1 text-xs font-medium rounded-md text-zinc-400 hover:text-zinc-200 transition flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span>📡 Live Stream</span>
+      </button>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <div id="authStatusBadge" class="text-[11px] font-mono px-2 py-0.5 rounded bg-emerald-950/60 border border-emerald-800 text-emerald-400 flex items-center gap-1.5">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+        <span id="authStatusText">Authenticated</span>
+      </div>
+      <button onclick="handleLogout()" class="text-xs px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 border border-bordercol text-zinc-300 transition">
+        Logout
+      </button>
+    </div>
+  </header>
+
+  <!-- Login Modal -->
+  <div id="loginModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-surface border border-bordercol rounded-xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded bg-zinc-800 border border-zinc-700 flex items-center justify-center text-base">
+          🔒
+        </div>
+        <div>
+          <h2 class="text-sm font-bold text-zinc-100">Admin Authentication Required</h2>
+          <p class="text-xs text-zinc-400">Enter your server secret key to manage ratings and crawler jobs.</p>
+        </div>
+      </div>
+
+      <div class="space-y-2">
+        <label class="text-xs font-medium text-zinc-300">Admin Secret Key</label>
+        <input type="password" id="adminKeyInput" placeholder="Enter ADMIN_SECRET_KEY..." class="w-full bg-darkbg border border-bordercol rounded-md px-3 py-2 text-xs font-mono text-zinc-200 focus:outline-none focus:border-brand" />
+        <p id="loginError" class="text-[11px] text-rose-400 hidden">Invalid admin key.</p>
+      </div>
+
+      <button onclick="handleLogin()" class="w-full py-2 bg-brand hover:bg-emerald-600 text-zinc-950 font-semibold rounded-md text-xs transition">
+        Authenticate Session
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Content Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6">
+
+    <!-- TAB 1: SITES MANAGEMENT -->
+    <div id="tabSitesSection" class="space-y-6">
+      <!-- KPI Summary Bar -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-surface border border-bordercol rounded-lg p-4 space-y-1">
+          <div class="text-[11px] font-medium text-zinc-400">Total Monitored Sites</div>
+          <div id="kpiTotalSites" class="text-2xl font-bold font-mono text-zinc-100">--</div>
+          <div class="text-[10px] text-zinc-500">Live evaluated domains</div>
+        </div>
+
+        <div class="bg-surface border border-bordercol rounded-lg p-4 space-y-1">
+          <div class="text-[11px] font-medium text-zinc-400">Average Privacy Score</div>
+          <div id="kpiAvgScore" class="text-2xl font-bold font-mono text-zinc-100">--</div>
+          <div class="text-[10px] text-zinc-500">Across top 1000 database</div>
+        </div>
+
+        <div class="bg-surface border border-bordercol rounded-lg p-4 space-y-1">
+          <div class="text-[11px] font-medium text-zinc-400">DPDP Verified Officers</div>
+          <div id="kpiDpdpCount" class="text-2xl font-bold font-mono text-emerald-400">--</div>
+          <div class="text-[10px] text-zinc-500">With statutory Indian contacts</div>
+        </div>
+
+        <div class="bg-surface border border-bordercol rounded-lg p-4 space-y-1">
+          <div class="text-[11px] font-medium text-zinc-400">Automated Crawler Status</div>
+          <div id="kpiCrawlerStatus" class="text-sm font-semibold font-mono text-zinc-200 mt-1 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            Idle (Ready)
+          </div>
+          <div id="kpiLastCrawl" class="text-[10px] text-zinc-500">Last run: Ready</div>
+        </div>
+      </div>
+
+      <!-- Crawler Actions & Controls -->
+      <div class="bg-surface border border-bordercol rounded-lg p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-sm font-semibold text-zinc-100 flex items-center gap-2">
+            ⚡ Top 1000 Automated Policy Crawler Engine
+          </h2>
+          <p class="text-xs text-zinc-400 mt-0.5">
+            Crawls top global & Indian websites, detects policy revisions, scores 6-pillar NLP rubrics, and logs extension queries.
+          </p>
+        </div>
+
+        <div class="flex items-center gap-2.5 flex-wrap">
+          <button id="btnScanTop1000" onclick="triggerTop1000Scan()" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-zinc-950 font-semibold text-xs rounded-md flex items-center gap-1.5 transition">
+            <span>🚀 Crawl Top 1000 Sites</span>
+          </button>
+          <button id="btnBulkRescore" onclick="triggerBulkRescore()" class="px-3.5 py-1.5 bg-zinc-800 hover:bg-zinc-700 border border-bordercol text-zinc-200 text-xs font-medium rounded-md flex items-center gap-1.5 transition">
+            <span>🔄 Auto-Rescore Database</span>
+          </button>
+          <button onclick="openAddSiteModal()" class="px-3.5 py-1.5 bg-zinc-800 hover:bg-zinc-700 border border-bordercol text-zinc-200 text-xs font-medium rounded-md flex items-center gap-1.5 transition">
+            <span>➕ Add Website</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Crawler Live Progress Bar -->
+      <div id="crawlerProgressBox" class="bg-surface border border-brand/40 rounded-lg p-4 space-y-2 hidden">
+        <div class="flex items-center justify-between text-xs">
+          <span class="font-medium text-emerald-400 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+            Crawling in progress: <span id="crawlerCurrentSite" class="font-mono text-zinc-200">--</span>
+          </span>
+          <span id="crawlerProgressText" class="font-mono text-zinc-400">0 / 0</span>
+        </div>
+        <div class="w-full bg-darkbg border border-bordercol h-2 rounded-full overflow-hidden">
+          <div id="crawlerProgressBar" class="h-full bg-brand transition-all duration-300" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <!-- Sites Table Section -->
+      <div class="bg-surface border border-bordercol rounded-lg overflow-hidden space-y-4 p-5">
+        <!-- Table Filter Header -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-2 border-b border-bordercol">
+          <div class="flex items-center gap-2 w-full sm:w-80">
+            <input type="text" id="searchInput" oninput="handleSearch()" placeholder="Search from 1000+ domains..." class="w-full bg-darkbg border border-bordercol rounded-md px-3 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-brand font-mono" />
+          </div>
+
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="text-[11px] text-zinc-400">Grade Filter:</span>
+            <button onclick="filterGrade('')" class="grade-filter-btn text-[11px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-200 border border-bordercol">All (1000+)</button>
+            <button onclick="filterGrade('A')" class="grade-filter-btn text-[11px] font-mono px-2 py-0.5 rounded bg-darkbg text-zinc-400 border border-bordercol">A</button>
+            <button onclick="filterGrade('B')" class="grade-filter-btn text-[11px] font-mono px-2 py-0.5 rounded bg-darkbg text-zinc-400 border border-bordercol">B</button>
+            <button onclick="filterGrade('C')" class="grade-filter-btn text-[11px] font-mono px-2 py-0.5 rounded bg-darkbg text-zinc-400 border border-bordercol">C</button>
+            <button onclick="filterGrade('D')" class="grade-filter-btn text-[11px] font-mono px-2 py-0.5 rounded bg-darkbg text-zinc-400 border border-bordercol">D</button>
+            <button onclick="filterGrade('F')" class="grade-filter-btn text-[11px] font-mono px-2 py-0.5 rounded bg-darkbg text-zinc-400 border border-bordercol">F</button>
+          </div>
+        </div>
+
+        <!-- Sites Table -->
+        <div class="overflow-x-auto max-h-[650px] overflow-y-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="sticky top-0 bg-surface z-10">
+              <tr class="border-b border-bordercol text-zinc-400 font-mono text-[11px]">
+                <th class="pb-3 font-medium">Domain / Name</th>
+                <th class="pb-3 font-medium">Grade & Score</th>
+                <th class="pb-3 font-medium">Category</th>
+                <th class="pb-3 font-medium">DPDP Redressal Officer</th>
+                <th class="pb-3 font-medium">6-Pillar Scores</th>
+                <th class="pb-3 font-medium text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="sitesTableBody" class="divide-y divide-bordercol/60">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: LIVE PING AUDIT LOGS -->
+    <div id="tabPingsSection" class="space-y-6 hidden">
+      <!-- Ping KPI Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="bg-surface border border-bordercol rounded-lg p-4 space-y-1">
+          <div class="text-[11px] font-medium text-zinc-400">Total Extension Queries Logged</div>
+          <div id="kpiTotalPings" class="text-2xl font-bold font-mono text-brand">--</div>
+          <div class="text-[10px] text-zinc-500">Every single client ping recorded</div>
+        </div>
+
+        <div class="bg-surface border border-bordercol rounded-lg p-4 space-y-1">
+          <div class="text-[11px] font-medium text-zinc-400">Unique Domains Queried</div>
+          <div id="kpiUniqueDomains" class="text-2xl font-bold font-mono text-zinc-100">--</div>
+          <div class="text-[10px] text-zinc-500">Distinct sites requested by users</div>
+        </div>
+
+        <div class="bg-surface border border-bordercol rounded-lg p-4 space-y-1">
+          <div class="text-[11px] font-medium text-zinc-400">Average Response Latency</div>
+          <div id="kpiAvgLatency" class="text-2xl font-bold font-mono text-zinc-100">-- ms</div>
+          <div class="text-[10px] text-zinc-500">Instantaneous server response speed</div>
+        </div>
+      </div>
+
+      <!-- Ping Logs Table -->
+      <div class="bg-surface border border-bordercol rounded-lg overflow-hidden space-y-4 p-5">
+        <div class="flex items-center justify-between pb-2 border-b border-bordercol">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+            <h2 class="text-sm font-semibold text-zinc-100">Live Client Extension Ping Stream</h2>
+          </div>
+          <button onclick="loadPings()" class="px-3 py-1 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded transition">
+            🔄 Refresh Stream
+          </button>
+        </div>
+
+        <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="sticky top-0 bg-surface z-10">
+              <tr class="border-b border-bordercol text-zinc-400 font-mono text-[11px]">
+                <th class="pb-3 font-medium">Timestamp</th>
+                <th class="pb-3 font-medium">Requested Domain</th>
+                <th class="pb-3 font-medium">Served Grade</th>
+                <th class="pb-3 font-medium">Served Score</th>
+                <th class="pb-3 font-medium">Latency</th>
+                <th class="pb-3 font-medium">Client Type</th>
+              </tr>
+            </thead>
+            <tbody id="pingsTableBody" class="divide-y divide-bordercol/60 font-mono text-[11px]">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: TRAFFIC ANALYTICS & GRAPHS -->
+    <div id="tabAnalyticsSection" class="space-y-6 hidden">
+      <!-- Analytics Header & Timeframe Switcher -->
+      <div class="bg-surface border border-bordercol rounded-lg p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-sm font-semibold text-zinc-100 flex items-center gap-2">
+            <span>📈 User Web Traffic & Browsing Analytics</span>
+            <span class="text-[10px] font-mono text-brand px-2 py-0.5 rounded bg-emerald-950/60 border border-emerald-800">Live Telemetry</span>
+          </h2>
+          <p class="text-xs text-zinc-400 mt-0.5">Aggregated website traffic and privacy compliance exposure across all users.</p>
+        </div>
+
+        <div class="flex items-center gap-2 flex-wrap">
+          <div class="flex items-center bg-darkbg p-1 rounded-lg border border-bordercol">
+            <button id="tfBtnDay" onclick="setAnalyticsTimeframe('day')" class="px-3 py-1 text-xs font-medium rounded-md bg-surface text-brand border border-bordercol transition">
+              📅 24 Hours (Day)
+            </button>
+            <button id="tfBtnWeek" onclick="setAnalyticsTimeframe('week')" class="px-3 py-1 text-xs font-medium rounded-md text-zinc-400 hover:text-zinc-200 transition">
+              📊 7 Days (Week)
+            </button>
+            <button id="tfBtnMonth" onclick="setAnalyticsTimeframe('month')" class="px-3 py-1 text-xs font-medium rounded-md text-zinc-400 hover:text-zinc-200 transition">
+              🗓️ 30 Days (Month)
+            </button>
+          </div>
+
+          <button onclick="loadAnalytics(currentAnalyticsTimeframe)" class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 border border-bordercol text-zinc-200 text-xs font-medium rounded-md flex items-center gap-1.5 transition">
+            <span>🔄 Refresh Analytics</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Analytics KPI Summary Bar -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-surface border border-bordercol rounded-lg p-4 space-y-1">
+          <div class="text-[11px] font-medium text-zinc-400">Total Website Visits Logged</div>
+          <div id="kpiAnalyticsTotalVisits" class="text-2xl font-bold font-mono text-brand">--</div>
+          <div class="text-[10px] text-zinc-500">Across all connected users</div>
+        </div>
+
+        <div class="bg-surface border border-bordercol rounded-lg p-4 space-y-1">
+          <div class="text-[11px] font-medium text-zinc-400">Unique Websites Visited</div>
+          <div id="kpiAnalyticsUniqueDomains" class="text-2xl font-bold font-mono text-zinc-100">--</div>
+          <div class="text-[10px] text-zinc-500">Distinct web platforms</div>
+        </div>
+
+        <div class="bg-surface border border-bordercol rounded-lg p-4 space-y-1">
+          <div class="text-[11px] font-medium text-zinc-400">Average Visited Privacy Score</div>
+          <div id="kpiAnalyticsAvgScore" class="text-2xl font-bold font-mono text-zinc-100">-- / 100</div>
+          <div class="text-[10px] text-zinc-500">Traffic-weighted average score</div>
+        </div>
+
+        <div class="bg-surface border border-bordercol rounded-lg p-4 space-y-1">
+          <div class="text-[11px] font-medium text-zinc-400">Peak Browsing Activity</div>
+          <div id="kpiAnalyticsBusiest" class="text-sm font-bold font-mono text-amber-400 mt-1 truncate">--</div>
+          <div class="text-[10px] text-zinc-500">Highest volume traffic slot</div>
+        </div>
+      </div>
+
+      <!-- Interactive Charts Grid (Area Chart + Risk Donut) -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Left 2 Cols: Traffic Volume Over Time Area/Line Chart -->
+        <div class="lg:col-span-2 bg-surface border border-bordercol rounded-lg p-5 space-y-4">
+          <div class="flex items-center justify-between border-b border-bordercol pb-3">
+            <div>
+              <h3 class="text-sm font-semibold text-zinc-100 flex items-center gap-2">
+                <span>📊 Top 10 Visited Websites (Bar + Line Graph Combined)</span>
+                <span class="text-[10px] font-mono text-emerald-400 px-1.5 py-0.5 rounded bg-emerald-950/60 border border-emerald-800">Top 10 Leaders</span>
+              </h3>
+              <p class="text-[11px] text-zinc-400">Total Visits shown as Emerald Bars + Authoritative Privacy Score shown as Cyan Line.</p>
+            </div>
+            <div class="flex items-center gap-3 text-[11px] font-mono">
+              <span class="flex items-center gap-1.5 text-emerald-400 font-medium">
+                <span class="w-2.5 h-3 rounded-sm bg-emerald-400 inline-block"></span> Total Visits (Bars)
+              </span>
+              <span class="flex items-center gap-1.5 text-cyan-400 font-medium">
+                <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 inline-block"></span> Privacy Score 0–100 (Line)
+              </span>
+            </div>
+          </div>
+          <div id="trafficLineChartContainer" class="relative h-[270px] w-full flex items-center justify-center">
+            <!-- Rendered as interactive vector Linear Graph -->
+          </div>
+        </div>
+
+        <!-- Right 1 Col: Visited Sites Risk Breakdown Donut Chart -->
+        <div class="bg-surface border border-bordercol rounded-lg p-5 space-y-4 flex flex-col justify-between">
+          <div class="border-b border-bordercol pb-3">
+            <h3 class="text-sm font-semibold text-zinc-100">🛡️ Visited Sites Privacy Risk</h3>
+            <p class="text-[11px] text-zinc-400">Compliance distribution of visited sites.</p>
+          </div>
+          <div id="riskDonutContainer" class="relative h-[180px] w-full flex items-center justify-center">
+            <!-- Rendered as SVG Donut -->
+          </div>
+          <div class="grid grid-cols-3 gap-2 pt-2 border-t border-bordercol/60 text-center font-mono text-[10px]">
+            <div class="bg-emerald-950/40 border border-emerald-800/60 rounded p-1.5">
+              <div class="text-emerald-400 font-bold" id="donutStatSafe">0</div>
+              <div class="text-zinc-400 text-[9px]">Safe (A/B)</div>
+            </div>
+            <div class="bg-amber-950/40 border border-amber-800/60 rounded p-1.5">
+              <div class="text-amber-400 font-bold" id="donutStatMod">0</div>
+              <div class="text-zinc-400 text-[9px]">Mod (C)</div>
+            </div>
+            <div class="bg-rose-950/40 border border-rose-800/60 rounded p-1.5">
+              <div class="text-rose-400 font-bold" id="donutStatRisk">0</div>
+              <div class="text-zinc-400 text-[9px]">Risk (D/F)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Visited Websites Leaderboard Table -->
+      <div class="bg-surface border border-bordercol rounded-lg overflow-hidden space-y-4 p-5">
+        <div class="flex items-center justify-between pb-2 border-b border-bordercol">
+          <div class="flex items-center gap-2">
+            <span class="text-base">🏆</span>
+            <h3 class="text-sm font-semibold text-zinc-100">Top Visited Websites & Traffic Distribution</h3>
+          </div>
+          <span class="text-xs text-zinc-400 font-mono">Ranked by Total Hits</span>
+        </div>
+
+        <div class="overflow-x-auto max-h-[500px] overflow-y-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="sticky top-0 bg-surface z-10">
+              <tr class="border-b border-bordercol text-zinc-400 font-mono text-[11px]">
+                <th class="pb-3 font-medium w-12 text-center">Rank</th>
+                <th class="pb-3 font-medium">Domain / Platform</th>
+                <th class="pb-3 font-medium">Total User Visits</th>
+                <th class="pb-3 font-medium">Traffic Share</th>
+                <th class="pb-3 font-medium">Grade & Score</th>
+                <th class="pb-3 font-medium">Category</th>
+                <th class="pb-3 font-medium">Last Visited</th>
+                <th class="pb-3 font-medium text-right">Deep-Dive</th>
+              </tr>
+            </thead>
+            <tbody id="analyticsTopSitesBody" class="divide-y divide-bordercol/60">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Edit Site Modal -->
+  <div id="editModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-surface border border-bordercol rounded-xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl">
+      <div class="p-5 border-b border-bordercol flex items-center justify-between">
+        <div>
+          <h2 class="text-sm font-bold text-zinc-100 flex items-center gap-2">
+            <span>✏️ Edit & Override Rating for</span>
+            <span id="editModalDomain" class="font-mono text-brand">example.com</span>
+          </h2>
+          <p class="text-xs text-zinc-400">Manual edits override automated values and sync immediately to extensions.</p>
+        </div>
+        <button onclick="closeEditModal()" class="text-zinc-400 hover:text-zinc-200 text-lg">&times;</button>
+      </div>
+
+      <div class="p-5 overflow-y-auto space-y-4 flex-1 text-xs">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="font-medium text-zinc-300 block mb-1">Platform Name</label>
+            <input type="text" id="editName" class="w-full bg-darkbg border border-bordercol rounded px-2.5 py-1.5 text-zinc-100 focus:outline-none focus:border-brand" />
+          </div>
+
+          <div>
+            <label class="font-medium text-zinc-300 block mb-1">Composite Grade (A+ to F)</label>
+            <select id="editGrade" class="w-full bg-darkbg border border-bordercol rounded px-2.5 py-1.5 text-zinc-100 focus:outline-none focus:border-brand">
+              <option value="A+">A+ (Gold Standard)</option>
+              <option value="A">A (High Privacy)</option>
+              <option value="B+">B+ (Good Protection)</option>
+              <option value="B">B (Standard Good)</option>
+              <option value="C+">C+ (Moderate Risk)</option>
+              <option value="C">C (Average Commercial)</option>
+              <option value="D+">D+ (High Exposure)</option>
+              <option value="D">D (Extensive Profiling)</option>
+              <option value="F">F (Critical Risk)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="font-medium text-zinc-300 block mb-1">Numerical Score (0–100)</label>
+            <input type="number" id="editScore" min="0" max="100" class="w-full bg-darkbg border border-bordercol rounded px-2.5 py-1.5 text-zinc-100 font-mono focus:outline-none focus:border-brand" />
+          </div>
+        </div>
+
+        <div>
+          <label class="font-medium text-zinc-300 block mb-1">Executive Summary / Verdict</label>
+          <textarea id="editSummary" rows="2" class="w-full bg-darkbg border border-bordercol rounded px-2.5 py-1.5 text-zinc-100 focus:outline-none focus:border-brand"></textarea>
+        </div>
+
+        <!-- 6-Pillar Rubric Sliders -->
+        <div class="border border-bordercol rounded-lg p-3 space-y-3 bg-darkbg">
+          <div class="font-semibold text-zinc-200">6-Pillar Rubric Weights & Scores</div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <div class="flex justify-between text-[11px] mb-1">
+                <span>Data Sharing (25%):</span>
+                <span id="val_data_sharing" class="font-mono text-brand">50/100</span>
+              </div>
+              <input type="range" id="rubric_data_sharing" min="0" max="100" class="w-full accent-emerald-500" oninput="updateRubricVal('data_sharing')" />
+            </div>
+
+            <div>
+              <div class="flex justify-between text-[11px] mb-1">
+                <span>Cookies & Trackers (20%):</span>
+                <span id="val_tracking_cookies" class="font-mono text-brand">50/100</span>
+              </div>
+              <input type="range" id="rubric_tracking_cookies" min="0" max="100" class="w-full accent-emerald-500" oninput="updateRubricVal('tracking_cookies')" />
+            </div>
+
+            <div>
+              <div class="flex justify-between text-[11px] mb-1">
+                <span>User Rights & Erasure (20%):</span>
+                <span id="val_user_rights" class="font-mono text-brand">50/100</span>
+              </div>
+              <input type="range" id="rubric_user_rights" min="0" max="100" class="w-full accent-emerald-500" oninput="updateRubricVal('user_rights')" />
+            </div>
+
+            <div>
+              <div class="flex justify-between text-[11px] mb-1">
+                <span>Data Retention (15%):</span>
+                <span id="val_retention" class="font-mono text-brand">50/100</span>
+              </div>
+              <input type="range" id="rubric_retention" min="0" max="100" class="w-full accent-emerald-500" oninput="updateRubricVal('retention')" />
+            </div>
+
+            <div>
+              <div class="flex justify-between text-[11px] mb-1">
+                <span>Breach Safeguards (10%):</span>
+                <span id="val_breach_history" class="font-mono text-brand">50/100</span>
+              </div>
+              <input type="range" id="rubric_breach_history" min="0" max="100" class="w-full accent-emerald-500" oninput="updateRubricVal('breach_history')" />
+            </div>
+
+            <div>
+              <div class="flex justify-between text-[11px] mb-1">
+                <span>Plain Language (10%):</span>
+                <span id="val_readability" class="font-mono text-brand">50/100</span>
+              </div>
+              <input type="range" id="rubric_readability" min="0" max="100" class="w-full accent-emerald-500" oninput="updateRubricVal('readability')" />
+            </div>
+          </div>
+        </div>
+
+        <!-- DPDP Compliance Contacts -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="font-medium text-zinc-300 block mb-1">DPDP Grievance Officer Name</label>
+            <input type="text" id="editOfficer" class="w-full bg-darkbg border border-bordercol rounded px-2.5 py-1.5 text-zinc-100 focus:outline-none focus:border-brand" />
+          </div>
+
+          <div>
+            <label class="font-medium text-zinc-300 block mb-1">Grievance Email Address</label>
+            <input type="email" id="editEmail" class="w-full bg-darkbg border border-bordercol rounded px-2.5 py-1.5 text-zinc-100 font-mono focus:outline-none focus:border-brand" />
+          </div>
+        </div>
+      </div>
+
+      <div class="p-4 border-t border-bordercol flex items-center justify-end gap-2 bg-surface">
+        <button onclick="closeEditModal()" class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded text-xs">
+          Cancel
+        </button>
+        <button onclick="saveSiteEdit()" class="px-4 py-1.5 bg-brand hover:bg-emerald-600 text-zinc-950 font-semibold rounded text-xs">
+          Save & Publish
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Site Modal -->
+  <div id="addModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-surface border border-bordercol rounded-xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between">
+        <h2 class="text-sm font-bold text-zinc-100">➕ Add New Website to Monitor</h2>
+        <button onclick="closeAddSiteModal()" class="text-zinc-400 hover:text-zinc-200 text-lg">&times;</button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="font-medium text-zinc-300 block mb-1">Domain Name</label>
+          <input type="text" id="addDomainInput" placeholder="e.g. nytimes.com, zerodha.com..." class="w-full bg-darkbg border border-bordercol rounded px-3 py-2 font-mono text-zinc-100 focus:outline-none focus:border-brand" />
+        </div>
+
+        <div class="flex items-center gap-2">
+          <input type="checkbox" id="addAutoScrape" checked class="rounded accent-emerald-500" />
+          <label for="addAutoScrape" class="text-zinc-300">Run Automated Live NLP Policy Scrape immediately</label>
+        </div>
+
+        <p id="addError" class="text-[11px] text-rose-400 hidden">Error adding site.</p>
+      </div>
+
+      <div class="flex justify-end gap-2">
+        <button onclick="closeAddSiteModal()" class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded text-xs">
+          Cancel
+        </button>
+        <button onclick="submitAddSite()" class="px-4 py-1.5 bg-brand hover:bg-emerald-600 text-zinc-950 font-semibold rounded text-xs">
+          Add Site
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Site Detail Modal -->
+  <div id="siteDetailModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-surface border border-bordercol rounded-xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+      <!-- Modal Header -->
+      <div class="p-5 border-b border-bordercol flex items-center justify-between bg-darkbg">
+        <div class="flex items-center gap-4">
+          <div id="detailGradeCircle" class="w-12 h-12 rounded-xl flex flex-col items-center justify-center font-mono font-bold border">
+            <span id="detailGrade" class="text-xl leading-none">A</span>
+            <span id="detailScore" class="text-[10px] text-zinc-400 font-normal">90/100</span>
+          </div>
+          <div>
+            <div class="flex items-center gap-2.5">
+              <h2 id="detailDomain" class="text-base font-bold text-zinc-100 font-mono">example.com</h2>
+              <span id="detailName" class="text-xs text-zinc-400">Example Corp</span>
+              <span id="detailVerdictTag" class="text-[10px] px-2 py-0.5 rounded-full font-mono font-semibold uppercase tracking-wider bg-emerald-950/60 border border-emerald-800 text-emerald-400">Safe Site</span>
+            </div>
+            <div class="text-xs text-zinc-500 mt-1 flex items-center gap-2">
+              <span id="detailCategory" class="text-zinc-400">Web Platform</span>
+              <span>&bull;</span>
+              <span id="detailDate">Last Analyzed: 2026-08-27</span>
+              <span>&bull;</span>
+              <span id="detailSource" class="capitalize font-mono text-[11px] text-zinc-400">Source: Live Radar</span>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="rescanFromDetailModal()" id="btnDetailRescan" class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded text-xs flex items-center gap-1.5 transition">
+            <span>🔄 Rescan</span>
+          </button>
+          <button onclick="closeSiteDetailModal()" class="text-zinc-400 hover:text-zinc-200 text-2xl p-1 leading-none">&times;</button>
+        </div>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-6 overflow-y-auto space-y-6 flex-1 text-sm text-zinc-300">
+        <!-- Quick Action Bar -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <a id="detailPolicyLink" href="#" target="_blank" class="py-2.5 px-4 bg-zinc-900 hover:bg-zinc-800 border border-bordercol rounded-lg flex items-center justify-center gap-2 text-xs font-semibold text-brand transition">
+            <span>🔗 View Verified Source Policy</span>
+          </a>
+          <button onclick="generateAndCopyNoticeFromModal()" class="py-2.5 px-4 bg-emerald-950/40 hover:bg-emerald-900/50 border border-emerald-800 rounded-lg flex items-center justify-center gap-2 text-xs font-semibold text-emerald-400 transition">
+            <span>📋 Copy Statutory DPDP Deletion Notice</span>
+          </button>
+        </div>
+
+        <!-- Executive Summary -->
+        <div class="bg-darkbg border border-bordercol rounded-xl p-4 space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-zinc-400 font-mono">Executive Privacy Assessment</span>
+            <span id="detailRiskLevelBadge" class="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-300">Low Exposure Risk</span>
+          </div>
+          <p id="detailSummary" class="text-xs text-zinc-300 leading-relaxed pt-1">
+            Analyzing privacy disclosures...
+          </p>
+        </div>
+
+        <!-- 6-Pillar Statutory Privacy Rubric -->
+        <div>
+          <div class="flex items-center justify-between mb-3 border-b border-bordercol pb-1.5">
+            <h3 class="font-semibold text-zinc-100 text-xs uppercase tracking-wider font-mono">6-Pillar Privacy Rubric Breakdown</h3>
+            <span class="text-[11px] text-zinc-500 font-mono">Normalized against DPDP Act 2023 & GDPR</span>
+          </div>
+          <div id="detailRubric" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- Regional Statutory Compliance (India DPDP / EU GDPR / CCPA) -->
+        <div>
+          <h3 class="font-semibold text-zinc-100 text-xs uppercase tracking-wider font-mono mb-3 border-b border-bordercol pb-1.5">
+            Statutory Legal Compliance (DPDP & GDPR)
+          </h3>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <!-- DPDP India -->
+            <div class="bg-darkbg border border-bordercol rounded-xl p-4 space-y-2 text-xs">
+              <div class="flex items-center justify-between pb-1.5 border-b border-zinc-800">
+                <span class="font-bold text-zinc-200">🇮🇳 India DPDP 2023</span>
+                <span id="detailDpdpStatus" class="font-mono text-[10px] px-1.5 py-0.5 rounded font-bold text-emerald-400 bg-emerald-950/40 border border-emerald-800">Compliant</span>
+              </div>
+              <div>
+                <span class="text-zinc-500 block text-[11px]">Grievance Officer</span>
+                <span id="detailOfficer" class="font-medium text-zinc-200">Mr. Priyanand S</span>
+              </div>
+              <div>
+                <span class="text-zinc-500 block text-[11px]">Grievance Email</span>
+                <span id="detailEmail" class="font-mono text-zinc-200 text-[11px] break-all">grievance@domain.com</span>
+              </div>
+              <div>
+                <span class="text-zinc-500 block text-[11px]">Statutory SLA</span>
+                <span id="detailSla" class="text-zinc-300">30-Day Mandatory Redressal</span>
+              </div>
+            </div>
+
+            <!-- EU GDPR -->
+            <div class="bg-darkbg border border-bordercol rounded-xl p-4 space-y-2 text-xs">
+              <div class="flex items-center justify-between pb-1.5 border-b border-zinc-800">
+                <span class="font-bold text-zinc-200">🇪🇺 EU GDPR</span>
+                <span id="detailGdprStatus" class="font-mono text-[10px] px-1.5 py-0.5 rounded font-bold text-emerald-400 bg-emerald-950/40 border border-emerald-800">Art. 17 Ready</span>
+              </div>
+              <div>
+                <span class="text-zinc-500 block text-[11px]">Data Protection Officer (DPO)</span>
+                <span id="detailDpo" class="font-mono text-zinc-200 text-[11px] break-all">dpo@domain.com</span>
+              </div>
+              <div>
+                <span class="text-zinc-500 block text-[11px]">Right to Erasure</span>
+                <span id="detailErasure" class="text-zinc-300">Disclosed & Active</span>
+              </div>
+            </div>
+
+            <!-- CCPA -->
+            <div class="bg-darkbg border border-bordercol rounded-xl p-4 space-y-2 text-xs">
+              <div class="flex items-center justify-between pb-1.5 border-b border-zinc-800">
+                <span class="font-bold text-zinc-200">🇺🇸 California CCPA</span>
+                <span id="detailCcpaStatus" class="font-mono text-[10px] px-1.5 py-0.5 rounded font-bold text-zinc-300 bg-zinc-800">Active</span>
+              </div>
+              <div>
+                <span class="text-zinc-500 block text-[11px]">Do-Not-Sell Selling Status</span>
+                <span id="detailDoNotSell" class="text-zinc-300">Supported / No Sale</span>
+              </div>
+              <div>
+                <span class="text-zinc-500 block text-[11px]">Consumer Opt-Out</span>
+                <span id="detailOptOut" class="text-zinc-300">Available</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Verified Data Breach History -->
+        <div>
+          <div class="flex items-center justify-between mb-3 border-b border-bordercol pb-1.5">
+            <h3 class="font-semibold text-zinc-100 text-xs uppercase tracking-wider font-mono flex items-center gap-1.5">
+              <span>🚨 Verified Data Breach History & Public Security Incidents</span>
+            </h3>
+            <span id="detailBreachBadge" class="text-[10px] font-mono px-2 py-0.5 rounded border bg-emerald-950/40 text-emerald-400 border-emerald-800">0 Breaches (Clean Record)</span>
+          </div>
+          <div id="detailBreachesContainer" class="space-y-2.5">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- Key Concerns & Safeguards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Concerns -->
+          <div class="bg-darkbg border border-bordercol rounded-xl p-4 space-y-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-rose-400 font-mono flex items-center gap-1.5">
+              <span>⚠️ Key Privacy Concerns & Red Flags</span>
+            </span>
+            <ul id="detailConcerns" class="space-y-1.5 text-xs text-zinc-300 pt-1">
+              <!-- Dynamically populated -->
+            </ul>
+          </div>
+
+          <!-- Positive Protections -->
+          <div class="bg-darkbg border border-bordercol rounded-xl p-4 space-y-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-emerald-400 font-mono flex items-center gap-1.5">
+              <span>🛡️ Consumer Protections & Safeguards</span>
+            </span>
+            <ul id="detailSafeguards" class="space-y-1.5 text-xs text-zinc-300 pt-1">
+              <!-- Dynamically populated -->
+            </ul>
+          </div>
+        </div>
+
+        <!-- Evidence & Policy Excerpts (Snippets without [object Object]) -->
+        <div>
+          <div class="flex items-center justify-between mb-3 border-b border-bordercol pb-1.5">
+            <h3 class="font-semibold text-zinc-100 text-xs uppercase tracking-wider font-mono">Evidence & Policy Excerpts</h3>
+            <span class="text-[11px] text-zinc-500 font-mono">Direct NLP Extracts from Legal Text</span>
+          </div>
+          <div id="detailSnippets" class="space-y-2.5">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Application Logic -->
+  <script>
+    let allSites = [];
+    let currentGradeFilter = '';
+    let adminToken = localStorage.getItem('guardra_admin_token') || '';
+    let currentEditingDomain = null;
+    let pollInterval = null;
+    let currentTab = 'sites';
+    let currentAnalyticsTimeframe = 'day';
+    let trafficChartInstance = null;
+    let riskDonutChartInstance = null;
+
+    window.onload = () => {
+      if (!adminToken) {
+        showLoginModal();
+      } else {
+        loadSites();
+        startCrawlerPolling();
+      }
+    };
+
+    function switchTab(tab) {
+      currentTab = tab;
+      
+      const secSites = document.getElementById('tabSitesSection');
+      const secAnalytics = document.getElementById('tabAnalyticsSection');
+      const secPings = document.getElementById('tabPingsSection');
+      
+      const btnSites = document.getElementById('tabBtnSites');
+      const btnAnalytics = document.getElementById('tabBtnAnalytics');
+      const btnPings = document.getElementById('tabBtnPings');
+
+      // Reset all sections
+      secSites.classList.add('hidden');
+      secAnalytics.classList.add('hidden');
+      secPings.classList.add('hidden');
+
+      // Reset all button styles
+      btnSites.className = 'px-3 py-1 text-xs font-medium rounded-md text-zinc-400 hover:text-zinc-200 transition';
+      btnAnalytics.className = 'px-3 py-1 text-xs font-medium rounded-md text-zinc-400 hover:text-zinc-200 transition flex items-center gap-1.5';
+      btnPings.className = 'px-3 py-1 text-xs font-medium rounded-md text-zinc-400 hover:text-zinc-200 transition flex items-center gap-1.5';
+
+      if (tab === 'sites') {
+        secSites.classList.remove('hidden');
+        btnSites.className = 'px-3 py-1 text-xs font-medium rounded-md bg-surface text-brand border border-bordercol transition';
+        loadSites();
+      } else if (tab === 'analytics') {
+        secAnalytics.classList.remove('hidden');
+        btnAnalytics.className = 'px-3 py-1 text-xs font-medium rounded-md bg-surface text-brand border border-bordercol transition flex items-center gap-1.5';
+        loadAnalytics(currentAnalyticsTimeframe);
+      } else {
+        secPings.classList.remove('hidden');
+        btnPings.className = 'px-3 py-1 text-xs font-medium rounded-md bg-surface text-brand border border-bordercol transition flex items-center gap-1.5';
+        loadPings();
+      }
+    }
+
+    function setAnalyticsTimeframe(tf) {
+      currentAnalyticsTimeframe = tf;
+      
+      const btnDay = document.getElementById('tfBtnDay');
+      const btnWeek = document.getElementById('tfBtnWeek');
+      const btnMonth = document.getElementById('tfBtnMonth');
+
+      btnDay.className = 'px-3 py-1 text-xs font-medium rounded-md text-zinc-400 hover:text-zinc-200 transition';
+      btnWeek.className = 'px-3 py-1 text-xs font-medium rounded-md text-zinc-400 hover:text-zinc-200 transition';
+      btnMonth.className = 'px-3 py-1 text-xs font-medium rounded-md text-zinc-400 hover:text-zinc-200 transition';
+
+      if (tf === 'day') btnDay.className = 'px-3 py-1 text-xs font-medium rounded-md bg-surface text-brand border border-bordercol transition';
+      else if (tf === 'week') btnWeek.className = 'px-3 py-1 text-xs font-medium rounded-md bg-surface text-brand border border-bordercol transition';
+      else if (tf === 'month') btnMonth.className = 'px-3 py-1 text-xs font-medium rounded-md bg-surface text-brand border border-bordercol transition';
+
+      loadAnalytics(tf);
+    }
+
+    async function loadAnalytics(timeframe = 'day') {
+      try {
+        const res = await fetch(`/api/admin/analytics/visits?timeframe=${timeframe}`, { headers: authHeaders() });
+        if (res.status === 401 || res.status === 403) {
+          showLoginModal();
+          return;
+        }
+        const data = await res.json();
+        
+        // Update KPIs
+        document.getElementById('kpiAnalyticsTotalVisits').innerText = data.total_visits || 0;
+        document.getElementById('kpiAnalyticsUniqueDomains').innerText = data.unique_domains || 0;
+        document.getElementById('kpiAnalyticsAvgScore').innerText = `${data.avg_score || 0} / 100`;
+        document.getElementById('kpiAnalyticsBusiest').innerText = data.busiest_period || 'N/A';
+
+        // Update Donut KPI Badges
+        const dist = data.grade_distribution || {};
+        const safeCount = (dist.A || 0) + (dist.B || 0);
+        const modCount = dist.C || 0;
+        const riskCount = (dist.D || 0) + (dist.F || 0);
+        
+        document.getElementById('donutStatSafe').innerText = safeCount;
+        document.getElementById('donutStatMod').innerText = modCount;
+        document.getElementById('donutStatRisk').innerText = riskCount;
+
+        // Render Charts & Leaderboard
+        renderTrafficChart(data.top10_chart || { labels: [], domains: [], visits: [], scores: [], grades: [], categories: [] });
+        renderRiskDonutChart(dist);
+        renderAnalyticsTopSites(data.top_domains || [], data.total_visits || 0);
+      } catch (e) {
+        console.error('Error loading analytics:', e);
+      }
+    }
+
+    function renderTrafficChart(chartData) {
+      const container = document.getElementById('trafficLineChartContainer');
+      if (!container) return;
+
+      const labels = chartData.labels || [];
+      const domains = chartData.domains || [];
+      const visits = chartData.visits || [];
+      const scores = chartData.scores || [];
+      const grades = chartData.grades || [];
+      const categories = chartData.categories || [];
+
+      if (labels.length === 0) {
+        container.innerHTML = `<div class="flex items-center justify-center h-full text-zinc-500 font-mono text-xs">No top website data recorded yet.</div>`;
+        return;
+      }
+
+      const maxVisits = Math.max(5, ...visits);
+      const height = 270;
+      const paddingLeft = 52;
+      const paddingRight = 52;
+      const paddingTop = 28;
+      const paddingBottom = 48;
+      const width = 800;
+
+      const plotW = width - paddingLeft - paddingRight;
+      const plotH = height - paddingTop - paddingBottom;
+      const slotW = plotW / labels.length;
+      const barW = Math.max(8, Math.min(32, slotW * 0.52));
+
+      // Grid lines and Dual Y-Axis ticks (4 steps)
+      let gridLinesSvg = '';
+      for (let i = 0; i <= 4; i++) {
+        const visitVal = Math.round((maxVisits / 4) * i);
+        const scoreVal = Math.round(25 * i);
+        const yPos = height - paddingBottom - (plotH / 4) * i;
+        
+        gridLinesSvg += `
+          <!-- Horizontal Grid Line -->
+          <line x1="${paddingLeft}" y1="${yPos}" x2="${width - paddingRight}" y2="${yPos}" stroke="#27272a" stroke-width="1" stroke-dasharray="${i === 0 ? 'none' : '4,4'}" />
+          
+          <!-- Left Y-Axis: Visits (Emerald) -->
+          <text x="${paddingLeft - 8}" y="${yPos + 3.5}" fill="#10b981" font-size="10" font-family="JetBrains Mono, monospace" text-anchor="end">${visitVal}</text>
+          
+          <!-- Right Y-Axis: Score (Cyan) -->
+          <text x="${width - paddingRight + 8}" y="${yPos + 3.5}" fill="#06b6d4" font-size="10" font-family="JetBrains Mono, monospace" text-anchor="start">${scoreVal}</text>
+        `;
+      }
+
+      // Calculate Bars and Line Points for Top 10 Sites
+      let barsSvg = '';
+      const linePoints = [];
+
+      labels.forEach((lbl, i) => {
+        const cx = paddingLeft + i * slotW + slotW / 2;
+        const v = visits[i] || 0;
+        const s = scores[i] !== undefined ? scores[i] : 50;
+        const g = grades[i] || 'C';
+        const dom = domains[i] || lbl;
+        const cat = categories[i] || 'Web Platform';
+
+        const barH = (v / maxVisits) * plotH;
+        const barY = height - paddingBottom - barH;
+        const barX = cx - barW / 2;
+
+        const lineY = height - paddingBottom - (s / 100) * plotH;
+        linePoints.push({ x: cx, y: lineY, score: s, grade: g, visits: v, label: lbl, domain: dom, cat: cat });
+
+        // Bar Element with deep-dive click handler
+        barsSvg += `
+          <g class="chart-bar group cursor-pointer" onclick="openSiteDetailModal('${dom}')">
+            <rect x="${barX.toFixed(1)}" y="${barY.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(2, barH).toFixed(1)}" rx="4" fill="url(#barEmeraldGrad)" stroke="#10b981" stroke-width="1.2" class="transition-all duration-200 group-hover:brightness-125" />
+            <title>${lbl} (${dom})\n• Total User Visits: ${v} hits\n• Privacy Score: ${s}/100 (Grade ${g})\n• Category: ${cat}\n(Click to inspect deep-dive policy clauses)</title>
+          </g>
+        `;
+      });
+
+      // Line Graph Path for Privacy Score
+      let linePathD = linePoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
+
+      // Line Graph Dots & Tooltips
+      let lineDotsSvg = '';
+      linePoints.forEach(p => {
+        lineDotsSvg += `
+          <g class="chart-line-point cursor-pointer transition-transform duration-150 hover:scale-125" onclick="openSiteDetailModal('${p.domain}')">
+            <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4.5" fill="#06b6d4" stroke="#09090b" stroke-width="2" />
+            <title>${p.label} (${p.domain})\n• Privacy Score: ${p.score}/100 (Grade ${p.grade})\n• Total User Visits: ${p.visits} hits\n• Category: ${p.cat}\n(Click to inspect deep-dive policy clauses)</title>
+          </g>
+        `;
+      });
+
+      // X-Axis Website Name/Domain Labels
+      let xLabelsSvg = '';
+      labels.forEach((lbl, i) => {
+        const cx = paddingLeft + i * slotW + slotW / 2;
+        const shortDom = (domains[i] || lbl).replace(/^www\./, '');
+        const displayLabel = shortDom.length > 12 ? shortDom.substring(0, 10) + '..' : shortDom;
+        
+        xLabelsSvg += `
+          <text x="${cx.toFixed(1)}" y="${height - 12}" fill="#a1a1aa" font-size="9" font-family="JetBrains Mono, monospace" font-weight="500" text-anchor="middle" class="cursor-pointer hover:fill-emerald-400" onclick="openSiteDetailModal('${domains[i] || lbl}')">${displayLabel}</text>
+        `;
+      });
+
+      const svgHtml = `
+        <svg viewBox="0 0 ${width} ${height}" class="w-full h-full overflow-visible">
+          <defs>
+            <linearGradient id="barEmeraldGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#10b981" stop-opacity="0.85" />
+              <stop offset="100%" stop-color="#10b981" stop-opacity="0.18" />
+            </linearGradient>
+          </defs>
+          
+          <!-- Grid Lines & Y-Axes -->
+          ${gridLinesSvg}
+          
+          <!-- X-Axis Domain Labels -->
+          ${xLabelsSvg}
+
+          <!-- Axis Legends on Edge -->
+          <text x="12" y="16" fill="#10b981" font-size="9" font-family="JetBrains Mono, monospace" font-weight="600">VISITS ↑</text>
+          <text x="${width - 12}" y="16" fill="#06b6d4" font-size="9" font-family="JetBrains Mono, monospace" font-weight="600" text-anchor="end">SCORE (0-100) ↑</text>
+
+          <!-- Top 10 Bars (Total Visits) -->
+          ${barsSvg}
+
+          <!-- Top 10 Line Graph (Privacy Scores) -->
+          <path d="${linePathD}" fill="none" stroke="#06b6d4" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+
+          <!-- Line Nodes -->
+          ${lineDotsSvg}
+        </svg>
+      `;
+
+      container.innerHTML = svgHtml;
+    }
+
+    function renderRiskDonutChart(dist) {
+      const container = document.getElementById('riskDonutContainer');
+      if (!container) return;
+
+      const safe = (dist.A || 0) + (dist.B || 0);
+      const mod = dist.C || 0;
+      const risk = (dist.D || 0) + (dist.F || 0);
+      const total = safe + mod + risk;
+
+      if (total === 0) {
+        container.innerHTML = `<div class="flex items-center justify-center h-full text-zinc-500 font-mono text-xs">No risk metrics recorded.</div>`;
+        return;
+      }
+
+      const safePct = Math.round((safe / total) * 100);
+      const modPct = Math.round((mod / total) * 100);
+      const riskPct = Math.max(0, 100 - safePct - modPct);
+
+      const c = 251.2;
+      const safeDash = (safePct / 100) * c;
+      const modDash = (modPct / 100) * c;
+      const riskDash = (riskPct / 100) * c;
+
+      const modOffset = -safeDash;
+      const riskOffset = -(safeDash + modDash);
+
+      const donutSvg = `
+        <div class="relative flex items-center justify-center">
+          <svg viewBox="0 0 100 100" class="w-36 h-36 transform -rotate-90">
+            <circle cx="50" cy="50" r="40" fill="transparent" stroke="#27272a" stroke-width="12" />
+            <circle cx="50" cy="50" r="40" fill="transparent" stroke="#10b981" stroke-width="12" stroke-dasharray="${safeDash} ${c - safeDash}" stroke-dashoffset="0" />
+            <circle cx="50" cy="50" r="40" fill="transparent" stroke="#f59e0b" stroke-width="12" stroke-dasharray="${modDash} ${c - modDash}" stroke-dashoffset="${modOffset}" />
+            <circle cx="50" cy="50" r="40" fill="transparent" stroke="#f43f5e" stroke-width="12" stroke-dasharray="${riskDash} ${c - riskDash}" stroke-dashoffset="${riskOffset}" />
+          </svg>
+          <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+            <span class="text-xl font-bold font-mono text-zinc-100">${safePct}%</span>
+            <span class="text-[9px] font-mono text-emerald-400">Safe Sites</span>
+          </div>
+        </div>
+      `;
+
+      container.innerHTML = donutSvg;
+    }
+
+    function renderAnalyticsTopSites(topDomains, totalVisits) {
+      const tbody = document.getElementById('analyticsTopSitesBody');
+      tbody.innerHTML = '';
+
+      if (!topDomains || topDomains.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="py-8 text-center text-zinc-500 font-sans">No user visit data recorded in this timeframe.</td></tr>`;
+        return;
+      }
+
+      topDomains.forEach((site, index) => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-surfaceHover/50 transition cursor-pointer';
+        tr.onclick = (e) => {
+          if (!e.target.closest('button')) openSiteDetailModal(site.domain);
+        };
+
+        const pct = totalVisits > 0 ? Math.round((site.visits / totalVisits) * 100) : 0;
+        const score = site.score || 0;
+        const gradeColor = score >= 80 ? 'text-emerald-400 bg-emerald-950/40 border-emerald-800' :
+                           (score >= 50 ? 'text-amber-400 bg-amber-950/40 border-amber-800' : 'text-rose-400 bg-rose-950/40 border-rose-800');
+
+        const rankBadge = index === 0 ? '🥇 1' : (index === 1 ? '🥈 2' : (index === 2 ? '🥉 3' : `#${index + 1}`));
+
+        tr.innerHTML = `
+          <td class="py-3 text-center font-mono font-bold text-zinc-400">${rankBadge}</td>
+          <td class="py-3 pr-3">
+            <div class="font-medium text-zinc-100">${site.name || site.domain}</div>
+            <div class="font-mono text-[11px] text-zinc-400">${site.domain}</div>
+          </td>
+          <td class="py-3 pr-3 font-mono font-bold text-zinc-200">
+            ${site.visits.toLocaleString()} <span class="text-[10px] text-zinc-500 font-normal">hits</span>
+          </td>
+          <td class="py-3 pr-3 w-40">
+            <div class="flex items-center gap-2 font-mono text-[11px] text-zinc-300">
+              <span>${pct}%</span>
+              <div class="flex-1 bg-darkbg border border-bordercol h-1.5 rounded-full overflow-hidden">
+                <div class="h-full bg-brand rounded-full" style="width: ${pct}%"></div>
+              </div>
+            </div>
+          </td>
+          <td class="py-3 pr-3">
+            <div class="flex items-center gap-1.5">
+              <span class="px-2 py-0.5 rounded font-mono font-bold text-xs border ${gradeColor}">${site.grade || 'C'}</span>
+              <span class="font-mono text-zinc-300">${score}/100</span>
+            </div>
+          </td>
+          <td class="py-3 pr-3 font-mono text-[11px] text-zinc-400">
+            ${site.category || 'Web Platform'}
+          </td>
+          <td class="py-3 pr-3 font-mono text-[11px] text-zinc-400">
+            ${site.last_visited ? site.last_visited.split('T')[0] : '--'}
+          </td>
+          <td class="py-3 text-right">
+            <button onclick="openSiteDetailModal('${site.domain}')" class="px-2.5 py-1 rounded bg-brand/20 hover:bg-brand/30 text-emerald-400 text-[11px] font-medium transition">
+              Inspect 🔍
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function showLoginModal() {
+      document.getElementById('loginModal').classList.remove('hidden');
+    }
+
+    async function handleLogin() {
+      const key = document.getElementById('adminKeyInput').value.trim();
+      const err = document.getElementById('loginError');
+      err.classList.add('hidden');
+
+      try {
+        const res = await fetch('/api/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ admin_key: key })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          adminToken = data.token;
+          localStorage.setItem('guardra_admin_token', adminToken);
+          document.getElementById('loginModal').classList.add('hidden');
+          loadSites();
+          startCrawlerPolling();
+        } else {
+          err.classList.remove('hidden');
+        }
+      } catch (e) {
+        err.innerText = 'Network error connecting to server.';
+        err.classList.remove('hidden');
+      }
+    }
+
+    function handleLogout() {
+      localStorage.removeItem('guardra_admin_token');
+      adminToken = '';
+      showLoginModal();
+    }
+
+    function authHeaders() {
+      return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${adminToken}`
+      };
+    }
+
+    async function loadSites() {
+      try {
+        const res = await fetch('/api/admin/sites?limit=1000', { headers: authHeaders() });
+        if (res.status === 401 || res.status === 403) {
+          showLoginModal();
+          return;
+        }
+        const data = await res.json();
+        allSites = data.sites || [];
+        updateKPIs();
+        renderTable();
+      } catch (e) {
+        console.error('Failed to load sites:', e);
+      }
+    }
+
+    async function loadPings() {
+      try {
+        const [pingsRes, statsRes] = await Promise.all([
+          fetch('/api/admin/pings?limit=100', { headers: authHeaders() }),
+          fetch('/api/admin/pings/stats', { headers: authHeaders() })
+        ]);
+
+        let pingsList = [];
+        if (pingsRes.ok) {
+          const pData = await pingsRes.json();
+          pingsList = pData.pings || [];
+          renderPingsTable(pingsList);
+        }
+
+        if (statsRes.ok) {
+          const sData = await statsRes.json();
+          document.getElementById('kpiTotalPings').innerText = sData.total_pings || 0;
+          document.getElementById('kpiUniqueDomains').innerText = sData.unique_domains || 0;
+          
+          if (pingsList.length > 0) {
+            const sum = pingsList.reduce((acc, p) => acc + (p.response_time_ms || 0), 0);
+            const avg = sum / pingsList.length;
+            const display = avg > 1000 ? `${(avg/1000).toFixed(2)} s` : `${Math.round(avg)} ms`;
+            document.getElementById('kpiAvgLatency').innerText = display;
+          } else {
+            document.getElementById('kpiAvgLatency').innerText = `${sData.avg_latency_ms || 0} ms`;
+          }
+        }
+      } catch (e) {
+        console.error('Error loading pings:', e);
+      }
+    }
+
+    function renderPingsTable(pings) {
+      const tbody = document.getElementById('pingsTableBody');
+      tbody.innerHTML = '';
+
+      if (pings.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-zinc-500 font-sans">No incoming extension pings recorded yet. Visit any site in Chromium!</td></tr>`;
+        return;
+      }
+
+      pings.forEach(p => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-surfaceHover/50 transition';
+
+        const gradeColor = p.score >= 80 ? 'text-emerald-400' : (p.score >= 50 ? 'text-amber-400' : 'text-rose-400');
+        const latencyDisplay = p.response_time_ms > 1000 ? `${(p.response_time_ms/1000).toFixed(2)} s` : `${Math.round(p.response_time_ms)} ms`;
+
+        tr.innerHTML = `
+          <td class="py-2.5 text-zinc-400">${p.timestamp}</td>
+          <td class="py-2.5 font-semibold text-zinc-100">${p.domain}</td>
+          <td class="py-2.5 font-bold ${gradeColor}">${p.grade}</td>
+          <td class="py-2.5 text-zinc-300">${p.score}/100</td>
+          <td class="py-2.5 text-zinc-400">${latencyDisplay}</td>
+          <td class="py-2.5">
+            <span class="px-1.5 py-0.5 rounded bg-zinc-800 border border-bordercol text-[10px] text-zinc-300">${p.client_type || 'extension'}</span>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function updateKPIs() {
+      document.getElementById('kpiTotalSites').innerText = allSites.length;
+      const totalScore = allSites.reduce((acc, s) => acc + (s.score || 0), 0);
+      const avg = allSites.length ? Math.round(totalScore / allSites.length) : 0;
+      document.getElementById('kpiAvgScore').innerText = `${avg} / 100`;
+      
+      const dpdpCount = allSites.filter(s => s.compliance?.dpdp?.compliant && s.compliance?.dpdp?.grievance_email).length;
+      document.getElementById('kpiDpdpCount').innerText = `${dpdpCount} Sites`;
+    }
+
+    function renderTable() {
+      const search = document.getElementById('searchInput').value.toLowerCase().trim();
+      const tbody = document.getElementById('sitesTableBody');
+      tbody.innerHTML = '';
+
+      const filtered = allSites.filter(s => {
+        const matchesSearch = !search || s.domain.toLowerCase().includes(search) || (s.name && s.name.toLowerCase().includes(search));
+        const matchesGrade = !currentGradeFilter || (s.grade && s.grade.startsWith(currentGradeFilter));
+        return matchesSearch && matchesGrade;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-zinc-500 font-sans">No matching websites found.</td></tr>`;
+        return;
+      }
+
+      filtered.slice(0, 250).forEach(s => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-surfaceHover/50 transition cursor-pointer';
+        tr.onclick = (e) => {
+          if (!e.target.closest('button')) openSiteDetailModal(s.domain);
+        };
+
+        const gradeColor = s.score >= 80 ? 'text-emerald-400 bg-emerald-950/40 border-emerald-800' :
+                           (s.score >= 50 ? 'text-amber-400 bg-amber-950/40 border-amber-800' : 'text-rose-400 bg-rose-950/40 border-rose-800');
+
+        tr.innerHTML = `
+          <td class="py-3 pr-3">
+            <div class="font-medium text-zinc-100">${s.name || s.domain}</div>
+            <div class="font-mono text-[11px] text-zinc-400">${s.domain}</div>
+          </td>
+          <td class="py-3 pr-3">
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded font-mono font-bold text-xs border ${gradeColor}">${s.grade}</span>
+              <span class="font-mono text-zinc-300">${s.score}/100</span>
+            </div>
+          </td>
+          <td class="py-3 pr-3 font-mono text-[11px] text-zinc-400">
+            ${s.category || 'Web Platform'}
+          </td>
+          <td class="py-3 pr-3">
+            <div class="text-zinc-200">${s.compliance?.dpdp?.grievance_officer || 'Not Listed'}</div>
+            <div class="font-mono text-[11px] text-zinc-400">${s.compliance?.dpdp?.grievance_email || 'N/A'}</div>
+          </td>
+          <td class="py-3 pr-3">
+            <div class="flex items-center gap-1">
+              ${renderRubricDots(s.rubric)}
+            </div>
+          </td>
+          <td class="py-3 text-right space-x-1.5">
+            <button onclick="triggerSingleRescore('${s.domain}')" title="Re-scan Live Policy" class="px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[11px] transition">
+              🔄 Scan
+            </button>
+            <button onclick="openEditModal('${s.domain}')" class="px-2 py-1 rounded bg-brand/20 hover:bg-brand/30 text-emerald-400 text-[11px] font-medium transition">
+              ✏️ Edit
+            </button>
+            <button onclick="deleteSite('${s.domain}')" class="px-2 py-1 rounded bg-rose-950/40 hover:bg-rose-900/60 text-rose-400 text-[11px] transition">
+              🗑️
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderRubricDots(rubric) {
+      if (!rubric) return '<span class="text-zinc-500">Standard</span>';
+      return Object.entries(rubric).map(([k, v]) => {
+        const c = v.score >= 70 ? 'bg-emerald-500' : (v.score >= 45 ? 'bg-amber-500' : 'bg-rose-500');
+        return `<span title="${k}: ${v.score}/100" class="w-2 h-2 rounded-full ${c} inline-block"></span>`;
+      }).join('');
+    }
+
+    function handleSearch() {
+      renderTable();
+    }
+
+    function filterGrade(grade) {
+      currentGradeFilter = grade;
+      renderTable();
+    }
+
+    // Modal Actions
+    let currentDetailSite = null;
+
+    function openSiteDetailModal(domain) {
+      const site = allSites.find(s => s.domain === domain);
+      if (!site) return;
+      currentDetailSite = site;
+
+      const score = Math.round(site.score || site.overall_score || 0);
+      const grade = site.grade || (score >= 80 ? 'A' : (score >= 50 ? 'C' : 'F'));
+
+      document.getElementById('detailDomain').innerText = domain;
+      document.getElementById('detailName').innerText = site.name && site.name !== domain ? site.name : domain.split('.')[0].toUpperCase();
+      document.getElementById('detailGrade').innerText = grade;
+      document.getElementById('detailScore').innerText = `${score}/100`;
+      
+      const gradeCircle = document.getElementById('detailGradeCircle');
+      const verdictTag = document.getElementById('detailVerdictTag');
+      const riskLevelBadge = document.getElementById('detailRiskLevelBadge');
+
+      if (score >= 80) {
+        gradeCircle.className = 'w-12 h-12 rounded-xl flex flex-col items-center justify-center font-mono font-bold border border-emerald-500 bg-emerald-950/40 text-emerald-400';
+        verdictTag.className = 'text-[10px] px-2 py-0.5 rounded-full font-mono font-semibold uppercase tracking-wider bg-emerald-950/60 border border-emerald-800 text-emerald-400';
+        verdictTag.innerText = '🛡️ Safe Site';
+        riskLevelBadge.innerText = '🟢 Low Privacy Risk';
+        riskLevelBadge.className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950/50 border border-emerald-800 text-emerald-400';
+      } else if (score >= 50) {
+        gradeCircle.className = 'w-12 h-12 rounded-xl flex flex-col items-center justify-center font-mono font-bold border border-amber-500 bg-amber-950/40 text-amber-400';
+        verdictTag.className = 'text-[10px] px-2 py-0.5 rounded-full font-mono font-semibold uppercase tracking-wider bg-amber-950/60 border border-amber-800 text-amber-400';
+        verdictTag.innerText = '⚠️ Moderate Exposure';
+        riskLevelBadge.innerText = '🟡 Moderate Privacy Risk';
+        riskLevelBadge.className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-amber-950/50 border border-amber-800 text-amber-400';
+      } else {
+        gradeCircle.className = 'w-12 h-12 rounded-xl flex flex-col items-center justify-center font-mono font-bold border border-rose-500 bg-rose-950/40 text-rose-400';
+        verdictTag.className = 'text-[10px] px-2 py-0.5 rounded-full font-mono font-semibold uppercase tracking-wider bg-rose-950/60 border border-rose-800 text-rose-400';
+        verdictTag.innerText = '🚨 Critical Exposure';
+        riskLevelBadge.innerText = '🔴 High / Critical Exposure';
+        riskLevelBadge.className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-rose-950/50 border border-rose-800 text-rose-400';
+      }
+      
+      document.getElementById('detailCategory').innerText = site.category || 'Web Platform';
+      const lastScanned = site.last_analyzed || site.last_analyzed_at || new Date().toISOString().split('T')[0];
+      document.getElementById('detailDate').innerText = `Last Analyzed: ${lastScanned.substring(0, 10)}`;
+      document.getElementById('detailSource').innerText = `Source: ${site.source || 'Live Radar'}`;
+      
+      let pUrl = site.policy_url;
+      if (!pUrl || pUrl === `https://${domain}/privacy` || pUrl === `https://${domain}`) {
+        pUrl = `https://www.${domain}/privacy-policy`;
+      }
+      if (domain === 'croma.com') pUrl = 'https://www.croma.com/privacy-policy';
+      else if (domain === 'kletech.ac.in') pUrl = 'https://www.kletech.ac.in/privacy-policy';
+      else if (domain === 'flipkart.com') pUrl = 'https://www.flipkart.com/pages/privacypolicy';
+      else if (domain === 'boat-lifestyle.com') pUrl = 'https://www.boat-lifestyle.com/pages/privacy-policy';
+      else if (domain === 'google.com') pUrl = 'https://policies.google.com/privacy';
+      else if (domain === 'meta.com') pUrl = 'https://www.facebook.com/privacy/policy/';
+      else if (domain === 'apple.com') pUrl = 'https://www.apple.com/legal/privacy/en-ww/';
+      document.getElementById('detailPolicyLink').href = pUrl;
+
+      // Executive Summary
+      let summaryText = site.summary || (typeof site.findings === 'object' && site.findings?.summary) || '';
+      if (!summaryText || summaryText === 'No summary available.') {
+        if (score >= 80) {
+          summaryText = `${site.name || domain} demonstrates strong consumer privacy safeguards with transparent statutory disclosures, clear retention limits, and recognized user rights under the DPDP Act 2023.`;
+        } else if (score >= 50) {
+          summaryText = `${site.name || domain} maintains standard commercial privacy disclosures but engages in third-party tracking, advertising telemetry, or vendor data sharing practices that warrant caution.`;
+        } else {
+          summaryText = `Critical privacy exposure detected for ${site.name || domain}. Invasive cross-device tracking, undisclosed data retention policies, or active behavioral advertising networks identified.`;
+        }
+      }
+      document.getElementById('detailSummary').innerText = summaryText;
+
+      // 6-Pillar Rubric Breakdown
+      const rubricDiv = document.getElementById('detailRubric');
+      rubricDiv.innerHTML = '';
+      const rubricNames = {
+        data_sharing: "Third-Party Data Sharing",
+        retention: "Data Retention Limits",
+        tracking_cookies: "Cookies & Tracker Density",
+        user_rights: "User Rights & Erasure Flow",
+        breach_history: "Breach History & Safeguards",
+        readability: "Plain-Language Clarity"
+      };
+
+      if (site.rubric && Object.keys(site.rubric).length > 0) {
+        Object.entries(site.rubric).forEach(([k, v]) => {
+          const s = Math.round(v.score || 0);
+          const colorClass = s >= 70 ? 'text-emerald-400 bg-emerald-400' : (s >= 45 ? 'text-amber-400 bg-amber-400' : 'text-rose-400 bg-rose-400');
+          const borderClass = s >= 70 ? 'border-emerald-800/40' : (s >= 45 ? 'border-amber-800/40' : 'border-rose-800/40');
+          const title = rubricNames[k] || v.label || k.replace('_', ' ').toUpperCase();
+          const riskTag = s >= 70 ? 'Low Risk' : (s >= 45 ? 'Moderate Risk' : 'High Risk');
+
+          rubricDiv.innerHTML += `
+            <div class="bg-darkbg border ${borderClass} rounded-xl p-3.5 space-y-2">
+              <div class="flex justify-between items-center text-xs">
+                <span class="font-semibold text-zinc-200">${title}</span>
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] font-mono text-zinc-500">${riskTag}</span>
+                  <span class="font-mono font-bold ${colorClass.split(' ')[0]}">${s}/100</span>
+                </div>
+              </div>
+              <div class="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+                <div class="${colorClass.split(' ')[1]} h-full rounded-full" style="width: ${Math.max(4, s)}%"></div>
+              </div>
+              <p class="text-[11px] text-zinc-400 leading-snug">${v.label || v.explanation || 'Evaluated via statutory NLP rubric.'}</p>
+            </div>
+          `;
+        });
+      } else {
+        rubricDiv.innerHTML = `<div class="text-zinc-500 text-xs p-3">No rubric evaluation details recorded.</div>`;
+      }
+
+      // Regional Compliance
+      const dpdp = site.compliance?.dpdp || {};
+      const gdpr = site.compliance?.gdpr || {};
+      const ccpa = site.compliance?.ccpa || {};
+
+      document.getElementById('detailOfficer').innerText = dpdp.grievance_officer || 'Not Listed';
+      document.getElementById('detailEmail').innerText = dpdp.grievance_email || 'Not Listed';
+      document.getElementById('detailSla').innerText = `${dpdp.redressal_period_days || 30}-Day Mandatory Redressal`;
+      
+      const dpdpStatusEl = document.getElementById('detailDpdpStatus');
+      if (dpdp.compliant) {
+        dpdpStatusEl.innerText = 'Compliant';
+        dpdpStatusEl.className = 'font-mono text-[10px] px-1.5 py-0.5 rounded font-bold text-emerald-400 bg-emerald-950/40 border border-emerald-800';
+      } else {
+        dpdpStatusEl.innerText = 'Undisclosed';
+        dpdpStatusEl.className = 'font-mono text-[10px] px-1.5 py-0.5 rounded font-bold text-amber-400 bg-amber-950/40 border border-amber-800';
+      }
+
+      document.getElementById('detailDpo').innerText = gdpr.dpo_contact || (gdpr.compliant ? 'Designated EU Representative' : 'Not Listed');
+      document.getElementById('detailErasure').innerText = gdpr.erasure_art17_disclosed ? 'Art. 17 Explicitly Supported' : (gdpr.compliant ? 'Standard Statutory Flow' : 'Undisclosed');
+      const gdprStatusEl = document.getElementById('detailGdprStatus');
+      if (gdpr.compliant) {
+        gdprStatusEl.innerText = 'Art. 17 Ready';
+        gdprStatusEl.className = 'font-mono text-[10px] px-1.5 py-0.5 rounded font-bold text-emerald-400 bg-emerald-950/40 border border-emerald-800';
+      } else {
+        gdprStatusEl.innerText = 'Standard';
+        gdprStatusEl.className = 'font-mono text-[10px] px-1.5 py-0.5 rounded font-bold text-zinc-400 bg-zinc-800';
+      }
+
+      document.getElementById('detailDoNotSell').innerText = ccpa.do_not_sell ? 'Supported (No Sale of Data)' : 'Not Disclosed';
+      document.getElementById('detailOptOut').innerText = ccpa.opt_out_link ? 'Direct Link Disclosed' : (ccpa.compliant ? 'Available' : 'N/A');
+      const ccpaStatusEl = document.getElementById('detailCcpaStatus');
+      if (ccpa.compliant || ccpa.do_not_sell) {
+        ccpaStatusEl.innerText = 'Active';
+        ccpaStatusEl.className = 'font-mono text-[10px] px-1.5 py-0.5 rounded font-bold text-emerald-400 bg-emerald-950/40 border border-emerald-800';
+      } else {
+        ccpaStatusEl.innerText = 'Standard';
+        ccpaStatusEl.className = 'font-mono text-[10px] px-1.5 py-0.5 rounded font-bold text-zinc-400 bg-zinc-800';
+      }
+
+      // Verified Data Breach History
+      const breachBadge = document.getElementById('detailBreachBadge');
+      const breachesContainer = document.getElementById('detailBreachesContainer');
+      breachesContainer.innerHTML = '';
+      const breaches = site.breaches || site.breach_history || [];
+
+      if (breaches && breaches.length > 0) {
+        breachBadge.innerText = `${breaches.length} Incident(s) Recorded`;
+        breachBadge.className = 'text-[10px] font-mono px-2 py-0.5 rounded border bg-rose-950/40 text-rose-400 border-rose-800';
+
+        breaches.forEach(b => {
+          const pwnFormatted = b.pwn_count ? `• ${Number(b.pwn_count).toLocaleString()} Records Leaked` : '';
+          const dataClasses = Array.isArray(b.data_classes) ? b.data_classes : [];
+          
+          breachesContainer.innerHTML += `
+            <div class="p-3.5 bg-rose-950/20 border border-rose-900/40 rounded-xl space-y-2 text-xs">
+              <div class="flex items-start justify-between gap-2">
+                <div>
+                  <span class="font-bold text-zinc-100">${b.name || 'Security Breach Incident'}</span>
+                  <span class="text-[11px] font-mono text-rose-400 ml-2">${pwnFormatted}</span>
+                </div>
+                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-950/60 text-amber-300 border border-amber-800 shrink-0">
+                  ${b.breach_date || 'Disclosed'}
+                </span>
+              </div>
+              <p class="text-zinc-400 text-xs leading-relaxed">${b.description || 'Public database breach recorded.'}</p>
+              ${dataClasses.length > 0 ? `
+                <div class="flex items-center gap-1.5 flex-wrap pt-1">
+                  <span class="text-[10px] text-zinc-500">Compromised Data:</span>
+                  ${dataClasses.map(c => `<span class="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300 font-mono">${c}</span>`).join('')}
+                </div>
+              ` : ''}
+              ${b.article_url ? `
+                <div class="pt-1">
+                  <a href="${b.article_url}" target="_blank" class="inline-flex items-center gap-1 text-[11px] text-brand hover:underline font-medium">
+                    <span>🔗 Read Verified Investigative Report &rarr;</span>
+                  </a>
+                </div>
+              ` : ''}
+            </div>
+          `;
+        });
+      } else {
+        breachBadge.innerText = '0 Breaches (Clean Record)';
+        breachBadge.className = 'text-[10px] font-mono px-2 py-0.5 rounded border bg-emerald-950/40 text-emerald-400 border-emerald-800';
+        breachesContainer.innerHTML = `
+          <div class="p-3 bg-emerald-950/20 border border-emerald-900/30 rounded-xl text-xs text-emerald-400 flex items-center gap-2">
+            <span>✓</span>
+            <span>Clean Security Profile: No major publicly exposed data breaches or uncontained leaks identified for this domain.</span>
+          </div>
+        `;
+      }
+
+      // Key Concerns & Red Flags
+      const concernsList = document.getElementById('detailConcerns');
+      concernsList.innerHTML = '';
+      const rawConcerns = site.concerns || site.key_concerns || [];
+      if (rawConcerns && rawConcerns.length > 0) {
+        rawConcerns.forEach(c => {
+          const text = (typeof c === 'object' && c !== null) ? (c.text || c.concern || c.description || JSON.stringify(c)) : String(c);
+          concernsList.innerHTML += `
+            <li class="flex items-start gap-1.5 text-zinc-300">
+              <span class="text-rose-400 font-bold shrink-0">•</span>
+              <span>${text}</span>
+            </li>
+          `;
+        });
+      } else {
+        concernsList.innerHTML = `<li class="text-zinc-500 list-none text-xs">No critical privacy concerns flagged.</li>`;
+      }
+
+      // Positive Consumer Safeguards
+      const safeguardsList = document.getElementById('detailSafeguards');
+      safeguardsList.innerHTML = '';
+      const safeguards = [];
+      if (score >= 60) safeguards.push("Explicit statutory disclosures provided for digital data handling.");
+      if (dpdp.compliant) safeguards.push("Indian Grievance Redressal Officer clearly designated with contact details.");
+      if (gdpr.erasure_art17_disclosed || gdpr.compliant) safeguards.push("Right to Erasure and account deletion flow supported.");
+      if (ccpa.do_not_sell) safeguards.push("No selling of personal data to third-party data brokers.");
+      if (breaches.length === 0) safeguards.push("Zero verified public security breaches or uncontained data leaks.");
+      if (safeguards.length === 0) safeguards.push("Standard web operational disclosures provided in legal notice.");
+
+      safeguards.forEach(sg => {
+        safeguardsList.innerHTML += `
+          <li class="flex items-start gap-1.5 text-zinc-300">
+            <span class="text-emerald-400 font-bold shrink-0">✓</span>
+            <span>${sg}</span>
+          </li>
+        `;
+      });
+
+      // Extracted Snippets (FIXING [object Object])
+      const snippetsDiv = document.getElementById('detailSnippets');
+      snippetsDiv.innerHTML = '';
+      const rawSnippets = site.snippets || site.key_clauses || [];
+
+      if (rawSnippets && rawSnippets.length > 0) {
+        rawSnippets.forEach(s => {
+          let snippetText = '';
+          let snippetType = 'neutral';
+
+          if (typeof s === 'object' && s !== null) {
+            snippetText = s.text || s.clause || s.snippet || s.description || JSON.stringify(s);
+            snippetType = s.type || s.category || 'neutral';
+          } else {
+            snippetText = String(s);
+          }
+
+          let badgeHtml = '';
+          if (snippetType === 'negative' || snippetType.includes('risk') || snippetType.includes('concern')) {
+            badgeHtml = `<span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-rose-950/60 text-rose-400 border border-rose-800 uppercase font-semibold">Risk Clause</span>`;
+          } else if (snippetType === 'positive' || snippetType.includes('safe') || snippetType.includes('protection')) {
+            badgeHtml = `<span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-950/60 text-emerald-400 border border-emerald-800 uppercase font-semibold">Protective</span>`;
+          } else {
+            badgeHtml = `<span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700 uppercase font-semibold">Excerpt</span>`;
+          }
+
+          snippetsDiv.innerHTML += `
+            <div class="p-3 bg-zinc-900/80 border border-zinc-800/80 rounded-xl space-y-1.5 text-xs font-sans">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] text-zinc-500 font-mono">“Policy Statement”</span>
+                ${badgeHtml}
+              </div>
+              <p class="text-zinc-200 italic leading-relaxed">"${snippetText}"</p>
+            </div>
+          `;
+        });
+      } else {
+        snippetsDiv.innerHTML = `<div class="text-zinc-500 text-xs p-3">No specific policy clause snippets extracted yet.</div>`;
+      }
+
+      document.getElementById('siteDetailModal').classList.remove('hidden');
+    }
+
+    function closeSiteDetailModal() {
+      document.getElementById('siteDetailModal').classList.add('hidden');
+      currentDetailSite = null;
+    }
+
+    async function rescanFromDetailModal() {
+      if (!currentDetailSite) return;
+      const btn = document.getElementById('btnDetailRescan');
+      btn.innerHTML = '<span>⏳ Rescanning...</span>';
+      btn.disabled = true;
+      try {
+        await rescanSite(currentDetailSite.domain);
+        await loadSites();
+        openSiteDetailModal(currentDetailSite.domain);
+      } catch (e) {
+        alert('Error rescanning site: ' + e.message);
+      } finally {
+        btn.innerHTML = '<span>🔄 Rescan</span>';
+        btn.disabled = false;
+      }
+    }
+
+    function generateAndCopyNoticeFromModal() {
+      if (!currentDetailSite) return;
+      const s = currentDetailSite;
+      const dpdpEmail = s.compliance?.dpdp?.grievance_email || s.compliance?.gdpr?.dpo_contact || `grievance@${s.domain}`;
+      const officer = s.compliance?.dpdp?.grievance_officer || 'Designated Grievance Officer';
+      
+      const noticeText = `To: ${officer} <${dpdpEmail}>\nSubject: Formal Statutory Data Erasure & Consent Withdrawal Notice - DPDP Act 2023 (Section 12)\n\nDear ${officer},\n\nI am writing to formally exercise my statutory right to data erasure and withdrawal of consent pursuant to Section 12 of the Digital Personal Data Protection Act, 2023 (DPDP Act 2023) and applicable data protection regulations regarding my personal data held by ${s.name || s.domain}.\n\nDomain: ${s.domain}\nDate: ${new Date().toISOString().split('T')[0]}\n\nPlease confirm complete erasure of all associated personal identifiers, telemetry, and account data within the statutory 30-day resolution timeline.\n\nSincerely,\nDigital Privacy Principal`;
+      
+      navigator.clipboard.writeText(noticeText).then(() => {
+        alert(`Statutory DPDP Deletion Notice for ${s.domain} copied to clipboard!\n\nRecipient: ${dpdpEmail}`);
+      }).catch(() => {
+        prompt('Copy the statutory notice below:', noticeText);
+      });
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const d = document.getElementById('siteDetailModal');
+        if (d && !d.classList.contains('hidden')) closeSiteDetailModal();
+        const m = document.getElementById('editModal');
+        if (m && !m.classList.contains('hidden')) closeEditModal();
+        const a = document.getElementById('addModal');
+        if (a && !a.classList.contains('hidden')) {
+          if (typeof closeAddSiteModal === 'function') closeAddSiteModal();
+        }
+      }
+    });
+
+    function openEditModal(domain) {
+      const site = allSites.find(s => s.domain === domain);
+      if (!site) return;
+
+      currentEditingDomain = domain;
+      document.getElementById('editModalDomain').innerText = domain;
+      document.getElementById('editName').value = site.name || domain;
+      document.getElementById('editGrade').value = site.grade || 'C';
+      document.getElementById('editScore').value = site.score || 50;
+      document.getElementById('editSummary').value = site.summary || '';
+      document.getElementById('editOfficer').value = site.compliance?.dpdp?.grievance_officer || '';
+      document.getElementById('editEmail').value = site.compliance?.dpdp?.grievance_email || '';
+
+      const r = site.rubric || {};
+      ['data_sharing', 'tracking_cookies', 'user_rights', 'retention', 'breach_history', 'readability'].forEach(k => {
+        const val = r[k]?.score ?? 50;
+        const input = document.getElementById(`rubric_${k}`);
+        if (input) {
+          input.value = val;
+          updateRubricVal(k);
+        }
+      });
+
+      document.getElementById('editModal').classList.remove('hidden');
+    }
+
+    function updateRubricVal(key) {
+      const val = document.getElementById(`rubric_${key}`).value;
+      document.getElementById(`val_${key}`).innerText = `${val}/100`;
+    }
+
+    function closeEditModal() {
+      document.getElementById('editModal').classList.add('hidden');
+    }
+
+    async function saveSiteEdit() {
+      const payload = {
+        domain: currentEditingDomain,
+        name: document.getElementById('editName').value,
+        grade: document.getElementById('editGrade').value,
+        score: parseInt(document.getElementById('editScore').value, 10),
+        summary: document.getElementById('editSummary').value,
+        rubric: {
+          data_sharing: { score: parseInt(document.getElementById('rubric_data_sharing').value, 10), max: 100, label: 'Data Sharing' },
+          tracking_cookies: { score: parseInt(document.getElementById('rubric_tracking_cookies').value, 10), max: 100, label: 'Cookies & Trackers' },
+          user_rights: { score: parseInt(document.getElementById('rubric_user_rights').value, 10), max: 100, label: 'User Rights Flow' },
+          retention: { score: parseInt(document.getElementById('rubric_retention').value, 10), max: 100, label: 'Retention Limits' },
+          breach_history: { score: parseInt(document.getElementById('rubric_breach_history').value, 10), max: 100, label: 'Breach Safeguards' },
+          readability: { score: parseInt(document.getElementById('rubric_readability').value, 10), max: 100, label: 'Readability' }
+        },
+        compliance: {
+          dpdp: {
+            compliant: true,
+            grievance_officer: document.getElementById('editOfficer').value,
+            grievance_email: document.getElementById('editEmail').value,
+            redressal_period_days: 30
+          }
+        }
+      };
+
+      try {
+        const res = await fetch(`/api/admin/sites/${currentEditingDomain}`, {
+          method: 'PUT',
+          headers: authHeaders(),
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          closeEditModal();
+          loadSites();
+        } else {
+          alert('Failed to save changes.');
+        }
+      } catch (e) {
+        alert('Network error while saving.');
+      }
+    }
+
+    async function deleteSite(domain) {
+      if (!confirm(`Are you sure you want to delete ${domain} from the database?`)) return;
+
+      try {
+        const res = await fetch(`/api/admin/sites/${domain}`, {
+          method: 'DELETE',
+          headers: authHeaders()
+        });
+        if (res.ok) loadSites();
+      } catch (e) {
+        alert('Error deleting site.');
+      }
+    }
+
+    async function triggerSingleRescore(domain) {
+      try {
+        const res = await fetch('/api/admin/crawler/rescore-site', {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify({ domain })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+          const score = data.new_score ?? data.result?.score ?? data.result?.overall_score ?? 50;
+          const grade = data.new_grade ?? data.result?.grade ?? 'C';
+          alert(`Rescored ${domain} successfully! New Grade: ${grade} (${score}/100)`);
+          loadSites();
+        } else {
+          alert(`Scrape alert: ${data.message || 'Could not fetch live policy.'}`);
+        }
+      } catch (e) {
+        alert('Network error during scan.');
+      }
+    }
+
+    async function triggerBulkRescore() {
+      try {
+        const res = await fetch('/api/admin/crawler/rescore-all', {
+          method: 'POST',
+          headers: authHeaders()
+        });
+        document.getElementById('crawlerProgressBox').classList.remove('hidden');
+      } catch (e) {
+        alert('Error starting bulk crawler.');
+      }
+    }
+
+    async function triggerTop1000Scan() {
+      try {
+        const res = await fetch('/api/admin/crawler/scan-top-1000', {
+          method: 'POST',
+          headers: authHeaders()
+        });
+        document.getElementById('crawlerProgressBox').classList.remove('hidden');
+      } catch (e) {
+        alert('Error initiating top 1000 crawler.');
+      }
+    }
+
+    function startCrawlerPolling() {
+      if (pollInterval) clearInterval(pollInterval);
+      pollInterval = setInterval(async () => {
+        try {
+          const res = await fetch('/api/admin/crawler/status', { headers: authHeaders() });
+          if (!res.ok) return;
+          const status = await res.json();
+
+          const box = document.getElementById('crawlerProgressBox');
+          if (status.is_running) {
+            box.classList.remove('hidden');
+            document.getElementById('crawlerCurrentSite').innerText = status.current_site || 'Working...';
+            document.getElementById('crawlerProgressText').innerText = `${status.progress} / ${status.total}`;
+            const pct = status.total ? Math.round((status.progress / status.total) * 100) : 0;
+            document.getElementById('crawlerProgressBar').style.width = `${pct}%`;
+            document.getElementById('kpiCrawlerStatus').innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> Scanning ${status.current_site}...`;
+          } else {
+            if (!box.classList.contains('hidden')) {
+              box.classList.add('hidden');
+              loadSites();
+            }
+            document.getElementById('kpiCrawlerStatus').innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span> Idle (Ready)`;
+            if (status.last_run) {
+              document.getElementById('kpiLastCrawl').innerText = `Last run: ${status.last_run}`;
+            }
+          }
+
+          // If on pings tab, auto-refresh pings stream
+          if (currentTab === 'pings') {
+            loadPings();
+          }
+        } catch (e) {}
+      }, 2500);
+    }
+
+    // Add Site
+    function openAddSiteModal() {
+      document.getElementById('addModal').classList.remove('hidden');
+      document.getElementById('addDomainInput').value = '';
+      document.getElementById('addError').classList.add('hidden');
+    }
+    function closeAddSiteModal() {
+      document.getElementById('addModal').classList.add('hidden');
+    }
+    async function submitAddSite() {
+      const rawDomain = document.getElementById('addDomainInput').value.trim();
+      const autoScrape = document.getElementById('addAutoScrape').checked;
+      const err = document.getElementById('addError');
+      err.classList.add('hidden');
+
+      if (!rawDomain) return;
+
+      // Clean domain from full URLs, http/https, and paths
+      const clean = rawDomain.replace(/^https?:\/\//i, '').replace(/^www\./i, '').split('/')[0].toLowerCase().trim();
+
+      // If already present, open editor directly
+      const existing = allSites.find(s => s.domain === clean);
+      if (existing) {
+        alert(`"${clean}" is already in your database. Opening rating editor now.`);
+        closeAddSiteModal();
+        openEditModal(clean);
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/admin/sites', {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify({ domain: clean, auto_scrape: autoScrape })
+        });
+        if (res.ok) {
+          closeAddSiteModal();
+          loadSites();
+        } else if (res.status === 401 || res.status === 403) {
+          localStorage.removeItem('guardra_admin_token');
+          adminToken = '';
+          closeAddSiteModal();
+          showLoginModal();
+          document.getElementById('loginError').innerText = 'Session expired. Please enter your Admin Secret Key.';
+          document.getElementById('loginError').classList.remove('hidden');
+        } else {
+          const d = await res.json();
+          err.innerText = d.detail || 'Failed to add site.';
+          err.classList.remove('hidden');
+        }
+      } catch (e) {
+        err.innerText = 'Network error connecting to server.';
+        err.classList.remove('hidden');
+      }
+    }
+  </script>
+</body>
+</html>
